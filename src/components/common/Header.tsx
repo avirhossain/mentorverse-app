@@ -6,12 +6,12 @@ import { Home, Zap, Lightbulb, User } from 'lucide-react';
 export const Header = ({ isMenuOpen, setIsMenuOpen, currentView, setCurrentView }) => (
     <header className="sticky top-0 z-50 bg-white shadow-lg border-b border-primary/10">
         <div className="max-w-7xl mx-auto p-4 flex justify-between items-center">
-            <Link href="/" className="text-2xl font-extrabold text-primary">Guidelab</Link>
+            <Link href="/home" className="text-2xl font-extrabold text-primary">Guidelab</Link>
             
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex space-x-6 items-center text-gray-600 font-medium">
                 <button 
-                    onClick={() => setCurrentView ? setCurrentView('home') : window.location.href = '/'} 
+                    onClick={() => setCurrentView ? setCurrentView('home') : window.location.href = '/home'} 
                     className={`flex items-center transition px-3 py-2 rounded-lg ${currentView === 'home' ? 'text-primary bg-primary/10 font-bold' : 'hover:text-primary hover:bg-gray-100'}`}
                 >
                     <Home className="w-5 h-5 mr-1" /> Home Page
@@ -45,7 +45,7 @@ export const Header = ({ isMenuOpen, setIsMenuOpen, currentView, setCurrentView 
         {/* Mobile Menu Dropdown */}
         {isMenuOpen && (
             <div className="lg:hidden absolute w-full bg-white shadow-lg border-t border-gray-100 py-4 px-4 space-y-3">
-                <button onClick={() => {if(setCurrentView) setCurrentView('home'); else window.location.href = '/'; setIsMenuOpen(false);}} className="w-full text-left flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg"><Home className="w-5 h-5 mr-2" /> Home Page</button>
+                <button onClick={() => {if(setCurrentView) setCurrentView('home'); else window.location.href = '/home'; setIsMenuOpen(false);}} className="w-full text-left flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg"><Home className="w-5 h-5 mr-2" /> Home Page</button>
                 <button onClick={() => {if(setCurrentView) setCurrentView('exclusive'); else window.location.href = '/sessions'; setIsMenuOpen(false);}} className="w-full text-left flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg"><Zap className="w-5 h-5 mr-2" /> Exclusive Session</button>
                 <button onClick={() => {if(setCurrentView) setCurrentView('tips'); else window.location.href = '/tips'; setIsMenuOpen(false);}} className="w-full text-left flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg"><Lightbulb className="w-5 h-5 mr-2" /> Tips & Resources</button>
                 <Link href="/account" className="w-full mt-2 px-4 py-2 text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-md flex items-center justify-center" onClick={() => setIsMenuOpen(false)}>

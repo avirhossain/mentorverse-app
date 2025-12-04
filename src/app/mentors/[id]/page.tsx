@@ -44,10 +44,10 @@ const MENTOR_DETAILS = {
 const Header = ({ isMenuOpen, setIsMenuOpen }) => (
     <header className="sticky top-0 z-50 bg-white shadow-md">
         <div className="max-w-7xl mx-auto p-4 flex justify-between items-center">
-            <Link href="/" className="text-2xl font-bold text-primary">Guidelab</Link>
+            <Link href="/home" className="text-2xl font-bold text-primary">Guidelab</Link>
             
             <nav className="hidden lg:flex space-x-6 items-center text-gray-600 font-medium">
-                <Link href="/" className="flex items-center hover:text-primary transition"><Home className="w-5 h-5 mr-1" /> Home Page</Link>
+                <Link href="/home" className="flex items-center hover:text-primary transition"><Home className="w-5 h-5 mr-1" /> Home Page</Link>
                 <Link href="/sessions" className="flex items-center hover:text-primary transition"><Zap className="w-5 h-5 mr-1" /> Exclusive Session</Link>
                 <Link href="/tips" className="flex items-center hover:text-primary transition"><Lightbulb className="w-5 h-5 mr-1" /> Tips</Link>
                 <Link href="/account" className="px-3 py-1.5 text-white bg-primary hover:bg-primary/90 rounded-full transition shadow-md flex items-center">
@@ -64,7 +64,7 @@ const Header = ({ isMenuOpen, setIsMenuOpen }) => (
         
         {isMenuOpen && (
             <div className="lg:hidden absolute w-full bg-white shadow-lg border-t border-gray-100 py-4 px-4 space-y-3">
-                <Link href="/" className="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg" onClick={() => setIsMenuOpen(false)}><Home className="w-5 h-5 mr-2" /> Home Page</Link>
+                <Link href="/home" className="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg" onClick={() => setIsMenuOpen(false)}><Home className="w-5 h-5 mr-2" /> Home Page</Link>
                 <Link href="/sessions" className="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg" onClick={() => setIsMenuOpen(false)}><Zap className="w-5 h-5 mr-2" /> Exclusive Session</Link>
                 <Link href="/tips" className="flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg" onClick={() => setIsMenuOpen(false)}><Lightbulb className="w-5 h-5 mr-2" /> Tips</Link>
                 <Link href="/account" className="w-full mt-2 px-4 py-2 text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-md flex items-center justify-center" onClick={() => setIsMenuOpen(false)}>
