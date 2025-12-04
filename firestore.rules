@@ -22,6 +22,13 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    /**
+     * Checks if the currently authenticated user is the admin.
+     */
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'mazhar@admin.com';
+    }
+
     //----------------------------------------------------------------//
     // Collection Rules
     //----------------------------------------------------------------//
@@ -31,7 +38,7 @@ service cloud.firestore {
      */
     match /mentors/{mentorId} {
       allow get, list: if true;
-      allow write: if isSignedIn();
+      allow write: if isAdmin();
     }
     
     /**
@@ -39,7 +46,7 @@ service cloud.firestore {
      */
     match /sessions/{sessionId} {
       allow get, list: if true;
-      allow write: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     /**
@@ -47,47 +54,46 @@ service cloud.firestore {
      */
     match /unique_sessions/{uniqueSessionId} {
       allow get, list: if true;
-      allow write: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     /**
-     * @description Tips are public for anyone to read. Only signed-in users (admins for now) can manage them.
+     * @description Tips are public for anyone to read. Only admins can manage them.
      */
     match /tips/{tipId} {
       allow get, list: if true;
-      allow write: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     /**
-     * @description User (mentee) profiles. A user can create their own profile and can only access their own. Admins can manage them.
+     * @description User (mentee) profiles. A user can create their own profile and can only access their own. Admins can manage any profile.
      */
     match /users/{menteeId} {
-      allow get: if isOwner(menteeId) || isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isOwner(menteeId) && request.resource.data.id == menteeId;
-      allow update: if isOwner(menteeId) || isSignedIn();
-      allow delete: if isOwner(menteeId) || isSignedIn();
+      allow get, update: if isOwner(menteeId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(menteeId);
+      allow delete: if isAdmin();
     }
 
     /**
      * @description A user's private session records. Only accessible by the user or an admin.
      */
     match /users/{menteeId}/sessions/{sessionId} {
-      allow read, write: if isOwner(menteeId) || isSignedIn();
+      allow read, write: if isOwner(menteeId) || isAdmin();
     }
 
     /**
      * @description A user's private recommendations. Only accessible by the user or an admin.
      */
     match /users/{menteeId}/recommendations/{recommendationId} {
-      allow read, write: if isOwner(menteeId) || isSignedIn();
+      allow read, write: if isOwner(menteeId) || isAdmin();
     }
 
     /**
-     * @description Coupon codes for adding balance.
+     * @description Coupon codes for adding balance. Only admins can manage them.
      */
     match /coupons/{couponId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isAdmin();
     }
 
     /**
@@ -95,7 +101,15 @@ service cloud.firestore {
      */
     match /pending_payments/{paymentId} {
       allow create: if isOwner(request.resource.data.userId);
-      allow get, list, update, delete: if isSignedIn();
+      allow get, list, update, delete: if isAdmin();
+    }
+    
+    /**
+     * @description Balance transaction logs. Admins can read all, users can only read their own.
+     */
+    match /balance_transactions/{transactionId} {
+        allow get, list: if isAdmin();
+        // Add rule for users to read their own transactions if needed
     }
   }
 }
