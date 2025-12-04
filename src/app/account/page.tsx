@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
-    User, BookOpen, Clock, Zap, Star, ChevronRight, Calendar, Phone, Cake, Building, Briefcase, Mail, CheckCircle, Save, UploadCloud, LogOut, LayoutGrid, Heart, Bookmark, Wallet, PlusCircle, X, LogIn
+    User, BookOpen, Clock, Zap, Star, ChevronRight, Calendar, Phone, Cake, Building, Briefcase, Mail, CheckCircle, Save, UploadCloud, LogOut, LayoutGrid, Heart, Bookmark, Wallet, PlusCircle, X, LogIn, Video
 } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useFirestore, useUser, useDoc, useMemoFirebase, useAuth } from '@/firebase';
+import { useFirestore, useUser, useDoc, useMemoFirebase, useAuth, useCollection } from '@/firebase';
 import { collection, query, where, getDocs, updateDoc, arrayUnion, doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { Mentee, Session } from '@/lib/types';
@@ -450,6 +450,88 @@ const WalletSection = ({ balance, onAddBalanceClick }) => (
     </section>
 );
 
+const JoinButton = ({ session }) => {
+    const [canJoin, setCanJoin] = useState(false);
+
+    useEffect(() => {
+        // This is a simplified check. A robust implementation would use a library like date-fns
+        // and a proper date/time string format (e.g., ISO 8601) in the Session object.
+        const checkTime = () => {
+            // Placeholder: Assume session.date is "YYYY-MM-DD" and session.time is "HH:MM AM/PM"
+            // This logic is for demonstration and will likely need to be adapted
+            const sessionDateTime = new Date(`${session.date} ${session.time}`);
+            const now = new Date();
+            const tenMinutes = 10 * 60 * 1000;
+            
+            // This comparison is naive and should be improved
+            if (sessionDateTime.getTime() - now.getTime() < tenMinutes) {
+                setCanJoin(true);
+            }
+        };
+
+        checkTime();
+        const interval = setInterval(checkTime, 60000); // Check every minute
+        return () => clearInterval(interval);
+    }, [session]);
+
+    if (canJoin) {
+        return (
+            <Button asChild>
+                <a href={session.jitsiLink} target="_blank" rel="noopener noreferrer">
+                    <Video className="w-4 h-4 mr-2" />
+                    Join Session
+                </a>
+            </Button>
+        );
+    }
+
+    return (
+        <Button variant="outline" disabled>
+            <Clock className="w-4 h-4 mr-2" />
+            Join link active 10m before
+        </Button>
+    );
+};
+
+const UpcomingSessions = ({ sessions, isLoading }) => (
+     <section>
+        <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-6 flex items-center">
+            <Calendar className="w-8 h-8 mr-3 text-primary" />
+            Upcoming Sessions
+        </h2>
+        <div className="space-y-4">
+             {isLoading ? (
+                <p className="text-gray-500 dark:text-gray-400">Loading upcoming sessions...</p>
+            ) : !sessions || sessions.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400">You have no upcoming sessions.</p>
+            ) : (
+                sessions.map(session => (
+                    <div key={session.id} className="p-5 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col sm:flex-row items-start justify-between transition duration-200 hover:shadow-xl hover:border-l-4 border-primary/80 border-l-4 border-transparent">
+                        <div className="flex items-start flex-grow">
+                            <div className="p-3 bg-primary/10 dark:bg-primary/20 rounded-lg mr-4 flex-shrink-0">
+                                <Zap className="w-6 h-6 text-primary dark:text-primary/90" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-1">{session.title}</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center space-x-4">
+                                    <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> {session.date} at {session.time}</span>
+                                    <span className="flex items-center"><Clock className="w-3 h-3 mr-1" /> {session.durationMinutes} min</span>
+                                </p>
+                                <p className="text-sm font-semibold text-primary dark:text-primary/90 mt-1">
+                                    Mentor: {session.mentorName}
+                                </p>
+                            </div>
+                        </div>
+                         <div className="mt-4 sm:mt-0 sm:text-right flex flex-col items-start sm:items-end flex-shrink-0 ml-0 sm:ml-4">
+                               <JoinButton session={session} />
+                         </div>
+                    </div>
+                ))
+            )}
+        </div>
+    </section>
+);
+
 
 const ActivitySection = ({ sessions, onReview }) => (
     <section>
@@ -552,6 +634,16 @@ export default function AccountPage() {
 
     const { data: menteeData, isLoading: isMenteeLoading } = useDoc<Mentee>(userDocRef);
 
+    const upcomingSessionsQuery = useMemoFirebase(() => {
+        if (!firestore || !authUser) return null;
+        return query(
+            collection(firestore, 'sessions'),
+            where('bookedBy', 'array-contains', authUser.uid)
+        );
+    }, [firestore, authUser]);
+
+    const { data: upcomingSessions, isLoading: isLoadingUpcomingSessions } = useCollection<Session>(upcomingSessionsQuery);
+
     const [showAddBalanceModal, setShowAddBalanceModal] = useState(false);
     const [sessionToReview, setSessionToReview] = useState(null);
     
@@ -611,6 +703,7 @@ export default function AccountPage() {
 
                             <div className="lg:col-span-2 space-y-8">
                                 <WalletSection balance={menteeData?.balance || 0} onAddBalanceClick={() => setShowAddBalanceModal(true)} />
+                                <UpcomingSessions sessions={upcomingSessions} isLoading={isLoadingUpcomingSessions} />
                                 <ActivitySection sessions={[]} onReview={setSessionToReview} />
                                 <SavedContentSection content={[]} />
                                 <LogoutButton />

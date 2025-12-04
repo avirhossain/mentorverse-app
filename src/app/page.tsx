@@ -78,7 +78,10 @@ const SessionCardSkeleton = () => (
     </div>
   );
 
-const SessionCard = ({ session, onBook }: { session: Session, onBook: (session: Session) => void }) => (
+const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (session: Session) => void, user: any }) => {
+    const isBooked = user && session.bookedBy?.includes(user.uid);
+
+    return (
     <div className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-primary flex flex-col justify-between transition duration-300 hover:shadow-2xl hover:scale-[1.01] transform">
         <div>
             <h3 className="text-xl font-bold text-gray-800 mb-1">{session.title}</h3>
@@ -100,13 +103,20 @@ const SessionCard = ({ session, onBook }: { session: Session, onBook: (session: 
                 </p>
             </div>
         </div>
-        <Button onClick={() => onBook(session)} className="w-full font-bold text-lg mt-6">
-            Book Session
+        <Button onClick={() => onBook(session)} disabled={isBooked} className="w-full font-bold text-lg mt-6">
+             {isBooked ? (
+                <>
+                    <CheckCircle className="mr-2" /> Session Booked
+                </>
+            ) : (
+                'Book Session'
+            )}
         </Button>
     </div>
-);
+    )
+};
 
-const RegistrationModal = ({ session, user, onClose, onLogin }) => {
+const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete }) => {
     const [step, setStep] = React.useState(user ? 'form' : 'auth_check');
     const [reason, setReason] = React.useState('');
     const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -161,7 +171,7 @@ const RegistrationModal = ({ session, user, onClose, onLogin }) => {
                     bookedBy: [...(currentSessionData.bookedBy || []), user.uid]
                 });
             });
-
+            onBookingComplete();
             toast({ title: 'Success!', description: 'You have successfully booked the session.' });
             setStep('thank_you');
         } catch (error) {
@@ -252,6 +262,8 @@ export default function HomePage() {
     const { user, isUserLoading } = useUser();
     const [sessionToBook, setSessionToBook] = useState<Session | null>(null);
     const [showLoginModalFromBooking, setShowLoginModalFromBooking] = useState(false);
+    const [bookingUpdate, setBookingUpdate] = useState(0);
+
 
     const mentorsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -261,7 +273,7 @@ export default function HomePage() {
     const sessionsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         return query(collection(firestore, 'sessions'), orderBy('date'));
-    }, [firestore]);
+    }, [firestore, bookingUpdate]);
 
     const { data: mentors, isLoading: isLoadingMentors } = useCollection<Mentor>(mentorsQuery);
     const { data: sessions, isLoading: isLoadingSessions } = useCollection<Session>(sessionsQuery);
@@ -277,6 +289,11 @@ export default function HomePage() {
     const handleCloseModal = () => {
         setSessionToBook(null);
     };
+
+    const handleBookingComplete = () => {
+        // Force a re-fetch of sessions to get updated `bookedBy` array
+        setBookingUpdate(prev => prev + 1);
+    }
 
     return (
         <div className="min-h-screen bg-background font-sans">
@@ -331,7 +348,7 @@ export default function HomePage() {
                              Array.from({ length: 3 }).map((_, index) => <SessionCardSkeleton key={index} />)
                         ) : (
                             sessions?.map((session) => (
-                                <SessionCard key={session.id} session={session} onBook={handleBookSession} />
+                                <SessionCard key={session.id} session={session} onBook={handleBookSession} user={user} />
                             ))
                         )}
                     </div>
@@ -347,6 +364,7 @@ export default function HomePage() {
                         handleCloseModal();
                         setShowLoginModalFromBooking(true);
                     }}
+                    onBookingComplete={handleBookingComplete}
                 />
             )}
         </div>
