@@ -23,7 +23,7 @@ service cloud.firestore {
     }
 
     /**
-     * Checks if the currently authenticated user is the admin.
+     * Checks if the currently authenticated user is the admin by email.
      */
     function isAdmin() {
       return isSignedIn() && request.auth.token.email == 'mazhar@admin.com';
@@ -34,63 +34,52 @@ service cloud.firestore {
     //----------------------------------------------------------------//
 
     /**
-     * @description Mentor profiles are public for anyone to read. Only admins can manage them.
+     * @description Public content that can be read by anyone, but only managed by admins.
      */
     match /mentors/{mentorId} {
       allow get, list: if true;
-      allow write: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
     
-    /**
-     * @description Session offerings are public for anyone to read. Only admins can manage them.
-     */
     match /sessions/{sessionId} {
       allow get, list: if true;
-      allow write: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
-    /**
-     * @description Unique session offerings are public for anyone to read. Only admins can manage them.
-     */
     match /unique_sessions/{uniqueSessionId} {
       allow get, list: if true;
-      allow write: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
-    /**
-     * @description Tips are public for anyone to read. Only admins can manage them.
-     */
     match /tips/{tipId} {
       allow get, list: if true;
-      allow write: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     /**
-     * @description User (mentee) profiles. A user can create their own profile and can only access their own. Admins can manage any profile.
+     * @description User profiles. Users can manage their own profile. Admins can manage any.
      */
     match /users/{menteeId} {
-      allow get, update: if isOwner(menteeId) || isAdmin();
+      allow get: if isOwner(menteeId) || isAdmin();
       allow list: if isAdmin();
       allow create: if isOwner(menteeId);
+      allow update: if isOwner(menteeId) || isAdmin();
       allow delete: if isAdmin();
     }
 
     /**
-     * @description A user's private session records. Only accessible by the user or an admin.
+     * @description User subcollections. Only accessible by the user or an admin.
      */
     match /users/{menteeId}/sessions/{sessionId} {
       allow read, write: if isOwner(menteeId) || isAdmin();
     }
 
-    /**
-     * @description A user's private recommendations. Only accessible by the user or an admin.
-     */
     match /users/{menteeId}/recommendations/{recommendationId} {
       allow read, write: if isOwner(menteeId) || isAdmin();
     }
 
     /**
-     * @description Coupon codes for adding balance. Only admins can manage them. Users can read a specific coupon to check it.
+     * @description Coupons can be read by any signed-in user, but only managed by admins.
      */
     match /coupons/{couponId} {
       allow get: if isSignedIn();
@@ -98,7 +87,7 @@ service cloud.firestore {
     }
 
     /**
-     * @description Pending payments for manual verification.
+     * @description Pending payments can be created by the user, but only managed by admins.
      */
     match /pending_payments/{paymentId} {
       allow create: if isOwner(request.resource.data.userId);
@@ -106,14 +95,10 @@ service cloud.firestore {
     }
     
     /**
-     * @description Balance transaction logs. Admins can create and read all transactions.
-     * Users can only read their own transactions.
+     * @description Balance transaction logs are admin-only for creation and listing.
      */
     match /balance_transactions/{transactionId} {
       allow create, get, list: if isAdmin();
-      // Future rule: allow get, list: if isOwner(resource.data.userId);
     }
   }
 }
-
-    
