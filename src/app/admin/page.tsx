@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { collection, getDocs, doc, runTransaction, deleteDoc, setDoc, updateDoc, addDoc } from 'firebase/firestore';
-import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import type { Mentor, Mentee, Session, Tip, Coupon, PendingPayment } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -194,7 +194,7 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                 toast({ title: 'Success!', description: 'New mentor profile created.' });
             }
             onClose();
-        } catch (error) => {
+        } catch (error) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
