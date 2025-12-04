@@ -25,7 +25,7 @@ const LoginModal = ({ onClose }) => {
 
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            router.push(role === 'admin' ? '/admin' : '/account');
+            router.push(role === 'admin' ? '/admin' : '/');
             onClose();
         } catch (error) {
             if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
@@ -56,7 +56,7 @@ const LoginModal = ({ onClose }) => {
                         await setDoc(adminRoleRef, { role: 'admin' });
                     }
 
-                    router.push(role === 'admin' ? '/admin' : '/account');
+                    router.push(role === 'admin' ? '/admin' : '/');
                     onClose();
                 } catch (createError) {
                     console.error(`Error creating ${role} user:`, createError);
