@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -7,6 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { User, Phone, FileText as ProfileIcon, Send, CheckCircle } from 'lucide-react';
+import { useFirestore } from '@/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+
 
 export default function BecomeAMentorPage() {
     const [name, setName] = useState('');
@@ -14,18 +19,37 @@ export default function BecomeAMentorPage() {
     const [summary, setSummary] = useState('');
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const firestore = useFirestore();
+    const { toast } = useToast();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!firestore) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not connect to the database.' });
+            return;
+        }
         setIsLoading(true);
-        // Simulate an API call to submit the application
-        setTimeout(() => {
+        
+        try {
+            const applicationsCollection = collection(firestore, 'mentor_applications');
+            await addDoc(applicationsCollection, {
+                name,
+                phone,
+                summary,
+                status: 'pending',
+                createdAt: new Date().toISOString(),
+            });
+            
             setIsLoading(false);
             setIsSubmitted(true);
             setName('');
             setPhone('');
             setSummary('');
-        }, 1000);
+        } catch (error) {
+            setIsLoading(false);
+            toast({ variant: 'destructive', title: 'Submission Failed', description: 'Please try again later.' });
+            console.error("Error submitting mentor application:", error);
+        }
     };
 
     return (
@@ -106,3 +130,5 @@ export default function BecomeAMentorPage() {
         </div>
     );
 }
+
+    

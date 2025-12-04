@@ -8,6 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { User, Phone, MessageSquare, Send, CheckCircle } from 'lucide-react';
+import { useFirestore } from '@/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SupportPage() {
     const [name, setName] = useState('');
@@ -15,18 +18,37 @@ export default function SupportPage() {
     const [details, setDetails] = useState('');
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const firestore = useFirestore();
+    const { toast } = useToast();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!firestore) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not connect to the database.' });
+            return;
+        }
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
+        
+        try {
+            const requestsCollection = collection(firestore, 'support_requests');
+            await addDoc(requestsCollection, {
+                name,
+                phone,
+                details,
+                status: 'new',
+                createdAt: new Date().toISOString(),
+            });
+            
             setIsLoading(false);
             setIsSubmitted(true);
             setName('');
             setPhone('');
             setDetails('');
-        }, 1000);
+        } catch (error) {
+            setIsLoading(false);
+            toast({ variant: 'destructive', title: 'Submission Failed', description: 'Please try again later.' });
+            console.error("Error submitting support request:", error);
+        }
     };
 
     return (
@@ -107,3 +129,5 @@ export default function SupportPage() {
         </div>
     );
 }
+
+    

@@ -113,5 +113,23 @@ service cloud.firestore {
     match /balance_transactions/{transactionId} {
       allow create, get, list: if isAdmin();
     }
+
+    /**
+     * @description Mentor applications. Any user can submit one. Only admins can read/manage them.
+     */
+    match /mentor_applications/{applicationId} {
+      allow create: if isSignedIn();
+      allow read, write, delete: if isAdmin();
+    }
+
+    /**
+     * @description Support requests. Any user can submit one. Only admins can read/manage them.
+     */
+    match /support_requests/{requestId} {
+      allow create: if isSignedIn();
+      allow read, write, delete: if isAdmin();
+    }
   }
 }
+
+    

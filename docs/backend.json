@@ -371,6 +371,36 @@
         "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of the transaction." }
       },
       "required": ["id", "userId", "amount", "source", "description", "createdAt"]
+    },
+    "MentorApplication": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MentorApplication",
+      "type": "object",
+      "description": "Represents an application from a user wanting to become a mentor.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID for the application." },
+        "name": { "type": "string", "description": "The applicant's name." },
+        "phone": { "type": "string", "description": "The applicant's phone number." },
+        "summary": { "type": "string", "description": "The applicant's professional summary." },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "The application status." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of the application." }
+      },
+      "required": ["id", "name", "phone", "summary", "status", "createdAt"]
+    },
+    "SupportRequest": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SupportRequest",
+      "type": "object",
+      "description": "Represents a support request from a user.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID for the request." },
+        "name": { "type": "string", "description": "The user's name." },
+        "phone": { "type": "string", "description": "The user's phone number." },
+        "details": { "type": "string", "description": "The details of the support issue." },
+        "status": { "type": "string", "enum": ["new", "in-progress", "resolved"], "description": "The request status." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of the request." }
+      },
+      "required": ["id", "name", "phone", "details", "status", "createdAt"]
     }
   },
   "auth": {
@@ -526,8 +556,28 @@
           "description": "Logs all changes to a user's balance for auditing purposes.",
           "params": [{ "name": "transactionId", "description": "The unique ID for the balance transaction." }]
         }
+      },
+      {
+        "path": "/mentor_applications/{applicationId}",
+        "definition": {
+          "entityName": "MentorApplication",
+          "schema": { "$ref": "#/backend/entities/MentorApplication" },
+          "description": "Collection for mentor applications awaiting admin review.",
+          "params": [{ "name": "applicationId", "description": "The unique ID for the mentor application." }]
+        }
+      },
+      {
+        "path": "/support_requests/{requestId}",
+        "definition": {
+          "entityName": "SupportRequest",
+          "schema": { "$ref": "#/backend/entities/SupportRequest" },
+          "description": "Collection for user support requests awaiting admin review.",
+          "params": [{ "name": "requestId", "description": "The unique ID for the support request." }]
+        }
       }
     ],
     "reasoning": "The Firestore structure is designed to securely manage mentors, mentees, sessions, unique session offerings, and personalized recommendations within the MentorVerse application. The structure emphasizes authorization independence, clarity, and scalability.\n\nAuthorization Independence (CRITICAL): To avoid hierarchical authorization dependencies (`get()`), the design denormalizes authorization context where necessary. For example, access to sessions within a mentee's profile does not require fetching the mentee's profile to verify ownership. Instead, the session document itself contains the `menteeId`. Similarly, global roles (admin) are managed via the existence of a document in dedicated collections, rather than relying on custom claims.\n\nStructural Segregation (Homogeneous Security Posture): The structure segregates data based on access needs.  User-owned data is stored under the `/users/{userId}` path, allowing for simple path-based ownership rules.  Admin-created unique sessions are stored in a separate collection, `/unique_sessions`, to distinguish them from user-created sessions.\n\nAccess Modeling (Standardization and Consistency): The structure uses consistent patterns for authorization:\n*   Private Data: Path-Based ownership is enforced for mentee-specific data (e.g., recommendations under `/users/{menteeId}/recommendations/{recommendationId}`).\n*   Collaborative Data:  Not explicitly needed in this design, as no entities require collaborative access.\n*   Global Roles (DBAC): Admin privileges are checked by existence in `/roles_admin/{uid}`.\n\nQAPs (Rules are not Filters): The structure supports secure `list` operations by ensuring that collections contain documents with homogeneous security requirements. For example, listing sessions is secure because access to each session is determined by the path (user-owned) and/or role, not by filtering based on document content.\n\nInvariants: The structure enforces data integrity by leveraging path-based ownership to ensure that mentees can only access their own sessions and recommendations. Timestamps are used to maintain the order and history of recommendations."
   }
 }
+
+    

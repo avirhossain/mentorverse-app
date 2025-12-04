@@ -1,5 +1,6 @@
 
 
+
 export interface Mentor {
   id: string; // Changed from number to string to align with Firestore document IDs
   name: string;
@@ -106,3 +107,23 @@ export interface BalanceTransaction {
     description: string; // e.g., Coupon code 'GUIDE500' or 'bKash TrxID: XXXXX'
     createdAt: string; // ISO Date string
 }
+
+export interface MentorApplication {
+    id: string;
+    name: string;
+    phone: string;
+    summary: string;
+    status: 'pending' | 'approved' | 'rejected';
+    createdAt: string; // ISO Date string
+}
+
+export interface SupportRequest {
+    id: string;
+    name: string;
+    phone: string;
+    details: string;
+    status: 'new' | 'in-progress' | 'resolved';
+    createdAt: string; // ISO Date string
+}
+
+    

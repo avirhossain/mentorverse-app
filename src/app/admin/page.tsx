@@ -1,7 +1,7 @@
 
 'use client';
 import React, { useState, useEffect } from 'react';
-import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldX, Calendar, CreditCard } from 'lucide-react';
+import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldX, Calendar, CreditCard, Inbox, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { collection, getDocs, doc, runTransaction, deleteDoc, setDoc, updateDoc, addDoc, writeBatch } from 'firebase/firestore';
 import { useAuth, useFirestore, useUser } from '@/firebase';
-import type { Mentor, Mentee, Session, Tip, Coupon, PendingPayment } from '@/lib/types';
+import type { Mentor, Mentee, Session, Tip, Coupon, PendingPayment, MentorApplication, SupportRequest } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { v4 as uuidv4 } from 'uuid';
@@ -668,7 +668,7 @@ const TipForm = ({ onSave, onClose }) => {
 };
 
 
-const DataListView = ({ title, data, isLoading, icon: Icon, renderItem }) => (
+const DataListView = ({ title, data, isLoading, icon: Icon, renderItem, emptyMessage = "No data available." }) => (
     <div className="mt-8">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
             <Icon className="w-6 h-6 mr-3 text-primary" />
@@ -685,7 +685,7 @@ const DataListView = ({ title, data, isLoading, icon: Icon, renderItem }) => (
                 {data && data.length > 0 ? (
                     data.map((item) => renderItem(item))
                 ) : (
-                    <p className="text-gray-500 dark:text-gray-400 text-center py-4">No data available.</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-center py-4">{emptyMessage}</p>
                 )}
             </div>
         )}
@@ -701,12 +701,16 @@ export default function AdminPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [mentorApps, setMentorApps] = useState<MentorApplication[]>([]);
+  const [supportRequests, setSupportRequests] = useState<SupportRequest[]>([]);
 
   const [isLoadingMentors, setIsLoadingMentors] = useState(true);
   const [isLoadingMentees, setIsLoadingMentees] = useState(true);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [isLoadingPayments, setIsLoadingPayments] = useState(true);
   const [isLoadingCoupons, setIsLoadingCoupons] = useState(true);
+  const [isLoadingMentorApps, setIsLoadingMentorApps] = useState(true);
+  const [isLoadingSupport, setIsLoadingSupport] = useState(true);
 
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
@@ -719,14 +723,18 @@ export default function AdminPage() {
     setIsLoadingSessions(true);
     setIsLoadingPayments(true);
     setIsLoadingCoupons(true);
+    setIsLoadingMentorApps(true);
+    setIsLoadingSupport(true);
 
     try {
-        const [mentorsSnap, menteesSnap, sessionsSnap, paymentsSnap, couponsSnap] = await Promise.all([
+        const [mentorsSnap, menteesSnap, sessionsSnap, paymentsSnap, couponsSnap, mentorAppsSnap, supportRequestsSnap] = await Promise.all([
             getDocs(collection(firestore, 'mentors')),
             getDocs(collection(firestore, 'users')),
             getDocs(collection(firestore, 'sessions')),
             getDocs(collection(firestore, 'pending_payments')),
             getDocs(collection(firestore, 'coupons')),
+            getDocs(collection(firestore, 'mentor_applications')),
+            getDocs(collection(firestore, 'support_requests')),
         ]);
 
         setMentors(mentorsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentor)));
@@ -734,6 +742,8 @@ export default function AdminPage() {
         setSessions(sessionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Session)));
         setPendingPayments(paymentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PendingPayment)));
         setCoupons(couponsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon)));
+        setMentorApps(mentorAppsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as MentorApplication)));
+        setSupportRequests(supportRequestsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as SupportRequest)));
 
     } catch (error) {
         toast({ variant: 'destructive', title: 'Error fetching data', description: error.message });
@@ -744,6 +754,8 @@ export default function AdminPage() {
         setIsLoadingSessions(false);
         setIsLoadingPayments(false);
         setIsLoadingCoupons(false);
+        setIsLoadingMentorApps(false);
+        setIsLoadingSupport(false);
     }
   };
 
@@ -913,6 +925,76 @@ export default function AdminPage() {
           </div>
           
           <PaymentApprovalList payments={pendingPayments.filter(p => p.status === 'pending')} onApprove={handleApprovePayment} isLoading={isLoadingPayments} />
+
+          <DataListView
+                title="Mentor Applications"
+                data={mentorApps}
+                isLoading={isLoadingMentorApps}
+                icon={Inbox}
+                renderItem={(app) => (
+                    <div key={app.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="font-bold text-gray-800 dark:text-white">{app.name} <span className="font-normal text-gray-500">- {app.phone}</span></p>
+                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{app.summary}</p>
+                            </div>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will delete the application from {app.name}. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete('mentor_applications', app.id, `application from ${app.name}`)}>Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </div>
+                )}
+                 emptyMessage="No new mentor applications."
+            />
+            
+            <DataListView
+                title="Support Requests"
+                data={supportRequests}
+                isLoading={isLoadingSupport}
+                icon={MessageSquare}
+                renderItem={(req) => (
+                    <div key={req.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div className="flex justify-between items-start">
+                             <div>
+                                <p className="font-bold text-gray-800 dark:text-white">{req.name} <span className="font-normal text-gray-500">- {req.phone}</span></p>
+                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{req.details}</p>
+                            </div>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will delete the support request from {req.name}. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete('support_requests', req.id, `request from ${req.name}`)}>Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </div>
+                )}
+                emptyMessage="No new support requests."
+            />
           
           <DataListView
             title="All Mentors"
@@ -1091,3 +1173,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
