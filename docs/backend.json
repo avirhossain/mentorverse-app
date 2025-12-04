@@ -355,6 +355,21 @@
         }
       },
       "required": ["id", "userId", "transactionId", "amount", "status", "createdAt"]
+    },
+    "BalanceTransaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BalanceTransaction",
+      "type": "object",
+      "description": "Represents a transaction that affects a user's balance.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID for the transaction." },
+        "userId": { "type": "string", "description": "The ID of the user." },
+        "amount": { "type": "number", "description": "The transaction amount (can be positive or negative)." },
+        "source": { "type": "string", "enum": ["coupon", "bkash", "session_payment"], "description": "The source of the transaction." },
+        "description": { "type": "string", "description": "A human-readable description of the transaction." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of the transaction." }
+      },
+      "required": ["id", "userId", "amount", "source", "description", "createdAt"]
     }
   },
   "auth": {
@@ -498,6 +513,15 @@
               "description": "The unique ID for the payment submission."
             }
           ]
+        }
+      },
+      {
+        "path": "/balance_transactions/{transactionId}",
+        "definition": {
+          "entityName": "BalanceTransaction",
+          "schema": { "$ref": "#/backend/entities/BalanceTransaction" },
+          "description": "Logs all changes to a user's balance for auditing purposes.",
+          "params": [{ "name": "transactionId", "description": "The unique ID for the balance transaction." }]
         }
       }
     ],

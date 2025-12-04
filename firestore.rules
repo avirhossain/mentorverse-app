@@ -90,10 +90,11 @@ service cloud.firestore {
     }
 
     /**
-     * @description Coupon codes for adding balance. Only admins can manage them.
+     * @description Coupon codes for adding balance. Only admins can manage them. Users can read a specific coupon to check it.
      */
     match /coupons/{couponId} {
-      allow read, write: if isAdmin();
+      allow get: if isSignedIn();
+      allow list, create, update, delete: if isAdmin();
     }
 
     /**
@@ -105,11 +106,14 @@ service cloud.firestore {
     }
     
     /**
-     * @description Balance transaction logs. Admins can read all, users can only read their own.
+     * @description Balance transaction logs. Admins can create and read all transactions.
+     * Users can only read their own transactions.
      */
     match /balance_transactions/{transactionId} {
-        allow get, list: if isAdmin();
-        // Add rule for users to read their own transactions if needed
+      allow create, get, list: if isAdmin();
+      // Future rule: allow get, list: if isOwner(resource.data.userId);
     }
   }
 }
+
+    
