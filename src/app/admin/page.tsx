@@ -303,7 +303,7 @@ const TipForm = ({ onSave, onClose }) => {
     };
 
     const handleTypeChange = (value) => {
-        setFormData(prev => ({ ...prev, type: value }));
+        setFormData(prev => ({ ...prev, type: value, content: '', link: '' }));
     };
 
     const handleSubmit = async (e) => {
@@ -319,9 +319,11 @@ const TipForm = ({ onSave, onClose }) => {
         }
 
         try {
-            const tipsCol = collection(firestore, 'tips');
             const newTip = {
-                ...formData,
+                type: formData.type,
+                title: formData.title,
+                summary: formData.summary,
+                ...(formData.type === 'Article' ? { content: formData.content } : { link: formData.link }),
                 id: `Tip${Date.now()}`, // Simple unique ID
             };
             
@@ -355,9 +357,9 @@ const TipForm = ({ onSave, onClose }) => {
             <Input name="title" placeholder="Tip Title" value={formData.title} onChange={handleChange} required />
             <Input name="summary" placeholder="Brief Summary" value={formData.summary} onChange={handleChange} required />
             {formData.type === 'Article' ? (
-                <Textarea name="content" placeholder="Full article content..." value={formData.content} onChange={handleChange} rows={6} />
+                <Textarea name="content" placeholder="Full article content..." value={formData.content} onChange={handleChange} rows={6} required />
             ) : (
-                <Input name="link" placeholder="URL (e.g., https://youtube.com/...)" value={formData.link} onChange={handleChange} required />
+                <Input name="link" placeholder="URL (e.g., https://youtube.com/...)" value={formData.link} onChange={handleChange} required type="url" />
             )}
             <div className="flex justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
@@ -558,5 +560,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    
