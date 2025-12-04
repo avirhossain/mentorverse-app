@@ -540,7 +540,6 @@ const SavedContentSection = ({ content }) => (
 
 export default function AccountPage() {
     const [user, setUser] = useState(MOCK_USER);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showAddBalanceModal, setShowAddBalanceModal] = useState(false);
     const [sessionToReview, setSessionToReview] = useState(null);
     
@@ -572,7 +571,7 @@ export default function AccountPage() {
 
     return (
         <div className="min-h-screen bg-background dark:bg-gray-900 font-sans transition duration-300">
-            <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} currentView="account"/>
+            <Header currentView="account"/>
 
             <div className="max-w-6xl mx-auto p-4 sm:p-8">
                 <header className="py-6 mb-8">

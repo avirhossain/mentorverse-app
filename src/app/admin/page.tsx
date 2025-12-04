@@ -571,7 +571,6 @@ const DataListView = ({ title, data, isLoading, icon: Icon, renderItem }) => (
 
 
 export default function AdminPage() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [modalState, setModalState] = useState({ type: null, data: null });
   
   const [mentors, setMentors] = useState<Mentor[]>([]);
@@ -699,8 +698,6 @@ export default function AdminPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header
-        isMenuOpen={isMenuOpen}
-        setIsMenuOpen={setIsMenuOpen}
         currentView="admin"
       />
       <main className="flex-1 p-4 md:p-8">

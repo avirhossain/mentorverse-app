@@ -336,7 +336,6 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
 
 export default function MentorPage({ params }: { params: { id: string } }) {
     const { id } = params;
-    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const firestore = useFirestore();
 
     const mentorRef = useMemoFirebase(() => {
@@ -348,7 +347,7 @@ export default function MentorPage({ params }: { params: { id: string } }) {
 
     return (
         <div className="min-h-screen bg-background font-sans">
-            <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+            <Header />
             <main>
                 {isLoading ? <MentorDetailsSkeleton /> : <MentorDetailsPage mentor={mentor} />}
             </main>
