@@ -1,43 +1,8 @@
 'use client';
-import React from 'react';
-import { Star, CheckCircle, Briefcase, GraduationCap, Clock, Calendar, MessageSquare, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Star, CheckCircle, Briefcase, GraduationCap, Clock, Calendar, MessageSquare, X, Zap } from 'lucide-react';
 import { Header } from '@/components/common/Header';
-
-// --- Consolidated Mock Data for Details Page ---
-
-const MENTOR_DETAILS = {
-    id: 1,
-    name: "Jasmine Chen",
-    title: "Staff Software Engineer",
-    company: "Google",
-    intro: "A dedicated Staff Software Engineer at Google with over 10 years of experience in building scalable, high-performance web applications using React and modern system architecture. I specialize in career growth, interview preparation, and navigating the transition to senior engineering roles. Let's map your success story.",
-    skills: ["React", "System Design", "Career Growth", "GoLang", "Microservices"],
-    rating: 5.0,
-    ratingsCount: 89,
-    avatar: "https://placehold.co/150x150/4F46E5/FFFFFF?text=JC",
-    professionalExperience: [
-        { title: "Staff Software Engineer", company: "Google", duration: "2020 - Present", description: "Led a team of 5 engineers in redesigning the core user authentication flow, resulting in a 15% latency reduction and 99.99% uptime." },
-        { title: "Senior Software Engineer", company: "Spotify", duration: "2016 - 2020", description: "Developed features for the desktop application, improving user engagement metrics by 20% over two years." },
-    ],
-    education: [
-        { degree: "M.S. Computer Science", institution: "Stanford University", duration: "2014 - 2016" },
-        { degree: "B.S. Electrical Engineering", institution: "MIT", duration: "2010 - 2014" },
-    ],
-    sessions: [
-        { id: 'qna', name: "30 min General Q&A", price: 300, currency: "৳", duration: 30, description: "Quick advice, roadmap checks, or simple technical questions." },
-        { id: 'interview', name: "60 min Interview Prep (Technical)", price: 1000, currency: "৳", duration: 60, description: "Focused mock interviews, system design walkthroughs, and detailed feedback." },
-    ],
-    availability: [
-        { date: "18th November", time: "7:00 PM - 8:00 PM", id: 1 },
-        { date: "19th November", time: "10:00 AM - 11:00 AM", id: 2 },
-        { date: "20th November", time: "4:00 PM - 5:00 PM", id: 3 },
-    ],
-    reviews: [
-        { mentee: "Rohan K.", date: "Nov 1, 2025", rating: 5, text: "Jasmine's system design breakdown was crystal clear. Highly recommend for FAANG interview prep!" },
-        { mentee: "Lina M.", date: "Oct 25, 2025", rating: 5, text: "Extremely valuable career advice. She helped me negotiate a 15% higher salary." },
-        { mentee: "Sam D.", date: "Oct 15, 2025", rating: 4, text: "Great session, though I wish we had more time to cover my resume fully." },
-    ]
-};
+import { Skeleton } from '@/components/ui/skeleton';
 
 // --- Helper Components ---
 
@@ -164,10 +129,51 @@ const CheckoutModal = ({ session, timeSlot, mentor, onClose }) => {
     );
 };
 
+const MentorDetailsSkeleton = () => (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10">
+      <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-8 flex flex-col items-center border-t-4 border-primary">
+        <Skeleton className="w-40 h-40 sm:w-48 sm:h-48 rounded-full mb-6" />
+        <div className="w-full text-center space-y-3">
+          <Skeleton className="h-8 w-1/2 mx-auto" />
+          <Skeleton className="h-6 w-3/4 mx-auto" />
+          <Skeleton className="h-5 w-1/3 mx-auto" />
+          <div className="flex flex-wrap gap-2 justify-center pt-2">
+            <Skeleton className="h-7 w-24 rounded-full" />
+            <Skeleton className="h-7 w-28 rounded-full" />
+            <Skeleton className="h-7 w-20 rounded-full" />
+          </div>
+        </div>
+      </div>
+      <div className="space-y-8">
+        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md space-y-4">
+            <Skeleton className="h-7 w-1/2" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+        </div>
+        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md space-y-4">
+            <Skeleton className="h-7 w-1/2" />
+            <Skeleton className="h-5 w-full" />
+            <Skeleton className="h-5 w-full" />
+        </div>
+      </div>
+    </div>
+);
+
+
 const MentorDetailsPage = ({ mentor }) => {
-    const [selectedSession, setSelectedSession] = React.useState(mentor.sessions[0]);
-    const [selectedTimeSlot, setSelectedTimeSlot] = React.useState(mentor.availability[0]);
+    const [selectedSession, setSelectedSession] = React.useState(null);
+    const [selectedTimeSlot, setSelectedTimeSlot] = React.useState(null);
     const [showCheckoutModal, setShowCheckoutModal] = React.useState(false);
+
+    useEffect(() => {
+        if (mentor?.sessions?.length > 0) {
+            setSelectedSession(mentor.sessions[0]);
+        }
+        if (mentor?.availability?.length > 0) {
+            setSelectedTimeSlot(mentor.availability[0]);
+        }
+    }, [mentor]);
 
     const handleConfirmPayment = () => {
         if (!selectedSession || !selectedTimeSlot) {
@@ -176,6 +182,8 @@ const MentorDetailsPage = ({ mentor }) => {
         }
         setShowCheckoutModal(true);
     };
+
+    if (!mentor) return <MentorDetailsSkeleton />;
 
     return (
         <div className="bg-background min-h-screen pb-10">
@@ -198,7 +206,7 @@ const MentorDetailsPage = ({ mentor }) => {
                         
                         <div className="flex items-center justify-center text-base font-medium text-yellow-500 mb-4">
                             <Star className="w-5 h-5 mr-1 fill-current" />
-                            <span className="text-gray-800 font-bold mr-2">{mentor.rating}</span>
+                            <span className="text-gray-800 font-bold mr-2">{mentor.rating.toFixed(1)}</span>
                             <span className="text-gray-500">({mentor.ratingsCount} ratings)</span>
                         </div>
                         
@@ -219,82 +227,94 @@ const MentorDetailsPage = ({ mentor }) => {
                         <p className="text-gray-700 leading-relaxed">{mentor.intro}</p>
                     </div>
 
-                    <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md">
-                        <h3 className="text-2xl font-bold text-gray-800 mb-5 flex items-center"><Briefcase className="w-6 h-6 mr-2 text-primary" /> Professional Experience</h3>
-                        {mentor.professionalExperience.map((item, index) => (
-                            <ExperienceItem key={index} item={item} />
-                        ))}
-                    </div>
-
-                    <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md">
-                        <h3 className="text-2xl font-bold text-gray-800 mb-5 flex items-center"><GraduationCap className="w-6 h-6 mr-2 text-primary" /> Education</h3>
-                        {mentor.education.map((item, index) => (
-                            <EducationItem key={index} item={item} />
-                        ))}
-                    </div>
-
-                    <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg border-t-4 border-green-500">
-                        <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center"><Zap className="w-6 h-6 mr-2 text-green-600" /> Book Your Session</h3>
-                        
-                        <h4 className="font-semibold text-lg text-gray-800 mb-3 flex items-center"><Clock className="w-4 h-4 mr-2 text-primary" /> Select Session Tier</h4>
-                        <div className="space-y-3 mb-6">
-                            {mentor.sessions.map((session) => (
-                                <label 
-                                    key={session.id}
-                                    className={`flex flex-col p-4 border rounded-lg cursor-pointer transition ${selectedSession.id === session.id 
-                                        ? 'border-primary bg-primary/10 ring-2 ring-primary' 
-                                        : 'border-gray-200 hover:border-primary/50'}`}
-                                    onClick={() => setSelectedSession(session)}
-                                >
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="font-semibold text-gray-800 text-base">{session.name}</span>
-                                        <span className="text-xl font-extrabold text-primary">
-                                            {session.price}<span className="text-sm font-normal"> {session.currency}</span>
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-gray-600">{session.description}</p>
-                                </label>
+                    {mentor.professionalExperience.length > 0 && (
+                        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md">
+                            <h3 className="text-2xl font-bold text-gray-800 mb-5 flex items-center"><Briefcase className="w-6 h-6 mr-2 text-primary" /> Professional Experience</h3>
+                            {mentor.professionalExperience.map((item, index) => (
+                                <ExperienceItem key={index} item={item} />
                             ))}
                         </div>
+                    )}
 
-                        <h4 className="font-semibold text-lg text-gray-800 mb-3 flex items-center"><Calendar className="w-4 h-4 mr-2 text-primary" /> Choose Available Time</h4>
-                        <div className="flex flex-wrap gap-3 mb-8">
-                            {mentor.availability.map((slot) => {
-                                const startTimeFull = slot.time.split(' - ')[0];
-                                const startTime = startTimeFull.replace(':00', '').trim();
+                    {mentor.education.length > 0 && (
+                        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md">
+                            <h3 className="text-2xl font-bold text-gray-800 mb-5 flex items-center"><GraduationCap className="w-6 h-6 mr-2 text-primary" /> Education</h3>
+                            {mentor.education.map((item, index) => (
+                                <EducationItem key={index} item={item} />
+                            ))}
+                        </div>
+                    )}
 
-                                return (
-                                    <button
-                                        key={slot.id}
-                                        className={`py-2 px-4 border rounded-full text-sm font-medium transition ${selectedTimeSlot.id === slot.id
-                                            ? 'bg-primary text-white border-primary shadow-md'
-                                            : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-primary/10 hover:border-primary/40'}`}
-                                        onClick={() => setSelectedTimeSlot(slot)}
+                    {mentor.sessions.length > 0 && (
+                        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg border-t-4 border-green-500">
+                            <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center"><Zap className="w-6 h-6 mr-2 text-green-600" /> Book Your Session</h3>
+                            
+                            <h4 className="font-semibold text-lg text-gray-800 mb-3 flex items-center"><Clock className="w-4 h-4 mr-2 text-primary" /> Select Session Tier</h4>
+                            <div className="space-y-3 mb-6">
+                                {mentor.sessions.map((session) => (
+                                    <label 
+                                        key={session.id}
+                                        className={`flex flex-col p-4 border rounded-lg cursor-pointer transition ${selectedSession?.id === session.id 
+                                            ? 'border-primary bg-primary/10 ring-2 ring-primary' 
+                                            : 'border-gray-200 hover:border-primary/50'}`}
+                                        onClick={() => setSelectedSession(session)}
                                     >
-                                        {slot.date} {startTime}
-                                    </button>
-                                );
-                            })}
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="font-semibold text-gray-800 text-base">{session.name}</span>
+                                            <span className="text-xl font-extrabold text-primary">
+                                                {session.price}<span className="text-sm font-normal"> {session.currency}</span>
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-gray-600">{session.description}</p>
+                                    </label>
+                                ))}
+                            </div>
+
+                            {mentor.availability.length > 0 && (
+                                <>
+                                    <h4 className="font-semibold text-lg text-gray-800 mb-3 flex items-center"><Calendar className="w-4 h-4 mr-2 text-primary" /> Choose Available Time</h4>
+                                    <div className="flex flex-wrap gap-3 mb-8">
+                                        {mentor.availability.map((slot) => {
+                                            const startTimeFull = slot.time.split(' - ')[0];
+                                            const startTime = startTimeFull.replace(':00', '').trim();
+
+                                            return (
+                                                <button
+                                                    key={slot.id}
+                                                    className={`py-2 px-4 border rounded-full text-sm font-medium transition ${selectedTimeSlot?.id === slot.id
+                                                        ? 'bg-primary text-white border-primary shadow-md'
+                                                        : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-primary/10 hover:border-primary/40'}`}
+                                                    onClick={() => setSelectedTimeSlot(slot)}
+                                                >
+                                                    {slot.date} {startTime}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            )}
+
+                            <button 
+                                onClick={handleConfirmPayment}
+                                className="w-full py-3 text-lg font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-xl transform hover:scale-[1.01]"
+                                disabled={!selectedSession || !selectedTimeSlot}
+                            >
+                                Confirm Payment ({selectedSession?.price || 'N/A'} {selectedSession?.currency})
+                            </button>
                         </div>
-
-                        <button 
-                            onClick={handleConfirmPayment}
-                            className="w-full py-3 text-lg font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-xl transform hover:scale-[1.01]"
-                            disabled={!selectedSession || !selectedTimeSlot}
-                        >
-                            Confirm Payment ({selectedSession.price} {selectedSession.currency})
-                        </button>
-                    </div>
+                    )}
 
 
-                    <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md">
-                        <h3 className="text-2xl font-bold text-gray-800 mb-5 flex items-center"><Star className="w-6 h-6 mr-2 text-primary fill-primary/10" /> Mentees Reviews ({mentor.reviews.length})</h3>
-                        <div className="space-y-4">
-                            {mentor.reviews.map((review, index) => (
-                                <ReviewCard key={index} review={review} />
-                            ))}
+                    {mentor.reviews.length > 0 && (
+                        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md">
+                            <h3 className="text-2xl font-bold text-gray-800 mb-5 flex items-center"><Star className="w-6 h-6 mr-2 text-primary fill-primary/10" /> Mentees Reviews ({mentor.reviews.length})</h3>
+                            <div className="space-y-4">
+                                {mentor.reviews.map((review, index) => (
+                                    <ReviewCard key={index} review={review} />
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                 </div>
             </div>
@@ -311,16 +331,38 @@ const MentorDetailsPage = ({ mentor }) => {
     );
 };
 
-export default function MentorPage() {
+export default function MentorPage({ params }: { params: { id: string } }) {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const [mentor, setMentor] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const mentor = MENTOR_DETAILS; 
+    useEffect(() => {
+        if (!params.id) return;
+
+        const fetchMentorDetails = async () => {
+            try {
+                const response = await fetch(`/api/mentors/${params.id}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch mentor details');
+                }
+                const data = await response.json();
+                setMentor(data);
+            } catch (error) {
+                console.error(error);
+                setMentor(null);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchMentorDetails();
+    }, [params.id]);
 
     return (
         <div className="min-h-screen bg-background font-sans">
             <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
             <main>
-                <MentorDetailsPage mentor={mentor} />
+                {isLoading ? <MentorDetailsSkeleton /> : <MentorDetailsPage mentor={mentor} />}
             </main>
         </div>
     );

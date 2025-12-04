@@ -1,14 +1,24 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Zap, User, CheckCircle, Clock, Calendar, Users, X } from 'lucide-react';
 import { Header } from '@/components/common/Header';
+import { Skeleton } from '@/components/ui/skeleton';
 
-
-const FREE_SESSIONS = [
-    { id: 1, title: "Deep Dive into React Hooks & Context", mentorName: "Jasmine Chen", date: "25th November", time: "11:00 AM", seats: 15, isFree: true, durationMinutes: 60 },
-    { id: 2, title: "System Design Q&A: Scaling Databases", mentorName: "Rajiv Sharma", date: "28th November", time: "05:00 PM", seats: 20, isFree: true, durationMinutes: 90 },
-    { id: 3, title: "Career Path: From Junior to Senior Engineer", mentorName: "Emily White", date: "1st December", time: "02:00 PM", seats: 10, isFree: true, durationMinutes: 45 },
-];
+const SessionCardSkeleton = () => (
+  <div className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-primary flex flex-col md:flex-row justify-between items-start md:items-center">
+    <div className="mb-4 md:mb-0 md:w-3/5 space-y-3">
+      <Skeleton className="h-6 w-3/4" />
+      <Skeleton className="h-5 w-1/2" />
+      <div className="flex flex-wrap gap-x-4 gap-y-2">
+        <Skeleton className="h-5 w-28" />
+        <Skeleton className="h-5 w-24" />
+      </div>
+    </div>
+    <div className="w-full md:w-auto">
+      <Skeleton className="h-12 w-full md:w-48 rounded-lg" />
+    </div>
+  </div>
+);
 
 
 const RegistrationModal = ({ session, isLoggedIn, onClose, onSignUp }) => {
@@ -137,7 +147,29 @@ export default function ExclusiveSessionsPage() {
     const [isLoggedIn, setIsLoggedIn] = React.useState(false); 
     const [sessionToBook, setSessionToBook] = React.useState(null);
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const [sessions, setSessions] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     
+    useEffect(() => {
+        const fetchSessions = async () => {
+            try {
+                const response = await fetch('/api/sessions');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch sessions');
+                }
+                const data = await response.json();
+                setSessions(data);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchSessions();
+    }, []);
+
+
     const handleBookSeat = (session) => {
         setSessionToBook(session);
     };
@@ -181,47 +213,51 @@ export default function ExclusiveSessionsPage() {
             </p>
             
             <div className="space-y-6">
-                {FREE_SESSIONS.map((session) => (
-                    <div 
-                        key={session.id} 
-                        className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-primary flex flex-col md:flex-row justify-between items-start md:items-center transition duration-300 hover:shadow-2xl hover:scale-[1.01] transform"
-                    >
-                        <div className="mb-4 md:mb-0 md:w-3/5">
-                            <h3 className="text-xl font-bold text-gray-800 mb-1">{session.title}</h3>
-                            <p className="text-md text-gray-600 flex items-center mb-2">
-                                <User className="w-4 h-4 mr-2 text-primary" />
-                                Mentor: <span className="font-extrabold text-primary ml-1">{session.mentorName}</span>
-                            </p>
-                            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500">
-                                <p className="flex items-center font-medium">
-                                    <Calendar className="w-4 h-4 mr-1 text-primary/80" />
-                                    Date: <span className="text-gray-700 font-semibold ml-1">{session.date}</span>
+                {isLoading ? (
+                    Array.from({ length: 3 }).map((_, index) => <SessionCardSkeleton key={index} />)
+                ) : (
+                    sessions.map((session) => (
+                        <div 
+                            key={session.id} 
+                            className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-primary flex flex-col md:flex-row justify-between items-start md:items-center transition duration-300 hover:shadow-2xl hover:scale-[1.01] transform"
+                        >
+                            <div className="mb-4 md:mb-0 md:w-3/5">
+                                <h3 className="text-xl font-bold text-gray-800 mb-1">{session.title}</h3>
+                                <p className="text-md text-gray-600 flex items-center mb-2">
+                                    <User className="w-4 h-4 mr-2 text-primary" />
+                                    Mentor: <span className="font-extrabold text-primary ml-1">{session.mentorName}</span>
                                 </p>
-                                <p className="flex items-center font-medium">
-                                    <Clock className="w-4 h-4 mr-1 text-primary/80" />
-                                    Time: <span className="text-gray-700 font-semibold ml-1">{session.time}</span>
-                                </p>
-                                <p className="flex items-center text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
-                                    <Clock className="w-4 h-4 mr-1" />
-                                    Duration: <span className="font-semibold ml-1">{session.durationMinutes} min</span>
-                                </p>
-                                <p className="flex items-center text-green-600 font-extrabold bg-green-100 px-2 py-0.5 rounded-full">
-                                    <Users className="w-4 h-4 mr-1" />
-                                    {session.seats} Seats Left!
-                                </p>
+                                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500">
+                                    <p className="flex items-center font-medium">
+                                        <Calendar className="w-4 h-4 mr-1 text-primary/80" />
+                                        Date: <span className="text-gray-700 font-semibold ml-1">{session.date}</span>
+                                    </p>
+                                    <p className="flex items-center font-medium">
+                                        <Clock className="w-4 h-4 mr-1 text-primary/80" />
+                                        Time: <span className="text-gray-700 font-semibold ml-1">{session.time}</span>
+                                    </p>
+                                    <p className="flex items-center text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
+                                        <Clock className="w-4 h-4 mr-1" />
+                                        Duration: <span className="font-semibold ml-1">{session.durationMinutes} min</span>
+                                    </p>
+                                    <p className="flex items-center text-green-600 font-extrabold bg-green-100 px-2 py-0.5 rounded-full">
+                                        <Users className="w-4 h-4 mr-1" />
+                                        {session.seats} Seats Left!
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="w-full md:w-auto">
+                                <button
+                                    onClick={() => handleBookSeat(session)}
+                                    className="w-full md:w-48 py-3 font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-lg text-lg transform hover:scale-[1.02]"
+                                >
+                                    Book Seat (Free)
+                                </button>
                             </div>
                         </div>
-                        
-                        <div className="w-full md:w-auto">
-                            <button
-                                onClick={() => handleBookSeat(session)}
-                                className="w-full md:w-48 py-3 font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-lg text-lg transform hover:scale-[1.02]"
-                            >
-                                Book Seat (Free)
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                    ))
+                )}
             </div>
         </div>
 

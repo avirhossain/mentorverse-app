@@ -1,0 +1,71 @@
+[
+    {
+        "id": 1,
+        "name": "Jasmine Chen",
+        "title": "Staff Software Engineer",
+        "company": "Google",
+        "intro": "A dedicated Staff Software Engineer at Google with over 10 years of experience in building scalable, high-performance web applications using React and modern system architecture. I specialize in career growth, interview preparation, and navigating the transition to senior engineering roles. Let's map your success story.",
+        "skills": ["React", "System Design", "Career Growth", "GoLang", "Microservices"],
+        "rating": 5.0,
+        "ratingsCount": 89,
+        "avatar": "https://placehold.co/150x150/4F46E5/FFFFFF?text=JC",
+        "professionalExperience": [
+            { "title": "Staff Software Engineer", "company": "Google", "duration": "2020 - Present", "description": "Led a team of 5 engineers in redesigning the core user authentication flow, resulting in a 15% latency reduction and 99.99% uptime." },
+            { "title": "Senior Software Engineer", "company": "Spotify", "duration": "2016 - 2020", "description": "Developed features for the desktop application, improving user engagement metrics by 20% over two years." }
+        ],
+        "education": [
+            { "degree": "M.S. Computer Science", "institution": "Stanford University", "duration": "2014 - 2016" },
+            { "degree": "B.S. Electrical Engineering", "institution": "MIT", "duration": "2010 - 2014" }
+        ],
+        "sessions": [
+            { "id": "qna", "name": "30 min General Q&A", "price": 300, "currency": "৳", "duration": 30, "description": "Quick advice, roadmap checks, or simple technical questions." },
+            { "id": "interview", "name": "60 min Interview Prep (Technical)", "price": 1000, "currency": "৳", "duration": 60, "description": "Focused mock interviews, system design walkthroughs, and detailed feedback." }
+        ],
+        "availability": [
+            { "date": "18th November", "time": "7:00 PM - 8:00 PM", "id": 1 },
+            { "date": "19th November", "time": "10:00 AM - 11:00 AM", "id": 2 },
+            { "date": "20th November", "time": "4:00 PM - 5:00 PM", "id": 3 }
+        ],
+        "reviews": [
+            { "mentee": "Rohan K.", "date": "Nov 1, 2025", "rating": 5, "text": "Jasmine's system design breakdown was crystal clear. Highly recommend for FAANG interview prep!" },
+            { "mentee": "Lina M.", "date": "Oct 25, 2025", "rating": 5, "text": "Extremely valuable career advice. She helped me negotiate a 15% higher salary." },
+            { "mentee": "Sam D.", "date": "Oct 15, 2025", "rating": 4, "text": "Great session, though I wish we had more time to cover my resume fully." }
+        ]
+    },
+    {
+        "id": 2,
+        "name": "Marcus Bell",
+        "title": "Senior Product Designer",
+        "company": "Meta",
+        "skills": ["UX/UI", "Design Strategy", "Figma"],
+        "rating": 4.9,
+        "ratingsCount": 152,
+        "avatar": "https://placehold.co/100x100/10B981/FFFFFF?text=MB",
+        "intro": "Passionate about creating user-centric and beautiful interfaces. Let's build something amazing together.",
+        "professionalExperience": [], "education": [], "sessions": [], "availability": [], "reviews": []
+    },
+    {
+        "id": 3,
+        "name": "Anya Sharma",
+        "title": "AI/ML Scientist",
+        "company": "Amazon",
+        "skills": ["Machine Learning", "Python", "Data Science"],
+        "rating": 5.0,
+        "ratingsCount": 41,
+        "avatar": "https://placehold.co/100x100/EF4444/FFFFFF?text=AS",
+        "intro": "Solving complex problems with data and algorithms. I can help you break into the world of AI.",
+        "professionalExperience": [], "education": [], "sessions": [], "availability": [], "reviews": []
+    },
+    {
+        "id": 4,
+        "name": "David Smith",
+        "title": "Leadership Coach",
+        "company": "Ex-Netflix",
+        "skills": ["Executive Coaching", "Team Management", "Startups"],
+        "rating": 4.8,
+        "ratingsCount": 205,
+        "avatar": "https://placehold.co/100x100/F59E0B/FFFFFF?text=DS",
+        "intro": "Helping leaders unlock their full potential. Over 15 years of experience in Silicon Valley.",
+        "professionalExperience": [], "education": [], "sessions": [], "availability": [], "reviews": []
+    }
+]

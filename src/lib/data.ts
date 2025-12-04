@@ -1,3 +1,3 @@
-// This file is intentionally left blank as the new design uses inline mock data.
-// In a real application, this would be populated from a database or API.
+// This file is intentionally left blank. Data is now managed via API routes
+// and stored in JSON files in the /data directory at the root of the project.
 export {};

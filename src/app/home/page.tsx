@@ -1,57 +1,28 @@
-
 'use client';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Star, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
+import { Skeleton } from '@/components/ui/skeleton';
 
-
-// --- Mock Data ---
-
-const MENTOR_DATA = [
-    {
-        id: 1,
-        name: "Jasmine Chen",
-        title: "Staff Software Engineer",
-        company: "Google",
-        skills: ["React", "System Design", "Career Growth"],
-        rating: 5.0,
-        ratingsCount: 89,
-        avatar: "https://placehold.co/100x100/4F46E5/FFFFFF?text=JC",
-    },
-    {
-        id: 2,
-        name: "Marcus Bell",
-        title: "Senior Product Designer",
-        company: "Meta",
-        skills: ["UX/UI", "Design Strategy", "Figma"],
-        rating: 4.9,
-        ratingsCount: 152,
-        avatar: "https://placehold.co/100x100/10B981/FFFFFF?text=MB",
-    },
-    {
-        id: 3,
-        name: "Anya Sharma",
-        title: "AI/ML Scientist",
-        company: "Amazon",
-        skills: ["Machine Learning", "Python", "Data Science"],
-        rating: 5.0,
-        ratingsCount: 41,
-        avatar: "https://placehold.co/100x100/EF4444/FFFFFF?text=AS",
-    },
-    {
-        id: 4,
-        name: "David Smith",
-        title: "Leadership Coach",
-        company: "Ex-Netflix",
-        skills: ["Executive Coaching", "Team Management", "Startups"],
-        rating: 4.8,
-        ratingsCount: 205,
-        avatar: "https://placehold.co/100x100/F59E0B/FFFFFF?text=DS",
-    },
-];
-
-// --- Components ---
+const MentorCardSkeleton = () => (
+    <div className="bg-white rounded-xl shadow-lg p-5 sm:p-6 flex flex-col items-start border border-gray-100 h-full">
+        <div className="flex items-start space-x-3 sm:space-x-4 mb-4 w-full">
+            <Skeleton className="w-14 h-14 sm:w-16 sm:h-16 rounded-full" />
+            <div className="flex-grow space-y-2">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-3 w-full" />
+            </div>
+        </div>
+        <Skeleton className="h-4 w-1/3 mb-3" />
+        <div className="flex flex-wrap gap-2 mt-auto w-full">
+            <Skeleton className="h-6 w-20 rounded-full" />
+            <Skeleton className="h-6 w-24 rounded-full" />
+            <Skeleton className="h-6 w-28 rounded-full" />
+        </div>
+    </div>
+);
 
 
 const MentorCard = ({ mentor }) => (
@@ -65,16 +36,16 @@ const MentorCard = ({ mentor }) => (
                         <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 fill-green-100" />
                     </div>
                     <p className="text-xs sm:text-sm text-gray-500 mb-1">{mentor.title} at {mentor.company}</p>
-                    <p className="text-xs text-gray-600 italic">"10 years leading teams and coaching top talent."</p>
+                    <p className="text-xs text-gray-600 italic line-clamp-2">"{mentor.intro}"</p>
                 </div>
             </div>
             <div className="flex items-center text-sm font-medium text-yellow-500 mb-3">
                 <Star className="w-4 h-4 mr-1 fill-current" />
-                <span className="text-gray-800 font-bold mr-1">{mentor.rating}</span>
+                <span className="text-gray-800 font-bold mr-1">{mentor.rating.toFixed(1)}</span>
                 <span className="text-gray-500">({mentor.ratingsCount} ratings)</span>
             </div>
             <div className="flex flex-wrap gap-2 mt-auto">
-                {mentor.skills.map(skill => (
+                {mentor.skills.slice(0, 3).map(skill => (
                     <span key={skill} className="px-3 py-1 text-xs font-medium text-primary bg-primary/10 rounded-full">
                         {skill}
                     </span>
@@ -87,6 +58,27 @@ const MentorCard = ({ mentor }) => (
 
 export default function HomePage() {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const [mentors, setMentors] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchMentors = async () => {
+            try {
+                const response = await fetch('/api/mentors');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch mentors');
+                }
+                const data = await response.json();
+                setMentors(data);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchMentors();
+    }, []);
 
     return (
         <div className="min-h-screen bg-background font-sans">
@@ -97,9 +89,13 @@ export default function HomePage() {
                     Find Your Guide
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-                    {MENTOR_DATA.map((mentor) => (
-                        <MentorCard key={mentor.id} mentor={mentor} />
-                    ))}
+                    {isLoading ? (
+                        Array.from({ length: 4 }).map((_, index) => <MentorCardSkeleton key={index} />)
+                    ) : (
+                        mentors.map((mentor) => (
+                            <MentorCard key={mentor.id} mentor={mentor} />
+                        ))
+                    )}
                 </div>
             </main>
         </div>
