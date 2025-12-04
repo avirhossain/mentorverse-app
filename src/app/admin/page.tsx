@@ -1,22 +1,20 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { FilePlus, Users as UsersIcon, X } from 'lucide-react';
+import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2 } from 'lucide-react';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { collection, addDoc } from 'firebase/firestore';
-import { useAuth, useFirestore } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
+import { v4 as uuidv4 } from 'uuid';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
-import { useUser } from '@/firebase';
-
 
 const Modal = ({ title, children, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl transform transition-all">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl transform transition-all">
       <div className="p-4 flex justify-between items-center border-b dark:border-gray-700">
         <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{title}</h3>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -31,67 +29,167 @@ const Modal = ({ title, children, onClose }) => (
 );
 
 const MentorForm = ({ onSave, onClose }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    title: '',
-    company: '',
-    skills: '',
-    intro: '',
-    avatar: 'https://placehold.co/150x150/4F46E5/FFFFFF?text=New',
-  });
-  const { toast } = useToast();
+    const [formData, setFormData] = useState({
+        name: '',
+        title: '',
+        company: '',
+        intro: '',
+        skills: '',
+        avatar: 'https://placehold.co/150x150/4F46E5/FFFFFF?text=New',
+        professionalExperience: [],
+        education: [],
+        sessions: [],
+        availability: [],
+        reviews: [],
+    });
+    const { toast } = useToast();
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const newMentor = {
-      ...formData,
-      id: uuidv4(), // Generate a unique string ID
-      rating: 0,
-      ratingsCount: 0,
-      skills: formData.skills.split(',').map(s => s.trim()),
-      professionalExperience: [],
-      education: [],
-      sessions: [],
-      availability: [],
-      reviews: [],
+    const handleDynamicChange = (section, index, e) => {
+        const { name, value } = e.target;
+        const list = [...formData[section]];
+        list[index][name] = value;
+        setFormData(prev => ({ ...prev, [section]: list }));
     };
     
-    try {
-      await onSave(newMentor);
-      toast({
-        title: 'Success!',
-        description: 'New mentor profile has been created.',
-      });
-      onClose();
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: `Failed to save mentor: ${error.message}`,
-      });
-    }
-  };
+    const addDynamicItem = (section, item) => {
+        setFormData(prev => ({
+            ...prev,
+            [section]: [...prev[section], item]
+        }));
+    };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required />
-      <Input name="title" placeholder="Job Title (e.g., Staff Software Engineer)" value={formData.title} onChange={handleChange} required />
-      <Input name="company" placeholder="Company (e.g., Google)" value={formData.company} onChange={handleChange} required />
-      <Input name="skills" placeholder="Skills (comma-separated, e.g., React, System Design)" value={formData.skills} onChange={handleChange} required />
-      <Textarea name="intro" placeholder="Mentor Introduction" value={formData.intro} onChange={handleChange} required />
-      <div className="flex justify-end gap-4 pt-4">
-        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-        <Button type="submit">Save Mentor</Button>
-      </div>
-    </form>
-  );
+    const removeDynamicItem = (section, index) => {
+        const list = [...formData[section]];
+        list.splice(index, 1);
+        setFormData(prev => ({ ...prev, [section]: list }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const newMentor = {
+            ...formData,
+            id: uuidv4(),
+            rating: formData.reviews.length > 0 ? formData.reviews.reduce((acc, r) => acc + Number(r.rating), 0) / formData.reviews.length : 0,
+            ratingsCount: formData.reviews.length,
+            skills: formData.skills.split(',').map(s => s.trim()),
+            // Ensure numeric fields are numbers
+            sessions: formData.sessions.map(s => ({...s, price: Number(s.price), duration: Number(s.duration)})),
+            availability: formData.availability.map(a => ({...a, id: Math.random()})), // Add random id for key prop
+            reviews: formData.reviews.map(r => ({...r, rating: Number(r.rating)})),
+        };
+        
+        try {
+            await onSave(newMentor);
+            toast({
+                title: 'Success!',
+                description: 'New mentor profile has been created.',
+            });
+            onClose();
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: `Failed to save mentor: ${error.message}`,
+            });
+        }
+    };
+
+    const renderDynamicSection = (sectionTitle, sectionKey, fields, newItem) => (
+        <div className="space-y-3 p-4 border rounded-lg">
+            <h4 className="font-semibold text-lg">{sectionTitle}</h4>
+            {formData[sectionKey].map((item, index) => (
+                <div key={index} className="p-3 border rounded-md space-y-2 relative bg-gray-50">
+                     <Button type="button" size="sm" variant="ghost" className="absolute top-2 right-2 p-1 h-auto" onClick={() => removeDynamicItem(sectionKey, index)}><Trash2 className="w-4 h-4 text-red-500"/></Button>
+                    {fields.map(field => (
+                         <Input 
+                            key={field.name}
+                            name={field.name}
+                            type={field.type || 'text'}
+                            placeholder={field.placeholder}
+                            value={item[field.name]}
+                            onChange={(e) => handleDynamicChange(sectionKey, index, e)}
+                        />
+                    ))}
+                </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" onClick={() => addDynamicItem(sectionKey, newItem)}>
+                <PlusCircle className="w-4 h-4 mr-2"/> Add {sectionTitle.slice(0, -1)}
+            </Button>
+        </div>
+    );
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Basic Info */}
+            <Input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required />
+            <Input name="title" placeholder="Job Title (e.g., Staff Software Engineer)" value={formData.title} onChange={handleChange} required />
+            <Input name="company" placeholder="Company (e.g., Google)" value={formData.company} onChange={handleChange} required />
+            <Input name="avatar" placeholder="Profile Picture URL" value={formData.avatar} onChange={handleChange} />
+            <Input name="skills" placeholder="Skills (comma-separated, e.g., React, System Design)" value={formData.skills} onChange={handleChange} required />
+            <Textarea name="intro" placeholder="Mentor Introduction" value={formData.intro} onChange={handleChange} required />
+
+            {/* Dynamic Sections */}
+            {renderDynamicSection('Professional Experiences', 'professionalExperience',
+                [
+                    { name: 'title', placeholder: 'Job Title' },
+                    { name: 'company', placeholder: 'Company' },
+                    { name: 'duration', placeholder: 'Duration (e.g., 2020 - Present)' },
+                    { name: 'description', placeholder: 'Description' }
+                ],
+                { title: '', company: '', duration: '', description: '' }
+            )}
+
+            {renderDynamicSection('Education', 'education',
+                [
+                    { name: 'degree', placeholder: 'Degree' },
+                    { name: 'institution', placeholder: 'Institution' },
+                    { name: 'duration', placeholder: 'Duration (e.g., 2014 - 2016)' },
+                ],
+                { degree: '', institution: '', duration: '' }
+            )}
+
+            {renderDynamicSection('Offered Sessions', 'sessions',
+                [
+                    { name: 'id', placeholder: 'Session ID (e.g., interview)' },
+                    { name: 'name', placeholder: 'Session Name (e.g., 60 min Interview Prep)' },
+                    { name: 'price', placeholder: 'Price', type: 'number' },
+                    { name: 'currency', placeholder: 'Currency (e.g., ৳)' },
+                    { name: 'duration', placeholder: 'Duration (in minutes)', type: 'number' },
+                    { name: 'description', placeholder: 'Session Description' }
+                ],
+                { id: '', name: '', price: 0, currency: '৳', duration: 60, description: '' }
+            )}
+
+            {renderDynamicSection('Availability', 'availability',
+                [
+                    { name: 'date', placeholder: 'Date (e.g., 18th November)' },
+                    { name: 'time', placeholder: 'Time Slot (e.g., 7:00 PM - 8:00 PM)' },
+                ],
+                { date: '', time: '' }
+            )}
+
+            {renderDynamicSection('Mentees Reviews', 'reviews',
+                [
+                    { name: 'mentee', placeholder: 'Mentee Name' },
+                    { name: 'date', placeholder: 'Date (e.g., Nov 1, 2025)' },
+                    { name: 'rating', placeholder: 'Rating (1-5)', type: 'number' },
+                    { name: 'text', placeholder: 'Review Text' }
+                ],
+                { mentee: '', date: '', rating: 5, text: '' }
+            )}
+
+            <div className="flex justify-end gap-4 pt-4">
+                <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                <Button type="submit">Save Mentor</Button>
+            </div>
+        </form>
+    );
 };
-
 
 const SessionForm = ({ onSave, onClose }) => {
     const { toast } = useToast();
@@ -162,17 +260,19 @@ export default function AdminPage() {
 
   useEffect(() => {
     // If there's no user and we're not in the middle of loading one, sign in anonymously.
-    if (!user && !isUserLoading) {
+    if (!user && !isUserLoading && auth) {
       initiateAnonymousSignIn(auth);
     }
   }, [user, isUserLoading, auth]);
 
   const handleSaveMentor = (mentorData) => {
+    if (!firestore) return;
     const mentorsCol = collection(firestore, 'mentors');
     return addDocumentNonBlocking(mentorsCol, mentorData);
   };
   
   const handleSaveSession = (sessionData) => {
+    if (!firestore) return;
     const sessionsCol = collection(firestore, 'sessions');
     return addDocumentNonBlocking(sessionsCol, sessionData);
   };
