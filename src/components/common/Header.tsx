@@ -2,9 +2,9 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Home, Zap, Lightbulb, User, Shield, LogIn, ArrowRight, X } from 'lucide-react';
+import { Home, Zap, Lightbulb, User, Shield, LogIn, ArrowRight, X, LogOut } from 'lucide-react';
 import { useAuth, useFirestore, useUser } from '@/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
@@ -107,7 +107,15 @@ export const Header = ({ currentView }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const { user, isUserLoading } = useUser();
+    const auth = useAuth();
     const isAdminView = currentView === 'admin';
+
+    const handleLogout = () => {
+        if(auth) {
+            signOut(auth);
+            setIsMenuOpen(false);
+        }
+    };
 
     const NavLink = ({ href, view, icon: Icon, text }) => (
         <Link 
@@ -126,7 +134,9 @@ export const Header = ({ currentView }) => {
                 
                 <nav className="hidden lg:flex space-x-2 items-center text-gray-600 font-medium">
                     {isAdminView ? (
-                        <NavLink href="/admin" view="admin" icon={Shield} text="Admin Dashboard" />
+                         <Button onClick={handleLogout} variant="outline">
+                            <LogOut className="w-5 h-5 mr-2" /> Logout
+                        </Button>
                     ) : (
                         <>
                             <NavLink href="/" view="home" icon={Home} text="Home" />
@@ -135,9 +145,14 @@ export const Header = ({ currentView }) => {
 
                             {!isUserLoading && (
                                 user ? (
-                                    <Link href="/account" className={`flex items-center transition px-3 py-2 rounded-full ${currentView === 'account' ? 'text-white bg-primary font-bold' : 'text-white bg-primary hover:bg-primary/90'}`}>
-                                        <User className="w-5 h-5 mr-2" /> Account
+                                    <>
+                                    <Link href="/account" className={`flex items-center transition px-3 py-2 rounded-lg ${currentView === 'account' ? 'text-primary bg-primary/10 font-bold' : 'hover:text-primary hover:bg-gray-100'}`}>
+                                        <User className="w-5 h-5 mr-1" /> Account
                                     </Link>
+                                    <Button onClick={handleLogout} variant="outline" size="sm">
+                                        <LogOut className="w-4 h-4 mr-2" /> Logout
+                                    </Button>
+                                    </>
                                 ) : (
                                     <Button onClick={() => setShowLoginModal(true)}>
                                         <LogIn className="w-5 h-5 mr-2" /> Login
@@ -158,7 +173,9 @@ export const Header = ({ currentView }) => {
             {isMenuOpen && (
                 <div className="lg:hidden absolute w-full bg-white shadow-lg border-t border-gray-100 py-4 px-4 space-y-3">
                      {isAdminView ? (
-                         <Link href="/admin" className="flex items-center p-2 text-gray-700 bg-primary/10 rounded-lg" onClick={() => setIsMenuOpen(false)}><Shield className="w-5 h-5 mr-2" />Admin Dashboard</Link>
+                         <Button onClick={handleLogout} className="w-full">
+                            <LogOut className="w-5 h-5 mr-2" /> Logout
+                        </Button>
                      ) : (
                         <>
                             <Link href="/" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Home className="w-5 h-5 mr-2" /> Home</Link>
@@ -167,9 +184,14 @@ export const Header = ({ currentView }) => {
                             
                             {!isUserLoading && (
                                 user ? (
-                                    <Link href="/account" className="w-full mt-2 px-4 py-2 text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-md flex items-center justify-center" onClick={() => setIsMenuOpen(false)}>
+                                    <>
+                                    <Link href="/account" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}>
                                         <User className="w-5 h-5 mr-2" /> Account
                                     </Link>
+                                     <Button onClick={handleLogout} className="w-full">
+                                        <LogOut className="w-5 h-5 mr-2" /> Logout
+                                    </Button>
+                                    </>
                                 ) : (
                                     <Button onClick={() => { setShowLoginModal(true); setIsMenuOpen(false); }} className="w-full">
                                         <LogIn className="w-5 h-5 mr-2" /> Login

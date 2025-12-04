@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
-    User, BookOpen, Clock, Zap, Star, ChevronRight, Calendar, Phone, Cake, Building, Briefcase, Mail, CheckCircle, Save, UploadCloud, LogOut, LayoutGrid, Heart, Bookmark, Wallet, PlusCircle, X
+    User, BookOpen, Clock, Zap, Star, ChevronRight, Calendar, Phone, Cake, Building, Briefcase, Mail, CheckCircle, Save, UploadCloud, LogOut, LayoutGrid, Heart, Bookmark, Wallet, PlusCircle, X, LogIn
 } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
@@ -9,11 +9,32 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useUser, useDoc, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, query, where, getDocs, updateDoc, arrayUnion, doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { Mentee, Session } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { signOut } from 'firebase/auth';
+
+
+const NotLoggedInView = () => (
+    <div className="flex flex-col items-center justify-center text-center p-8">
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl border-t-4 border-primary">
+            <LogIn className="w-16 h-16 text-primary mx-auto mb-6" />
+            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-3">Access Your Account</h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-sm">
+                Please log in or create an account to view your dashboard, manage sessions, and more.
+            </p>
+            <div className="flex justify-center gap-4">
+                 <Link href="/">
+                    <Button size="lg" className="font-bold">
+                       Go to Homepage
+                    </Button>
+                </Link>
+            </div>
+        </div>
+    </div>
+);
 
 
 const RatingStarsInput = ({ rating, setRating }) => (
@@ -522,7 +543,7 @@ const SavedContentSection = ({ content }) => (
 export default function AccountPage() {
     const { user: authUser, isUserLoading } = useUser();
     const firestore = useFirestore();
-    const { toast } = useToast();
+    const auth = useAuth();
     
     const userDocRef = useMemoFirebase(() => {
         if (!firestore || !authUser) return null;
@@ -546,8 +567,9 @@ export default function AccountPage() {
     };
 
     const handleLogout = () => {
-        console.log("Logout function executed. User should be redirected now.");
-        alert('Logged out successfully! (Simulated)');
+        if(auth) {
+            signOut(auth);
+        }
     };
     
     const LogoutButton = () => (
@@ -568,27 +590,37 @@ export default function AccountPage() {
         <div className="min-h-screen bg-background dark:bg-gray-900 font-sans transition duration-300">
             <Header currentView="account"/>
 
-            <div className="max-w-6xl mx-auto p-4 sm:p-8">
-                <header className="py-6 mb-8">
-                  <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white flex items-center">
-                      <User className="w-8 h-8 mr-3 text-primary" />
-                      Account Dashboard
-                  </h1>
-                </header>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <aside className="lg:col-span-1">
-                        <ProfileDetails user={isLoading ? null : menteeData} onSave={handleSaveProfile} />
-                    </aside>
-
-                    <div className="lg:col-span-2 space-y-8">
-                        <WalletSection balance={menteeData?.balance || 0} onAddBalanceClick={() => setShowAddBalanceModal(true)} />
-                        <ActivitySection sessions={[]} onReview={setSessionToReview} />
-                        <SavedContentSection content={[]} />
-                        <LogoutButton />
+            <main className="max-w-6xl mx-auto p-4 sm:p-8">
+                {isLoading ? (
+                    <div className="flex justify-center items-center h-64">
+                         <Skeleton className="w-48 h-48 rounded-full" />
                     </div>
-                </div>
-            </div>
+                ) : authUser && menteeData ? (
+                    <>
+                        <header className="py-6 mb-8">
+                        <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white flex items-center">
+                            <User className="w-8 h-8 mr-3 text-primary" />
+                            Account Dashboard
+                        </h1>
+                        </header>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <aside className="lg:col-span-1">
+                                <ProfileDetails user={menteeData} onSave={handleSaveProfile} />
+                            </aside>
+
+                            <div className="lg:col-span-2 space-y-8">
+                                <WalletSection balance={menteeData?.balance || 0} onAddBalanceClick={() => setShowAddBalanceModal(true)} />
+                                <ActivitySection sessions={[]} onReview={setSessionToReview} />
+                                <SavedContentSection content={[]} />
+                                <LogoutButton />
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <NotLoggedInView />
+                )}
+            </main>
 
             {showAddBalanceModal && (
                 <AddBalanceModal 
