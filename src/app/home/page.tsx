@@ -1,12 +1,13 @@
 'use client';
-import React, { useMemo } from 'react';
-import { Star, CheckCircle } from 'lucide-react';
+import React from 'react';
+import { Star, CheckCircle, Zap, User, Calendar, Clock, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
-import type { Mentor } from '@/lib/types';
+import type { Mentor, Session } from '@/lib/types';
+import { Button } from '@/components/ui/button';
 
 const MentorCardSkeleton = () => (
     <div className="bg-white rounded-xl shadow-lg p-5 sm:p-6 flex flex-col items-start border border-gray-100 h-full">
@@ -58,6 +59,49 @@ const MentorCard = ({ mentor }: { mentor: Mentor }) => (
     </Link>
 );
 
+const SessionCardSkeleton = () => (
+    <div className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-gray-200 flex flex-col justify-between">
+      <div className="space-y-3">
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-5 w-1/2" />
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
+          <Skeleton className="h-5 w-28" />
+          <Skeleton className="h-5 w-24" />
+        </div>
+      </div>
+      <div className="mt-6">
+        <Skeleton className="h-12 w-full rounded-lg" />
+      </div>
+    </div>
+  );
+
+const SessionCard = ({ session }: { session: Session }) => (
+    <div className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-primary flex flex-col justify-between transition duration-300 hover:shadow-2xl hover:scale-[1.01] transform">
+        <div>
+            <h3 className="text-xl font-bold text-gray-800 mb-1">{session.title}</h3>
+            <p className="text-md text-gray-600 flex items-center mb-2">
+                <User className="w-4 h-4 mr-2 text-primary" />
+                Mentor: <span className="font-extrabold text-primary ml-1">{session.mentorName}</span>
+            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500">
+                <p className="flex items-center font-medium">
+                    <Calendar className="w-4 h-4 mr-1 text-primary/80" />
+                    Date: <span className="text-gray-700 font-semibold ml-1">{session.date}</span>
+                </p>
+                <p className="flex items-center font-medium">
+                    <Clock className="w-4 h-4 mr-1 text-primary/80" />
+                    Time: <span className="text-gray-700 font-semibold ml-1">{session.time}</span>
+                </p>
+            </div>
+        </div>
+        <Link href="/sessions" className="w-full mt-6">
+            <Button className="w-full font-bold text-lg">
+                View Session
+            </Button>
+        </Link>
+    </div>
+);
+
 
 export default function HomePage() {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -68,26 +112,74 @@ export default function HomePage() {
         return query(collection(firestore, 'mentors'), orderBy('name'));
     }, [firestore]);
 
-    const { data: mentors, isLoading } = useCollection<Mentor>(mentorsQuery);
+    const sessionsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'sessions'), orderBy('date'));
+    }, [firestore]);
+
+    const { data: mentors, isLoading: isLoadingMentors } = useCollection<Mentor>(mentorsQuery);
+    const { data: sessions, isLoading: isLoadingSessions } = useCollection<Session>(sessionsQuery);
 
     return (
         <div className="min-h-screen bg-background font-sans">
             <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} currentView="home"/>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-center text-gray-900 mb-8 sm:mb-10">
-                    Find Your Guide
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-                    {isLoading ? (
-                        Array.from({ length: 4 }).map((_, index) => <MentorCardSkeleton key={index} />)
-                    ) : (
-                        mentors?.map((mentor) => (
-                            <MentorCard key={mentor.id} mentor={mentor} />
-                        ))
-                    )}
+            <section className="bg-primary/5 text-center py-20 px-4">
+                <div className="max-w-4xl mx-auto">
+                    <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight">
+                        Your dream and journey starts now.
+                    </h1>
+                    <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
+                        Connect with top-tier mentors, join exclusive sessions, and unlock your full potential with Guidelab.
+                    </p>
+                    <div className="mt-8 flex justify-center gap-4">
+                        <Link href="/sessions">
+                            <Button size="lg" className="font-bold">
+                                <Zap className="mr-2" /> Explore Sessions
+                            </Button>
+                        </Link>
+                        <Link href="#mentors">
+                            <Button size="lg" variant="outline" className="font-bold bg-white">
+                                Find a Mentor
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
+            </section>
+
+
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-16">
+                <section id="mentors">
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-center text-gray-900 mb-8 sm:mb-10">
+                        Featured Mentors
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+                        {isLoadingMentors ? (
+                            Array.from({ length: 4 }).map((_, index) => <MentorCardSkeleton key={index} />)
+                        ) : (
+                            mentors?.map((mentor) => (
+                                <MentorCard key={mentor.id} mentor={mentor} />
+                            ))
+                        )}
+                    </div>
+                </section>
+
+                <section id="sessions">
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-center text-gray-900 mb-8 sm:mb-10">
+                        Upcoming Sessions
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {isLoadingSessions ? (
+                             Array.from({ length: 3 }).map((_, index) => <SessionCardSkeleton key={index} />)
+                        ) : (
+                            sessions?.slice(0, 3).map((session) => (
+                                <SessionCard key={session.id} session={session} />
+                            ))
+                        )}
+                    </div>
+                </section>
             </main>
         </div>
     );
 };
+    
