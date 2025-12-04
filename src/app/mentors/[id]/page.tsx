@@ -169,7 +169,7 @@ const MentorDetailsSkeleton = () => (
 const BookingSection = ({ mentor, onBook }) => {
     return (
         <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg border-t-4 border-green-500">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center"><Zap className="w-6 h-6 mr-2 text-green-600" /> Book Your Session</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center"><Zap className="w-6 h-6 mr-2 text-green-600" /> Book a Session</h3>
             <Accordion type="single" collapsible className="w-full" defaultValue={mentor.sessions?.[0]?.id}>
                 {mentor.sessions.map((session) => (
                     <AccordionItem value={session.id} key={session.id}>
