@@ -180,12 +180,10 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                 toast({ title: 'Success!', description: 'Mentor profile updated.' });
             } else {
                 const mentorsCol = collection(firestore, 'mentors');
-                const mentorsSnapshot = await getDocs(mentorsCol);
-                const newId = (mentorsSnapshot.size + 1).toString();
-                
+                const newMentorRef = doc(mentorsCol); // Create a new document reference with an auto-generated ID
                 const newMentor = {
                     ...processedData,
-                    id: newId,
+                    id: newMentorRef.id, // Use the auto-generated ID
                     rating: formData.reviews.length > 0 ? formData.reviews.reduce((acc, r) => acc + Number(r.rating), 0) / formData.reviews.length : 0,
                     ratingsCount: formData.reviews.length,
                     availability: formData.availability.map(a => ({...a, id: Math.random()})),
@@ -898,3 +896,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
