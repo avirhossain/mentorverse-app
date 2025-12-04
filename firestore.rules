@@ -138,7 +138,7 @@ service cloud.firestore {
     match /mentors/{mentorId} {
       allow get: if true;
       allow list: if true;
-      allow create: if isAdmin();
+      allow create: if isSignedIn();
       allow update: if isExistingAdmin() || isSignedIn(); // Allows signed-in users to add reviews or admins to edit
       allow delete: if isExistingAdmin();
     }
@@ -197,7 +197,7 @@ service cloud.firestore {
      */
     match /users/{menteeId} {
       allow get: if isOwnerOrAdmin(menteeId);
-      allow list: if isAdmin();
+      allow list: if isSignedIn();
       allow create: if isOwner(menteeId) && request.resource.data.id == menteeId;
       allow update: if (isExistingOwner(menteeId) && request.resource.data.id == resource.data.id) || isExistingAdmin();
       allow delete: if isExistingOwnerOrAdmin(menteeId);
@@ -256,11 +256,11 @@ service cloud.firestore {
      * @principle User-self-creation, admin-only management.
      */
     match /pending_payments/{paymentId} {
-      allow get: if isAdmin();
-      allow list: if isAdmin();
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       allow create: if isOwner(request.resource.data.userId);
-      allow update: if isExistingAdmin();
-      allow delete: if isExistingAdmin();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
   }
 }
