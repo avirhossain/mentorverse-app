@@ -3,7 +3,8 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useFirestore, useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
+import { initializeFirebase } from '@/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { GoogleAuthProvider, PhoneAuthProvider, EmailAuthProvider } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
@@ -13,18 +14,25 @@ import('firebaseui/dist/firebaseui.css');
 
 export default function LoginPage() {
     const router = useRouter();
-    const auth = useAuth();
     const firestore = useFirestore();
     const { user, isUserLoading } = useUser();
     const [firebaseui, setFirebaseui] = useState(null);
     const elementRef = useRef(null);
 
-    // Load firebaseui on mount
+    // This state will hold the compat auth instance
+    const [authCompat, setAuthCompat] = useState(null);
+
+    // Load firebaseui and the compat auth instance on mount
     useEffect(() => {
         // Asynchronously import the firebaseui library
         import('firebaseui').then(firebaseui => {
             setFirebaseui(firebaseui);
         });
+        
+        // Get the compat auth instance from our initialized services
+        const { authCompat: compatInstance } = initializeFirebase();
+        setAuthCompat(compatInstance);
+
     }, []);
 
     // If user is logged in, redirect them
@@ -38,14 +46,16 @@ export default function LoginPage() {
 
 
     useEffect(() => {
-        if (!auth || !firebaseui || !elementRef.current) {
+        // Wait until all dependencies are loaded
+        if (!authCompat || !firebaseui || !elementRef.current) {
             return;
         }
 
         // Get the firebaseui instance
         let ui = firebaseui.auth.AuthUI.getInstance();
         if (!ui) {
-            ui = new firebaseui.auth.AuthUI(auth);
+            // Pass the COMPAT auth instance here
+            ui = new firebaseui.auth.AuthUI(authCompat);
         }
 
         const uiConfig = {
@@ -56,11 +66,11 @@ export default function LoginPage() {
                 {
                     provider: PhoneAuthProvider.PROVIDER_ID,
                     recaptchaParameters: {
-                        type: 'image', // 'image' or 'audio'
-                        size: 'invisible', // 'normal' or 'invisible' or 'compact'
-                        badge: 'bottomleft' //' bottomright' or 'inline' applies to invisible.
+                        type: 'image',
+                        size: 'invisible',
+                        badge: 'bottomleft'
                     },
-                    defaultCountry: 'BD' // Set default country to Bangladesh
+                    defaultCountry: 'BD'
                 },
                 EmailAuthProvider.PROVIDER_ID,
             ],
@@ -88,7 +98,6 @@ export default function LoginPage() {
                     return false;
                 },
             },
-            // For phone number auth, we need to specify the Terms of Service and Privacy Policy.
             tosUrl: '/terms',
             privacyPolicyUrl: '/privacy'
         };
@@ -99,7 +108,6 @@ export default function LoginPage() {
         // Cleanup function
         return () => {
              if (ui) {
-                // This is a common pattern to reset the UI instance to avoid errors on hot reloads
                 try {
                     ui.reset();
                 } catch (e) {
@@ -108,7 +116,7 @@ export default function LoginPage() {
             }
         };
 
-    }, [auth, firebaseui, firestore]);
+    }, [authCompat, firebaseui, firestore]);
 
     return (
         <div className="min-h-screen bg-background">
@@ -124,7 +132,6 @@ export default function LoginPage() {
                         </p>
                     </div>
 
-                    {/* This div is the container for the FirebaseUI widget */}
                     <div ref={elementRef} id="firebaseui-auth-container" />
                 </div>
             </div>
