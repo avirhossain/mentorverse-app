@@ -113,12 +113,15 @@ export const Header = ({ currentView, showLoginModal: showLoginModalProp, setSho
 
     const { user, isUserLoading } = useUser();
     const auth = useAuth();
+    const router = useRouter();
     const isAdminView = currentView === 'admin';
 
     const handleLogout = () => {
         if(auth) {
-            signOut(auth);
-            setIsMenuOpen(false);
+            signOut(auth).then(() => {
+                setIsMenuOpen(false);
+                router.push('/');
+            });
         }
     };
 
