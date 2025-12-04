@@ -254,11 +254,11 @@ service cloud.firestore {
      * @principle User-self-creation, admin-only management.
      */
     match /pending_payments/{paymentId} {
-      allow get: if isAdmin();
-      allow list: if isAdmin();
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       allow create: if isOwner(request.resource.data.userId);
-      allow update: if isExistingAdmin();
-      allow delete: if isExistingAdmin();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
   }
 }
