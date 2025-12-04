@@ -1,16 +1,18 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2 } from 'lucide-react';
+import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase } from 'lucide-react';
+import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { collection } from 'firebase/firestore';
-import { useAuth, useFirestore, useUser } from '@/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { v4 as uuidv4 } from 'uuid';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import type { Mentor } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Modal = ({ title, children, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
@@ -43,6 +45,7 @@ const MentorForm = ({ onSave, onClose }) => {
         reviews: [],
     });
     const { toast } = useToast();
+    const firestore = useFirestore();
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -71,18 +74,32 @@ const MentorForm = ({ onSave, onClose }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const newMentor = {
-            ...formData,
-            id: uuidv4(),
-            rating: formData.reviews.length > 0 ? formData.reviews.reduce((acc, r) => acc + Number(r.rating), 0) / formData.reviews.length : 0,
-            ratingsCount: formData.reviews.length,
-            skills: formData.skills.split(',').map(s => s.trim()),
-            sessions: formData.sessions.map(s => ({...s, price: Number(s.price), duration: Number(s.duration)})),
-            availability: formData.availability.map(a => ({...a, id: Math.random()})),
-            reviews: formData.reviews.map(r => ({...r, rating: Number(r.rating)})),
-        };
+        
+        if (!firestore) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: `Firestore is not available.`,
+            });
+            return;
+        }
         
         try {
+            const mentorsCol = collection(firestore, 'mentors');
+            const mentorsSnapshot = await getDocs(mentorsCol);
+            const newId = `M${String(mentorsSnapshot.size + 1).padStart(2, '0')}`;
+
+            const newMentor = {
+                ...formData,
+                id: newId,
+                rating: formData.reviews.length > 0 ? formData.reviews.reduce((acc, r) => acc + Number(r.rating), 0) / formData.reviews.length : 0,
+                ratingsCount: formData.reviews.length,
+                skills: formData.skills.split(',').map(s => s.trim()),
+                sessions: formData.sessions.map(s => ({...s, price: Number(s.price), duration: Number(s.duration)})),
+                availability: formData.availability.map(a => ({...a, id: Math.random()})),
+                reviews: formData.reviews.map(r => ({...r, rating: Number(r.rating)})),
+            };
+        
             await onSave(newMentor);
             toast({
                 title: 'Success!',
@@ -197,6 +214,7 @@ const MentorForm = ({ onSave, onClose }) => {
 
 const SessionForm = ({ onSave, onClose }) => {
     const { toast } = useToast();
+    const firestore = useFirestore();
     const [formData, setFormData] = useState({
         title: '',
         mentorName: '',
@@ -213,15 +231,29 @@ const SessionForm = ({ onSave, onClose }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const newSession = {
-            ...formData,
-            id: uuidv4(),
-            isFree: true,
-            seats: Number(formData.seats),
-            durationMinutes: Number(formData.durationMinutes),
-        };
-        
+
+        if (!firestore) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: `Firestore is not available.`,
+            });
+            return;
+        }
+
         try {
+            const sessionsCol = collection(firestore, 'sessions');
+            const sessionsSnapshot = await getDocs(sessionsCol);
+            const newId = `Session${101 + sessionsSnapshot.size}`;
+
+            const newSession = {
+                ...formData,
+                id: newId,
+                isFree: true,
+                seats: Number(formData.seats),
+                durationMinutes: Number(formData.durationMinutes),
+            };
+        
             await onSave(newSession);
             toast({
                 title: 'Success!',
@@ -253,6 +285,30 @@ const SessionForm = ({ onSave, onClose }) => {
     );
 };
 
+const DataListView = ({ title, data, isLoading, icon: Icon, renderItem }) => (
+    <div className="mt-8">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
+            <Icon className="w-6 h-6 mr-3 text-primary" />
+            {title}
+        </h2>
+        {isLoading ? (
+             <div className="space-y-3">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+            </div>
+        ) : (
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border-t-4 border-primary/50 space-y-3">
+                {data && data.length > 0 ? (
+                    data.map((item) => renderItem(item))
+                ) : (
+                    <p className="text-gray-500 dark:text-gray-400 text-center py-4">No data available.</p>
+                )}
+            </div>
+        )}
+    </div>
+);
+
 
 export default function AdminPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -261,6 +317,22 @@ export default function AdminPage() {
   const firestore = useFirestore();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
+
+  const mentorsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'mentors');
+  }, [firestore]);
+
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    // Assuming mentees are stored in a 'users' collection.
+    // This might need to be adjusted based on your actual data structure.
+    return collection(firestore, 'users');
+  }, [firestore]);
+
+  const { data: mentors, isLoading: isLoadingMentors } = useCollection<Mentor>(mentorsQuery);
+  const { data: mentees, isLoading: isLoadingMentees } = useCollection(usersQuery);
+
 
   useEffect(() => {
     if (!user && !isUserLoading && auth) {
@@ -325,6 +397,41 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+          
+          <DataListView
+            title="All Mentors"
+            data={mentors}
+            isLoading={isLoadingMentors}
+            icon={Briefcase}
+            renderItem={(mentor) => (
+                <div key={mentor.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
+                    <div>
+                        <span className="font-bold text-primary">{mentor.id}</span>
+                        <span className="ml-4 font-semibold text-gray-800 dark:text-white">{mentor.name}</span>
+                        <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">({mentor.title})</span>
+                    </div>
+                    <Link href={`/mentors/${mentor.id}`} className="text-sm text-primary hover:underline">View</Link>
+                </div>
+            )}
+           />
+
+            <DataListView
+                title="All Mentees (Users)"
+                data={mentees}
+                isLoading={isLoadingMentees}
+                icon={User}
+                renderItem={(mentee) => (
+                    <div key={mentee.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
+                       <div>
+                            <span className="font-bold text-primary">{`C${String(mentees.findIndex(m => m.id === mentee.id) + 10001)}`}</span>
+                            <span className="ml-4 font-semibold text-gray-800 dark:text-white">{mentee.name || 'Anonymous User'}</span>
+                            <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">({mentee.email || mentee.id})</span>
+                        </div>
+                        <Link href={`/account?userId=${mentee.id}`} className="text-sm text-primary hover:underline">View Profile</Link>
+                    </div>
+                )}
+            />
+
         </div>
       </main>
 
@@ -342,3 +449,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
