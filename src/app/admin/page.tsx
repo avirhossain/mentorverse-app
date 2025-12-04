@@ -77,9 +77,8 @@ const MentorForm = ({ onSave, onClose }) => {
             rating: formData.reviews.length > 0 ? formData.reviews.reduce((acc, r) => acc + Number(r.rating), 0) / formData.reviews.length : 0,
             ratingsCount: formData.reviews.length,
             skills: formData.skills.split(',').map(s => s.trim()),
-            // Ensure numeric fields are numbers
             sessions: formData.sessions.map(s => ({...s, price: Number(s.price), duration: Number(s.duration)})),
-            availability: formData.availability.map(a => ({...a, id: Math.random()})), // Add random id for key prop
+            availability: formData.availability.map(a => ({...a, id: Math.random()})),
             reviews: formData.reviews.map(r => ({...r, rating: Number(r.rating)})),
         };
         
@@ -103,7 +102,7 @@ const MentorForm = ({ onSave, onClose }) => {
         <div className="space-y-3 p-4 border rounded-lg">
             <h4 className="font-semibold text-lg">{sectionTitle}</h4>
             {formData[sectionKey].map((item, index) => (
-                <div key={index} className="p-3 border rounded-md space-y-2 relative bg-gray-50">
+                <div key={index} className="p-3 border rounded-md space-y-2 relative bg-gray-50 dark:bg-gray-700/50">
                      <Button type="button" size="sm" variant="ghost" className="absolute top-2 right-2 p-1 h-auto" onClick={() => removeDynamicItem(sectionKey, index)}><Trash2 className="w-4 h-4 text-red-500"/></Button>
                     {fields.map(field => (
                          <Input 
@@ -115,6 +114,21 @@ const MentorForm = ({ onSave, onClose }) => {
                             onChange={(e) => handleDynamicChange(sectionKey, index, e)}
                         />
                     ))}
+                    {sectionKey === 'sessions' && (
+                        <div className="pl-4 mt-2 space-y-2 border-l-2 border-primary">
+                            <h5 className="text-sm font-semibold">Available Slots for this Session</h5>
+                             {formData.availability.map((avail, availIndex) => (
+                                <div key={availIndex} className="flex items-center gap-2">
+                                    <Input name="date" placeholder="Date (e.g., 18th November)" value={avail.date} onChange={(e) => handleDynamicChange('availability', availIndex, e)} />
+                                    <Input name="time" placeholder="Time (e.g., 7:00 PM - 8:00 PM)" value={avail.time} onChange={(e) => handleDynamicChange('availability', availIndex, e)} />
+                                    <Button type="button" size="sm" variant="ghost" className="p-1 h-auto" onClick={() => removeDynamicItem('availability', availIndex)}><Trash2 className="w-4 h-4 text-red-500"/></Button>
+                                </div>
+                            ))}
+                            <Button type="button" variant="outline" size="sm" onClick={() => addDynamicItem('availability', { date: '', time: ''})}>
+                                <PlusCircle className="w-4 h-4 mr-2"/> Add Slot
+                            </Button>
+                        </div>
+                    )}
                 </div>
             ))}
             <Button type="button" variant="outline" size="sm" onClick={() => addDynamicItem(sectionKey, newItem)}>
@@ -125,7 +139,6 @@ const MentorForm = ({ onSave, onClose }) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Basic Info */}
             <Input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required />
             <Input name="title" placeholder="Job Title (e.g., Staff Software Engineer)" value={formData.title} onChange={handleChange} required />
             <Input name="company" placeholder="Company (e.g., Google)" value={formData.company} onChange={handleChange} required />
@@ -133,7 +146,6 @@ const MentorForm = ({ onSave, onClose }) => {
             <Input name="skills" placeholder="Skills (comma-separated, e.g., React, System Design)" value={formData.skills} onChange={handleChange} required />
             <Textarea name="intro" placeholder="Mentor Introduction" value={formData.intro} onChange={handleChange} required />
 
-            {/* Dynamic Sections */}
             {renderDynamicSection('Professional Experiences', 'professionalExperience',
                 [
                     { name: 'title', placeholder: 'Job Title' },
@@ -163,14 +175,6 @@ const MentorForm = ({ onSave, onClose }) => {
                     { name: 'description', placeholder: 'Session Description' }
                 ],
                 { id: '', name: '', price: 0, currency: '৳', duration: 60, description: '' }
-            )}
-
-            {renderDynamicSection('Availability', 'availability',
-                [
-                    { name: 'date', placeholder: 'Date (e.g., 18th November)' },
-                    { name: 'time', placeholder: 'Time Slot (e.g., 7:00 PM - 8:00 PM)' },
-                ],
-                { date: '', time: '' }
             )}
 
             {renderDynamicSection('Mentees Reviews', 'reviews',
@@ -211,7 +215,7 @@ const SessionForm = ({ onSave, onClose }) => {
         e.preventDefault();
         const newSession = {
             ...formData,
-            id: uuidv4(), // Generate a unique string ID
+            id: uuidv4(),
             isFree: true,
             seats: Number(formData.seats),
             durationMinutes: Number(formData.durationMinutes),
@@ -259,7 +263,6 @@ export default function AdminPage() {
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    // If there's no user and we're not in the middle of loading one, sign in anonymously.
     if (!user && !isUserLoading && auth) {
       initiateAnonymousSignIn(auth);
     }
