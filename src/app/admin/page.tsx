@@ -116,7 +116,6 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
         professionalExperience: [],
         education: [],
         sessions: [],
-        availability: [],
         reviews: [],
         ...mentor,
         skills: mentor?.skills?.join(', ') || '',
@@ -141,17 +140,40 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
         list[index][name] = value;
         setFormData(prev => ({ ...prev, [section]: list }));
     };
-    
+
+     const handleNestedDynamicChange = (section, parentIndex, nestedSection, index, e) => {
+        const { name, value } = e.target;
+        const list = [...formData[section]];
+        const nestedList = [...list[parentIndex][nestedSection]];
+        nestedList[index][name] = value;
+        list[parentIndex][nestedSection] = nestedList;
+        setFormData(prev => ({ ...prev, [section]: list }));
+    };
+
     const addDynamicItem = (section, item) => {
         setFormData(prev => ({
             ...prev,
             [section]: [...prev[section], item]
         }));
     };
+    
+    const addNestedDynamicItem = (section, parentIndex, nestedSection, item) => {
+        const list = [...formData[section]];
+        list[parentIndex][nestedSection] = [...list[parentIndex][nestedSection], item];
+        setFormData(prev => ({ ...prev, [section]: list }));
+    };
 
     const removeDynamicItem = (section, index) => {
         const list = [...formData[section]];
         list.splice(index, 1);
+        setFormData(prev => ({ ...prev, [section]: list }));
+    };
+
+    const removeNestedDynamicItem = (section, parentIndex, nestedSection, index) => {
+        const list = [...formData[section]];
+        const nestedList = [...list[parentIndex][nestedSection]];
+        nestedList.splice(index, 1);
+        list[parentIndex][nestedSection] = nestedList;
         setFormData(prev => ({ ...prev, [section]: list }));
     };
 
@@ -171,24 +193,34 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
             const processedData = {
                 ...formData,
                 skills: formData.skills.split(',').map(s => s.trim()),
-                sessions: formData.sessions.map(s => ({...s, price: Number(s.price), duration: Number(s.duration)})),
+                sessions: formData.sessions.map(s => ({
+                    ...s, 
+                    price: Number(s.price), 
+                    duration: Number(s.duration),
+                    availability: s.availability.map(a => ({...a, id: a.id || uuidv4() }))
+                })),
                 reviews: formData.reviews.map(r => ({...r, rating: Number(r.rating)})),
             };
 
+            const rating = processedData.reviews.length > 0 ? processedData.reviews.reduce((acc, r) => acc + Number(r.rating), 0) / processedData.reviews.length : 0;
+            const ratingsCount = processedData.reviews.length;
+            
+            let finalData;
+
             if (isEditing) {
-                await onSave(processedData);
+                finalData = { ...processedData, rating, ratingsCount };
+                await onSave(finalData);
                 toast({ title: 'Success!', description: 'Mentor profile updated.' });
             } else {
                 const mentorsCol = collection(firestore, 'mentors');
-                const newMentorRef = doc(mentorsCol); // Create a new document reference with an auto-generated ID
-                const newMentor = {
+                const newMentorRef = doc(mentorsCol); 
+                finalData = {
                     ...processedData,
-                    id: newMentorRef.id, // Use the auto-generated ID
-                    rating: formData.reviews.length > 0 ? formData.reviews.reduce((acc, r) => acc + Number(r.rating), 0) / formData.reviews.length : 0,
-                    ratingsCount: formData.reviews.length,
-                    availability: formData.availability.map(a => ({...a, id: Math.random()})),
+                    id: newMentorRef.id,
+                    rating,
+                    ratingsCount,
                 };
-                await onSave(newMentor);
+                await onSave(finalData);
                 toast({ title: 'Success!', description: 'New mentor profile created.' });
             }
             onClose();
@@ -220,14 +252,14 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                     {sectionKey === 'sessions' && (
                         <div className="pl-4 mt-2 space-y-2 border-l-2 border-primary">
                             <h5 className="text-sm font-semibold">Available Slots for this Session</h5>
-                             {formData.availability.map((avail, availIndex) => (
-                                <div key={availIndex} className="flex items-center gap-2">
-                                    <Input name="date" placeholder="Date (e.g., 18th November)" value={avail.date} onChange={(e) => handleDynamicChange('availability', availIndex, e)} />
-                                    <Input name="time" placeholder="Time (e.g., 7:00 PM - 8:00 PM)" value={avail.time} onChange={(e) => handleDynamicChange('availability', availIndex, e)} />
-                                    <Button type="button" size="sm" variant="ghost" className="p-1 h-auto" onClick={() => removeDynamicItem('availability', availIndex)}><Trash2 className="w-4 h-4 text-red-500"/></Button>
+                             {item.availability.map((avail, availIndex) => (
+                                <div key={avail.id || availIndex} className="flex items-center gap-2">
+                                    <Input name="date" placeholder="Date (e.g., 18th November)" value={avail.date} onChange={(e) => handleNestedDynamicChange(sectionKey, index, 'availability', availIndex, e)} />
+                                    <Input name="time" placeholder="Time (e.g., 7:00 PM - 8:00 PM)" value={avail.time} onChange={(e) => handleNestedDynamicChange(sectionKey, index, 'availability', availIndex, e)} />
+                                    <Button type="button" size="sm" variant="ghost" className="p-1 h-auto" onClick={() => removeNestedDynamicItem(sectionKey, index, 'availability', availIndex)}><Trash2 className="w-4 h-4 text-red-500"/></Button>
                                 </div>
                             ))}
-                            <Button type="button" variant="outline" size="sm" onClick={() => addDynamicItem('availability', { date: '', time: ''})}>
+                            <Button type="button" variant="outline" size="sm" onClick={() => addNestedDynamicItem(sectionKey, index, 'availability', { id: uuidv4(), date: '', time: ''})}>
                                 <PlusCircle className="w-4 h-4 mr-2"/> Add Slot
                             </Button>
                         </div>
@@ -285,14 +317,14 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
 
             {renderDynamicSection('Offered Sessions', 'sessions',
                 [
-                    { name: 'id', placeholder: 'Session ID (e.g., interview)' },
+                    { name: 'id', placeholder: 'Session ID (e.g., interview-prep)' },
                     { name: 'name', placeholder: 'Session Name (e.g., 60 min Interview Prep)' },
                     { name: 'price', placeholder: 'Price', type: 'number' },
                     { name: 'currency', placeholder: 'Currency (e.g., ৳)' },
                     { name: 'duration', placeholder: 'Duration (in minutes)', type: 'number' },
                     { name: 'description', placeholder: 'Session Description' }
                 ],
-                { id: '', name: '', price: 0, currency: '৳', duration: 60, description: '' }
+                { id: '', name: '', price: 0, currency: '৳', duration: 60, description: '', availability: [] }
             )}
 
             {renderDynamicSection('Mentees Reviews', 'reviews',

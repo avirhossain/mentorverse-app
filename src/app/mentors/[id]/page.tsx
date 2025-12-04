@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useEffect, useState, useMemo } from 'react';
 import { Star, CheckCircle, Briefcase, GraduationCap, Clock, Calendar, MessageSquare, X, Zap } from 'lucide-react';
@@ -6,6 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { Mentor } from '@/lib/types';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from '@/components/ui/button';
 
 // --- Helper Components ---
 
@@ -163,26 +166,61 @@ const MentorDetailsSkeleton = () => (
     </div>
 );
 
+const BookingSection = ({ mentor, onBook }) => {
+    return (
+        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg border-t-4 border-green-500">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center"><Zap className="w-6 h-6 mr-2 text-green-600" /> Book Your Session</h3>
+            <Accordion type="single" collapsible className="w-full" defaultValue={mentor.sessions?.[0]?.id}>
+                {mentor.sessions.map((session) => (
+                    <AccordionItem value={session.id} key={session.id}>
+                        <AccordionTrigger className="hover:no-underline">
+                            <div className="flex justify-between items-center w-full">
+                                <span className="text-lg font-semibold text-gray-800">{session.name}</span>
+                                <span className="text-xl font-extrabold text-primary">
+                                    {session.price > 0 ? `${session.price} ${session.currency}` : 'Free'}
+                                </span>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                            <div className="pt-2 pb-4 space-y-4">
+                                <p className="text-sm text-gray-600">{session.description}</p>
+                                <div className="flex items-center text-sm text-gray-500">
+                                    <Clock className="w-4 h-4 mr-2" /> Duration: {session.duration} minutes
+                                </div>
+                                <div className="space-y-3">
+                                    <h4 className="font-semibold text-md text-gray-700 flex items-center"><Calendar className="w-4 h-4 mr-2 text-primary" /> Choose a time slot:</h4>
+                                    {session.availability && session.availability.length > 0 ? (
+                                        <div className="flex flex-wrap gap-3">
+                                            {session.availability.map((slot) => (
+                                                <Button
+                                                    key={slot.id}
+                                                    variant="outline"
+                                                    onClick={() => onBook(session, slot)}
+                                                >
+                                                    {slot.date} @ {slot.time.split(' - ')[0]}
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-500 italic">No available slots for this session currently.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                ))}
+            </Accordion>
+        </div>
+    );
+};
+
 
 const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
-    const [selectedSession, setSelectedSession] = React.useState(null);
-    const [selectedTimeSlot, setSelectedTimeSlot] = React.useState(null);
     const [showCheckoutModal, setShowCheckoutModal] = React.useState(false);
+    const [selectedBooking, setSelectedBooking] = React.useState<{session: any, timeSlot: any} | null>(null);
 
-    useEffect(() => {
-        if (mentor?.sessions?.length > 0) {
-            setSelectedSession(mentor.sessions[0]);
-        }
-        if (mentor?.availability?.length > 0) {
-            setSelectedTimeSlot(mentor.availability[0]);
-        }
-    }, [mentor]);
-
-    const handleConfirmPayment = () => {
-        if (!selectedSession || !selectedTimeSlot) {
-            console.error("Please select both a session and an availability slot.");
-            return;
-        }
+    const handleBookNow = (session, timeSlot) => {
+        setSelectedBooking({ session, timeSlot });
         setShowCheckoutModal(true);
     };
 
@@ -230,7 +268,11 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
                         <p className="text-gray-700 leading-relaxed">{mentor.intro}</p>
                     </div>
 
-                    {mentor.professionalExperience.length > 0 && (
+                    {mentor.sessions && mentor.sessions.length > 0 && (
+                        <BookingSection mentor={mentor} onBook={handleBookNow} />
+                    )}
+
+                    {mentor.professionalExperience && mentor.professionalExperience.length > 0 && (
                         <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md">
                             <h3 className="text-2xl font-bold text-gray-800 mb-5 flex items-center"><Briefcase className="w-6 h-6 mr-2 text-primary" /> Professional Experience</h3>
                             {mentor.professionalExperience.map((item, index) => (
@@ -239,7 +281,7 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
                         </div>
                     )}
 
-                    {mentor.education.length > 0 && (
+                    {mentor.education && mentor.education.length > 0 && (
                         <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md">
                             <h3 className="text-2xl font-bold text-gray-800 mb-5 flex items-center"><GraduationCap className="w-6 h-6 mr-2 text-primary" /> Education</h3>
                             {mentor.education.map((item, index) => (
@@ -248,67 +290,7 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
                         </div>
                     )}
 
-                    {mentor.sessions.length > 0 && (
-                        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg border-t-4 border-green-500">
-                            <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center"><Zap className="w-6 h-6 mr-2 text-green-600" /> Book Your Session</h3>
-                            
-                            <h4 className="font-semibold text-lg text-gray-800 mb-3 flex items-center"><Clock className="w-4 h-4 mr-2 text-primary" /> Select Session Tier</h4>
-                            <div className="space-y-3 mb-6">
-                                {mentor.sessions.map((session) => (
-                                    <label 
-                                        key={session.id}
-                                        className={`flex flex-col p-4 border rounded-lg cursor-pointer transition ${selectedSession?.id === session.id 
-                                            ? 'border-primary bg-primary/10 ring-2 ring-primary' 
-                                            : 'border-gray-200 hover:border-primary/50'}`}
-                                        onClick={() => setSelectedSession(session)}
-                                    >
-                                        <div className="flex justify-between items-center mb-1">
-                                            <span className="font-semibold text-gray-800 text-base">{session.name}</span>
-                                            <span className="text-xl font-extrabold text-primary">
-                                                {session.price}<span className="text-sm font-normal"> {session.currency}</span>
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-gray-600">{session.description}</p>
-                                    </label>
-                                ))}
-                            </div>
-
-                            {mentor.availability.length > 0 && (
-                                <>
-                                    <h4 className="font-semibold text-lg text-gray-800 mb-3 flex items-center"><Calendar className="w-4 h-4 mr-2 text-primary" /> Choose Available Time</h4>
-                                    <div className="flex flex-wrap gap-3 mb-8">
-                                        {mentor.availability.map((slot) => {
-                                            const startTimeFull = slot.time.split(' - ')[0];
-                                            const startTime = startTimeFull.replace(':00', '').trim();
-
-                                            return (
-                                                <button
-                                                    key={slot.id}
-                                                    className={`py-2 px-4 border rounded-full text-sm font-medium transition ${selectedTimeSlot?.id === slot.id
-                                                        ? 'bg-primary text-white border-primary shadow-md'
-                                                        : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-primary/10 hover:border-primary/40'}`}
-                                                    onClick={() => setSelectedTimeSlot(slot)}
-                                                >
-                                                    {slot.date} {startTime}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </>
-                            )}
-
-                            <button 
-                                onClick={handleConfirmPayment}
-                                className="w-full py-3 text-lg font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-xl transform hover:scale-[1.01]"
-                                disabled={!selectedSession || !selectedTimeSlot}
-                            >
-                                Confirm Payment ({selectedSession?.price || 'N/A'} {selectedSession?.currency})
-                            </button>
-                        </div>
-                    )}
-
-
-                    {mentor.reviews.length > 0 && (
+                    {mentor.reviews && mentor.reviews.length > 0 && (
                         <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md">
                             <h3 className="text-2xl font-bold text-gray-800 mb-5 flex items-center"><Star className="w-6 h-6 mr-2 text-primary fill-primary/10" /> Mentees Reviews ({mentor.reviews.length})</h3>
                             <div className="space-y-4">
@@ -322,10 +304,10 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
                 </div>
             </div>
             
-            {showCheckoutModal && selectedSession && selectedTimeSlot && (
+            {showCheckoutModal && selectedBooking && (
                 <CheckoutModal
-                    session={selectedSession}
-                    timeSlot={selectedTimeSlot}
+                    session={selectedBooking.session}
+                    timeSlot={selectedBooking.timeSlot}
                     mentor={mentor}
                     onClose={() => setShowCheckoutModal(false)}
                 />
