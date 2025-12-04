@@ -30,6 +30,11 @@
             "type": "string"
           }
         },
+        "status": {
+          "type": "string",
+          "enum": ["active", "suspended"],
+          "description": "The current status of the mentor's account."
+        },
         "reviews": {
           "type": "array",
           "description": "A list of reviews submitted by mentees.",
@@ -75,6 +80,7 @@
         "email",
         "bio",
         "expertise",
+        "status",
         "availableTimeslots",
         "sessionCost"
       ]
@@ -112,6 +118,11 @@
         "balance": {
           "type": "number",
           "description": "The user's account balance."
+        },
+        "status": {
+            "type": "string",
+            "enum": ["active", "suspended"],
+            "description": "The current status of the mentee's account."
         }
       },
       "required": [
@@ -119,7 +130,8 @@
         "name",
         "email",
         "interests",
-        "mentorshipGoal"
+        "mentorshipGoal",
+        "status"
       ]
     },
     "Session": {

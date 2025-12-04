@@ -138,9 +138,9 @@ service cloud.firestore {
     match /mentors/{mentorId} {
       allow get: if true;
       allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn(); // Allows signed-in users to add reviews.
-      allow delete: if isSignedIn();
+      allow create: if isAdmin();
+      allow update: if isExistingAdmin() || isSignedIn(); // Allows signed-in users to add reviews or admins to edit
+      allow delete: if isExistingAdmin();
     }
     
     /**
@@ -188,19 +188,19 @@ service cloud.firestore {
     }
 
     /**
-     * @description User (mentee) profiles. A user can create their own profile and can only access their own.
+     * @description User (mentee) profiles. A user can create their own profile and can only access their own. Admins can manage them.
      * @path /users/{menteeId}
      * @allow (create) A new user (auth.uid: 'user123') creates their own profile at `/users/user123`.
-     * @deny (list) An authenticated user tries to list all documents in the `/users` collection.
+     * @deny (list) An authenticated user tries to list all documents in the `/users` collection unless they are an admin.
      * @deny (get) A user ('user123') tries to read the profile of another user ('user456').
      * @principle Enforces strict document ownership and self-creation, and prevents user enumeration.
      */
     match /users/{menteeId} {
-      allow get: if isOwner(menteeId);
-      allow list: if isSignedIn();
+      allow get: if isOwnerOrAdmin(menteeId);
+      allow list: if isAdmin();
       allow create: if isOwner(menteeId) && request.resource.data.id == menteeId;
-      allow update: if isExistingOwner(menteeId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(menteeId);
+      allow update: if (isExistingOwner(menteeId) && request.resource.data.id == resource.data.id) || isExistingAdmin();
+      allow delete: if isExistingOwnerOrAdmin(menteeId);
     }
 
     /**
@@ -256,11 +256,11 @@ service cloud.firestore {
      * @principle User-self-creation, admin-only management.
      */
     match /pending_payments/{paymentId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      allow get: if isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(request.resource.data.userId);
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow update: if isExistingAdmin();
+      allow delete: if isExistingAdmin();
     }
   }
 }

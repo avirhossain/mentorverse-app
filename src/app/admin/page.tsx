@@ -1,20 +1,21 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote } from 'lucide-react';
+import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldX } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { collection, getDocs, doc, runTransaction } from 'firebase/firestore';
+import { collection, getDocs, doc, runTransaction, deleteDoc } from 'firebase/firestore';
 import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
-import type { Mentor } from '@/lib/types';
+import type { Mentor, Mentee } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { v4 as uuidv4 } from 'uuid';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
 const Modal = ({ title, children, onClose }) => (
@@ -99,7 +100,7 @@ const PaymentApprovalList = ({ payments, onApprove }) => (
 );
 
 
-const MentorForm = ({ onSave, onClose }) => {
+const MentorForm = ({ mentor, onSave, onClose }) => {
     const [formData, setFormData] = useState({
         name: '',
         title: '',
@@ -107,18 +108,27 @@ const MentorForm = ({ onSave, onClose }) => {
         intro: '',
         skills: '',
         avatar: 'https://placehold.co/150x150/4F46E5/FFFFFF?text=New',
+        status: 'active',
         professionalExperience: [],
         education: [],
         sessions: [],
         availability: [],
         reviews: [],
+        ...mentor,
+        skills: mentor?.skills?.join(', ') || '',
     });
+
     const { toast } = useToast();
     const firestore = useFirestore();
+    const isEditing = !!mentor;
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleStatusChange = (value) => {
+        setFormData(prev => ({ ...prev, status: value }));
     };
 
     const handleDynamicChange = (section, index, e) => {
@@ -154,26 +164,31 @@ const MentorForm = ({ onSave, onClose }) => {
         }
         
         try {
-            const mentorsCol = collection(firestore, 'mentors');
-            const mentorsSnapshot = await getDocs(mentorsCol);
-            const newId = `M${String(mentorsSnapshot.size + 1).padStart(2, '0')}`;
-
-            const newMentor = {
+            const processedData = {
                 ...formData,
-                id: newId,
-                rating: formData.reviews.length > 0 ? formData.reviews.reduce((acc, r) => acc + Number(r.rating), 0) / formData.reviews.length : 0,
-                ratingsCount: formData.reviews.length,
                 skills: formData.skills.split(',').map(s => s.trim()),
                 sessions: formData.sessions.map(s => ({...s, price: Number(s.price), duration: Number(s.duration)})),
-                availability: formData.availability.map(a => ({...a, id: Math.random()})),
                 reviews: formData.reviews.map(r => ({...r, rating: Number(r.rating)})),
             };
-        
-            await onSave(newMentor);
-            toast({
-                title: 'Success!',
-                description: 'New mentor profile has been created.',
-            });
+
+            if (isEditing) {
+                await onSave(processedData);
+                toast({ title: 'Success!', description: 'Mentor profile updated.' });
+            } else {
+                const mentorsCol = collection(firestore, 'mentors');
+                const mentorsSnapshot = await getDocs(mentorsCol);
+                const newId = `M${String(mentorsSnapshot.size + 1).padStart(2, '0')}`;
+                
+                const newMentor = {
+                    ...processedData,
+                    id: newId,
+                    rating: formData.reviews.length > 0 ? formData.reviews.reduce((acc, r) => acc + Number(r.rating), 0) / formData.reviews.length : 0,
+                    ratingsCount: formData.reviews.length,
+                    availability: formData.availability.map(a => ({...a, id: Math.random()})),
+                };
+                await onSave(newMentor);
+                toast({ title: 'Success!', description: 'New mentor profile created.' });
+            }
             onClose();
         } catch (error) {
             toast({
@@ -183,7 +198,7 @@ const MentorForm = ({ onSave, onClose }) => {
             });
         }
     };
-
+    
     const renderDynamicSection = (sectionTitle, sectionKey, fields, newItem) => (
         <div className="space-y-3 p-4 border rounded-lg">
             <h4 className="font-semibold text-lg">{sectionTitle}</h4>
@@ -225,12 +240,27 @@ const MentorForm = ({ onSave, onClose }) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            <Input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required />
-            <Input name="title" placeholder="Job Title (e.g., Staff Software Engineer)" value={formData.title} onChange={handleChange} required />
-            <Input name="company" placeholder="Company (e.g., Google)" value={formData.company} onChange={handleChange} required />
-            <Input name="avatar" placeholder="Profile Picture URL" value={formData.avatar} onChange={handleChange} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required />
+                <Input name="title" placeholder="Job Title (e.g., Staff Software Engineer)" value={formData.title} onChange={handleChange} required />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input name="company" placeholder="Company (e.g., Google)" value={formData.company} onChange={handleChange} required />
+                <Input name="avatar" placeholder="Profile Picture URL" value={formData.avatar} onChange={handleChange} />
+            </div>
+            
             <Input name="skills" placeholder="Skills (comma-separated, e.g., React, System Design)" value={formData.skills} onChange={handleChange} required />
             <Textarea name="intro" placeholder="Mentor Introduction" value={formData.intro} onChange={handleChange} required />
+            
+            <Select onValueChange={handleStatusChange} value={formData.status}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Select account status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+            </Select>
 
             {renderDynamicSection('Professional Experiences', 'professionalExperience',
                 [
@@ -275,11 +305,73 @@ const MentorForm = ({ onSave, onClose }) => {
 
             <div className="flex justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                <Button type="submit">Save Mentor</Button>
+                <Button type="submit">{isEditing ? 'Save Changes' : 'Save Mentor'}</Button>
             </div>
         </form>
     );
 };
+
+const MenteeForm = ({ mentee, onSave, onClose }) => {
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        interests: '',
+        balance: 0,
+        status: 'active',
+        ...mentee,
+        interests: mentee?.interests?.join(', ') || '',
+    });
+
+    const { toast } = useToast();
+    
+    const handleChange = (e) => {
+        const { name, value, type } = e.target;
+        setFormData(prev => ({ ...prev, [name]: type === 'number' ? Number(value) : value }));
+    };
+    
+    const handleStatusChange = (value) => {
+        setFormData(prev => ({ ...prev, status: value }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            const processedData = {
+                ...formData,
+                interests: formData.interests.split(',').map(i => i.trim()),
+            };
+            await onSave(processedData);
+            toast({ title: "Success!", description: "Mentee profile updated." });
+            onClose();
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: `Failed to update mentee: ${error.message}` });
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <Input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required />
+            <Input name="email" type="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required />
+            <Input name="interests" placeholder="Interests (comma-separated)" value={formData.interests} onChange={handleChange} />
+            <Input name="balance" type="number" placeholder="Account Balance" value={formData.balance} onChange={handleChange} required />
+
+            <Select onValueChange={handleStatusChange} value={formData.status}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Select account status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+            </Select>
+            <div className="flex justify-end gap-4 pt-4">
+                <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                <Button type="submit">Save Changes</Button>
+            </div>
+        </form>
+    );
+};
+
 
 const SessionForm = ({ onSave, onClose }) => {
     const { toast } = useToast();
@@ -493,10 +585,7 @@ const DataListView = ({ title, data, isLoading, icon: Icon, renderItem }) => (
 
 export default function AdminPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showMentorModal, setShowMentorModal] = useState(false);
-  const [showSessionModal, setShowSessionModal] = useState(false);
-  const [showTipModal, setShowTipModal] = useState(false);
-  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [modalState, setModalState] = useState({ type: null, data: null });
 
   const firestore = useFirestore();
   const auth = useAuth();
@@ -509,7 +598,7 @@ export default function AdminPage() {
   const pendingPaymentsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'pending_payments') : null, [firestore]);
 
   const { data: mentors, isLoading: isLoadingMentors } = useCollection<Mentor>(mentorsQuery);
-  const { data: mentees, isLoading: isLoadingMentees } = useCollection(usersQuery);
+  const { data: mentees, isLoading: isLoadingMentees } = useCollection<Mentee>(usersQuery);
   const { data: pendingPayments, isLoading: isLoadingPayments } = useCollection(pendingPaymentsQuery);
 
 
@@ -521,10 +610,26 @@ export default function AdminPage() {
 
   const handleSaveMentor = (mentorData) => {
     if (!firestore) return;
-    const mentorsCol = collection(firestore, 'mentors');
-    return addDocumentNonBlocking(mentorsCol, mentorData);
+    const mentorRef = doc(firestore, 'mentors', mentorData.id);
+    return setDocumentNonBlocking(mentorRef, mentorData, { merge: true });
   };
   
+  const handleSaveMentee = (menteeData) => {
+    if (!firestore) return;
+    const menteeRef = doc(firestore, 'users', menteeData.id);
+    return updateDocumentNonBlocking(menteeRef, menteeData);
+  };
+  
+  const handleDelete = async (collectionName, docId, name) => {
+    if (!firestore) return;
+    try {
+        await deleteDoc(doc(firestore, collectionName, docId));
+        toast({ title: 'Success!', description: `${name} has been deleted.` });
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: `Failed to delete: ${error.message}` });
+    }
+  };
+
   const handleSaveSession = (sessionData) => {
     if (!firestore) return;
     const sessionsCol = collection(firestore, 'sessions');
@@ -569,6 +674,8 @@ export default function AdminPage() {
     }
   };
 
+  const openModal = (type, data = null) => setModalState({ type, data });
+  const closeModal = () => setModalState({ type: null, data: null });
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -594,7 +701,7 @@ export default function AdminPage() {
                   Create, edit, and view mentor profiles.
                 </p>
                 <Button
-                  onClick={() => setShowMentorModal(true)}
+                  onClick={() => openModal('mentor')}
                   className="mt-2"
                 >
                   Create New Mentor
@@ -607,7 +714,7 @@ export default function AdminPage() {
                   Create unique, bookable sessions offered by mentors.
                 </p>
                 <Button
-                  onClick={() => setShowSessionModal(true)}
+                  onClick={() => openModal('session')}
                   className="mt-2"
                 >
                   Create New Session
@@ -620,7 +727,7 @@ export default function AdminPage() {
                    Create articles, and add links to videos and websites.
                 </p>
                 <Button
-                  onClick={() => setShowTipModal(true)}
+                  onClick={() => openModal('tip')}
                   className="mt-2"
                 >
                   Create New Tip
@@ -633,7 +740,7 @@ export default function AdminPage() {
                    Create and manage promotional coupon codes for users.
                 </p>
                 <Button
-                  onClick={() => setShowCouponModal(true)}
+                  onClick={() => openModal('coupon')}
                   className="mt-2"
                 >
                   Create Coupon
@@ -651,12 +758,33 @@ export default function AdminPage() {
             icon={Briefcase}
             renderItem={(mentor) => (
                 <div key={mentor.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
-                    <div>
+                    <div className="flex-grow">
+                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${mentor.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`} title={mentor.status}></span>
                         <span className="font-bold text-primary">{mentor.id}</span>
                         <span className="ml-4 font-semibold text-gray-800 dark:text-white">{mentor.name}</span>
                         <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">({mentor.title})</span>
                     </div>
-                    <Link href={`/mentors/${mentor.id}`} className="text-sm text-primary hover:underline">View</Link>
+                    <div className="flex items-center gap-2">
+                        <Link href={`/mentors/${mentor.id}`} className="text-sm text-primary hover:underline">View</Link>
+                        <Button variant="ghost" size="sm" onClick={() => openModal('mentor', mentor)}><Edit className="w-4 h-4" /></Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the mentor profile for {mentor.name}.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete('mentors', mentor.id, mentor.name)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 </div>
             )}
            />
@@ -668,12 +796,32 @@ export default function AdminPage() {
                 icon={User}
                 renderItem={(mentee) => (
                     <div key={mentee.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
-                       <div>
-                            <span className="font-bold text-primary">{`C${String(mentees.findIndex(m => m.id === mentee.id) + 10001)}`}</span>
+                       <div className="flex-grow">
+                            <span className={`inline-block w-2 h-2 rounded-full mr-2 ${mentee.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`} title={mentee.status}></span>
                             <span className="ml-4 font-semibold text-gray-800 dark:text-white">{mentee.name || 'Anonymous User'}</span>
                             <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">({mentee.email || mentee.id})</span>
                         </div>
-                        <Link href={`/account?userId=${mentee.id}`} className="text-sm text-primary hover:underline">View Profile</Link>
+                        <div className="flex items-center gap-2">
+                            <Link href={`/account?userId=${mentee.id}`} className="text-sm text-primary hover:underline">View</Link>
+                            <Button variant="ghost" size="sm" onClick={() => openModal('mentee', mentee)}><Edit className="w-4 h-4" /></Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete the account for {mentee.name || mentee.id}.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete('users', mentee.id, mentee.name || mentee.id)}>Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
                     </div>
                 )}
             />
@@ -681,29 +829,35 @@ export default function AdminPage() {
         </div>
       </main>
 
-      {showMentorModal && (
-        <Modal title="Create New Mentor" onClose={() => setShowMentorModal(false)}>
-          <MentorForm onSave={handleSaveMentor} onClose={() => setShowMentorModal(false)} />
-        </Modal>
-      )}
+        {modalState.type === 'mentor' && (
+            <Modal title={modalState.data ? "Edit Mentor" : "Create New Mentor"} onClose={closeModal}>
+                <MentorForm mentor={modalState.data} onSave={handleSaveMentor} onClose={closeModal} />
+            </Modal>
+        )}
 
-      {showSessionModal && (
-        <Modal title="Create New Session" onClose={() => setShowSessionModal(false)}>
-          <SessionForm onSave={handleSaveSession} onClose={() => setShowSessionModal(false)} />
-        </Modal>
-      )}
+        {modalState.type === 'mentee' && (
+            <Modal title="Edit Mentee" onClose={closeModal}>
+                <MenteeForm mentee={modalState.data} onSave={handleSaveMentee} onClose={closeModal} />
+            </Modal>
+        )}
 
-      {showTipModal && (
-        <Modal title="Create New Tip" onClose={() => setShowTipModal(false)}>
-          <TipForm onSave={handleSaveTip} onClose={() => setShowTipModal(false)} />
-        </Modal>
-      )}
-      
-      {showCouponModal && (
-        <Modal title="Create New Coupon" onClose={() => setShowCouponModal(false)}>
-          <CouponForm onSave={handleSaveCoupon} onClose={() => setShowCouponModal(false)} />
-        </Modal>
-      )}
+        {modalState.type === 'session' && (
+            <Modal title="Create New Session" onClose={closeModal}>
+                <SessionForm onSave={handleSaveSession} onClose={closeModal} />
+            </Modal>
+        )}
+
+        {modalState.type === 'tip' && (
+            <Modal title="Create New Tip" onClose={closeModal}>
+                <TipForm onSave={handleSaveTip} onClose={closeModal} />
+            </Modal>
+        )}
+        
+        {modalState.type === 'coupon' && (
+            <Modal title="Create New Coupon" onClose={closeModal}>
+                <CouponForm onSave={handleSaveCoupon} onClose={closeModal} />
+            </Modal>
+        )}
     </div>
   );
 }

@@ -8,6 +8,7 @@ export interface Mentor {
   ratingsCount: number;
   avatar: string;
   intro: string;
+  status: 'active' | 'suspended';
   professionalExperience: {
     title: string;
     company: string;
@@ -39,6 +40,17 @@ export interface Mentor {
     text: string;
   }[];
 }
+
+export interface Mentee {
+  id: string;
+  name: string;
+  email: string;
+  interests: string[];
+  mentorshipGoal: string;
+  balance: number;
+  status: 'active' | 'suspended';
+}
+
 
 export interface Session {
     id: string; 
