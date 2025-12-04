@@ -51,12 +51,6 @@ const LoginModal = ({ onClose }) => {
                         });
                     }
 
-                    if (role === 'admin') {
-                        // Also create an admin role document
-                        const adminRoleRef = doc(firestore, "roles_admin", user.uid);
-                        await setDoc(adminRoleRef, { role: 'admin' });
-                    }
-
                     router.push(role === 'admin' ? '/admin' : '/');
                     onClose();
                 } catch (createError) {
@@ -209,3 +203,5 @@ export const Header = ({ currentView, showLoginModal: showLoginModalProp, setSho
     </>
     );
 };
+
+    
