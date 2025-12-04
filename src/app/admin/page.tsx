@@ -541,7 +541,7 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
                 description: isEditing ? 'Session updated successfully.' : 'New exclusive session has been created.',
             });
             onClose();
-        } catch (error) => {
+        } catch (error) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
