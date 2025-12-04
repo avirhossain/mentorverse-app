@@ -42,11 +42,12 @@ service cloud.firestore {
     }
     
     /**
-     * @description Session offerings are public for anyone to read. Only admins can manage them.
+     * @description Session offerings are public to read. Mentees can update (book) them. Admins can create/delete.
      */
     match /sessions/{sessionId} {
       allow get, list: if true;
-      allow write: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isSignedIn();
     }
 
     /**
