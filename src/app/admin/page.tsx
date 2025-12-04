@@ -16,22 +16,21 @@ export default function AdminPage() {
       <main className="flex-1 p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
           <div className="space-y-2 mb-8">
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-gray-500">Manage Guidelab content and users.</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+            <p className="text-gray-500 dark:text-gray-400">Manage Guidelab content and users.</p>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">Content Management</h2>
-            <p className="text-gray-600 mb-6">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-t-4 border-primary">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Content Management</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-8">
               This section is for creating and managing mentor profiles and
-              unique sessions. The full implementation is not part of this
-              demo.
+              unique sessions. The full implementation for these actions is not yet built.
             </p>
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="flex flex-col items-start gap-2 p-6 border rounded-lg bg-gray-50">
+              <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                 <UsersIcon className="w-8 h-8 text-primary" />
-                <h3 className="text-lg font-semibold">Manage Mentors</h3>
-                <p className="text-sm text-gray-500">
+                <h3 className="text-lg font-semibold dark:text-white">Manage Mentors</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Admins can create, edit, and view mentor profiles, including
                   their expertise, availability, and session costs.
                 </p>
@@ -42,10 +41,10 @@ export default function AdminPage() {
                   Create New Mentor
                 </button>
               </div>
-              <div className="flex flex-col items-start gap-2 p-6 border rounded-lg bg-gray-50">
+              <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                 <FilePlus className="w-8 h-8 text-primary" />
-                <h3 className="text-lg font-semibold">Manage Sessions</h3>
-                <p className="text-sm text-gray-500">
+                <h3 className="text-lg font-semibold dark:text-white">Manage Sessions</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Admins can create unique, bookable sessions offered by
                   mentors, complete with descriptions and pricing.
                 </p>
