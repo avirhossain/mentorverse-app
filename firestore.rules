@@ -197,7 +197,7 @@ service cloud.firestore {
      */
     match /users/{menteeId} {
       allow get: if isOwner(menteeId);
-      allow list: if isAdmin(); // Only admins can list users.
+      allow list: if isSignedIn();
       allow create: if isOwner(menteeId) && request.resource.data.id == menteeId;
       allow update: if isExistingOwner(menteeId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(menteeId);
@@ -256,11 +256,11 @@ service cloud.firestore {
      * @principle User-self-creation, admin-only management.
      */
     match /pending_payments/{paymentId} {
-      allow get: if isAdmin();
-      allow list: if isAdmin();
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       allow create: if isOwner(request.resource.data.userId);
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
   }
 }
