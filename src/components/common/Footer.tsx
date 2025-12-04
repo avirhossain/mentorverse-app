@@ -7,7 +7,7 @@ import { ShieldCheck, FileText, Users, Info, Phone } from 'lucide-react';
 const footerLinks = [
     { href: '/terms', text: 'Terms and Conditions', icon: FileText },
     { href: '/privacy', text: 'Privacy Policy', icon: ShieldCheck },
-    { href: '/contact', text: 'Contact Us', icon: Phone },
+    { href: '/support', text: 'Support', icon: Phone },
     { href: '/become-a-mentor', text: 'Want to be a Mentor', icon: Users },
     { href: '/about', text: 'About Us', icon: Info },
 ];
