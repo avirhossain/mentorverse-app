@@ -14,6 +14,7 @@
  *   - `/users/{menteeId}/sessions`: A mentee's booked sessions.
  *   - `/users/{menteeId}/recommendations`: A mentee's personalized recommendations.
  * - `/mentors`: A public collection of all available mentor profiles.
+ * - `/sessions`: A public collection of all available session offerings.
  * - `/unique_sessions`: A public collection of special session offerings.
  * - `/roles_admin`: A private collection where document existence signifies a user's admin status.
  *
@@ -133,6 +134,21 @@ service cloud.firestore {
      * @principle Implements a "Public Read with Admin-Only Writes" pattern for shared content.
      */
     match /mentors/{mentorId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isExistingAdmin();
+      allow delete: if isExistingAdmin();
+    }
+    
+    /**
+     * @description Session offerings are public for anyone to read. Only admins can manage them.
+     * @path /sessions/{sessionId}
+     * @allow (list) Any user, signed in or not, can list all session offerings.
+     * @deny (update) A non-admin user tries to change the details of a session.
+     * @principle Implements a "Public Read with Admin-Only Writes" pattern for shared content.
+     */
+    match /sessions/{sessionId} {
       allow get: if true;
       allow list: if true;
       allow create: if isAdmin();
