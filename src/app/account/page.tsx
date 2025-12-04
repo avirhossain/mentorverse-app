@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
@@ -10,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useFirestore, useUser, useDoc, useMemoFirebase, useAuth, useCollection } from '@/firebase';
-import { collection, query, where, getDocs, updateDoc, arrayUnion, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, arrayUnion, doc, setDoc, runTransaction } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { Mentee, Session } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -346,30 +347,90 @@ const ProfileDetails = ({ user, onSave }) => {
     );
 };
 
-const AddBalanceModal = ({ onClose, onBalanceUpdate }) => {
+const AddBalanceModal = ({ onClose, onBalanceUpdate, user, firestore }) => {
     const [couponCode, setCouponCode] = useState('');
     const [bkashId, setBkashId] = useState('');
     const [message, setMessage] = useState({ type: '', text: '' });
+    const { toast } = useToast();
 
-    const handleCouponSubmit = (e) => {
+    const handleCouponSubmit = async (e) => {
         e.preventDefault();
         setMessage({ type: '', text: '' });
-        // Mock coupon validation
-        if (couponCode.toUpperCase() === 'GUIDE500') {
-            onBalanceUpdate(500); // Simulate adding 500
-            setMessage({ type: 'success', text: 'Successfully added ৳500 to your balance!' });
-            setTimeout(onClose, 2000);
-        } else {
-            setMessage({ type: 'error', text: 'Invalid coupon code. Please try again.' });
+
+        if (!firestore || !user) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Cannot process request.' });
+            return;
+        }
+
+        const couponRef = doc(firestore, 'coupons', couponCode.toUpperCase());
+        const userRef = doc(firestore, 'users', user.uid);
+        const transactionRef = doc(collection(firestore, 'balance_transactions'));
+
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                const couponDoc = await transaction.get(couponRef);
+                if (!couponDoc.exists() || couponDoc.data().isUsed) {
+                    throw new Error("This coupon is invalid or has already been used.");
+                }
+
+                const userDoc = await transaction.get(userRef);
+                if (!userDoc.exists()) {
+                    throw new Error("User profile not found.");
+                }
+
+                const couponData = couponDoc.data();
+                const newBalance = (userDoc.data().balance || 0) + couponData.amount;
+
+                transaction.update(userRef, { balance: newBalance });
+                transaction.update(couponRef, { 
+                    isUsed: true,
+                    usedBy: user.uid,
+                    usedAt: new Date().toISOString(),
+                });
+                transaction.set(transactionRef, {
+                    id: transactionRef.id,
+                    userId: user.uid,
+                    amount: couponData.amount,
+                    source: 'coupon',
+                    description: `Coupon: ${couponCode.toUpperCase()}`,
+                    createdAt: new Date().toISOString(),
+                });
+            });
+
+            toast({ title: 'Success!', description: `Balance updated successfully.` });
+            onBalanceUpdate();
+            onClose();
+
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Redemption Failed', description: error.message });
         }
     };
-
-    const handleBkashSubmit = (e) => {
+    
+    const handleBkashSubmit = async (e) => {
         e.preventDefault();
-        setMessage({ type: 'info', text: 'We are verifying your payment and will get back to you within 3 hours.' });
-        // In a real app, you'd send this to the backend
-        console.log('bKash Transaction ID submitted:', bkashId);
-        setTimeout(onClose, 3000);
+        const amountInput = (e.target as HTMLFormElement).elements.namedItem('amount') as HTMLInputElement;
+        const amount = Number(amountInput.value);
+
+        if (!firestore || !user || !bkashId || !amount) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please fill all fields.' });
+            return;
+        }
+        
+        const paymentRef = doc(collection(firestore, 'pending_payments'));
+        try {
+            await setDoc(paymentRef, {
+                id: paymentRef.id,
+                userId: user.uid,
+                transactionId: bkashId,
+                amount,
+                status: 'pending',
+                createdAt: new Date().toISOString(),
+            });
+             setMessage({ type: 'info', text: 'We are verifying your payment and will get back to you within 3 hours.' });
+            setTimeout(onClose, 3000);
+        } catch (error) {
+             toast({ variant: 'destructive', title: 'Submission Failed', description: error.message });
+        }
     };
 
     return (
@@ -403,6 +464,13 @@ const AddBalanceModal = ({ onClose, onBalanceUpdate }) => {
                         <TabsContent value="bkash">
                             <form onSubmit={handleBkashSubmit} className="space-y-4 mt-4">
                                 <p className="text-sm text-gray-600 dark:text-gray-300">Submit your bKash payment transaction ID for manual verification.</p>
+                                <Input 
+                                    placeholder="Enter Amount" 
+                                    name="amount"
+                                    type="number"
+                                    className="text-center"
+                                    required
+                                />
                                 <Input 
                                     placeholder="Enter bKash TrxID" 
                                     value={bkashId} 
@@ -627,10 +695,12 @@ export default function AccountPage() {
     const firestore = useFirestore();
     const auth = useAuth();
     
+    const [balanceUpdate, setBalanceUpdate] = useState(0);
+
     const userDocRef = useMemoFirebase(() => {
         if (!firestore || !authUser) return null;
         return doc(firestore, 'users', authUser.uid);
-    }, [firestore, authUser]);
+    }, [firestore, authUser, balanceUpdate]);
 
     const { data: menteeData, isLoading: isMenteeLoading } = useDoc<Mentee>(userDocRef);
 
@@ -652,10 +722,8 @@ export default function AccountPage() {
         await setDoc(userDocRef, updatedData, { merge: true });
     };
 
-    const handleBalanceUpdate = (amount) => {
-         if (!userDocRef || !menteeData) return;
-        const newBalance = (menteeData.balance || 0) + amount;
-        updateDoc(userDocRef, { balance: newBalance });
+    const handleBalanceUpdate = () => {
+        setBalanceUpdate(prev => prev + 1);
     };
 
     const handleLogout = () => {
@@ -719,6 +787,8 @@ export default function AccountPage() {
                 <AddBalanceModal 
                     onClose={() => setShowAddBalanceModal(false)}
                     onBalanceUpdate={handleBalanceUpdate}
+                    user={authUser}
+                    firestore={firestore}
                 />
             )}
             

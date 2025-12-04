@@ -1,20 +1,21 @@
 
 'use client';
 import React, { useState, useEffect } from 'react';
-import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldX, Calendar } from 'lucide-react';
+import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldX, Calendar, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { collection, getDocs, doc, runTransaction, deleteDoc, setDoc, updateDoc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, runTransaction, deleteDoc, setDoc, updateDoc, addDoc, writeBatch } from 'firebase/firestore';
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import type { Mentor, Mentee, Session, Tip, Coupon, PendingPayment } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { v4 as uuidv4 } from 'uuid';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const Modal = ({ title, children, onClose }) => (
@@ -33,16 +34,17 @@ const Modal = ({ title, children, onClose }) => (
   </div>
 );
 
-const CouponForm = ({ onSave, onClose }) => {
+const CouponForm = ({ onSave, onClose, firestore }) => {
     const { toast } = useToast();
     const [formData, setFormData] = useState({ code: '', amount: 0, expiresAt: '' });
+    const [bulkCodes, setBulkCodes] = useState('');
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = async (e) => {
+    const handleSingleSubmit = async (e) => {
         e.preventDefault();
         try {
             const newCoupon = {
@@ -59,17 +61,73 @@ const CouponForm = ({ onSave, onClose }) => {
             toast({ variant: 'destructive', title: 'Error', description: `Failed to save coupon: ${error.message}` });
         }
     };
+    
+    const handleBulkSubmit = async (e) => {
+        e.preventDefault();
+        const codes = bulkCodes.split(/[\n, ]+/).filter(c => c.trim() !== '');
+        if (codes.length === 0) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please enter at least one coupon code.' });
+            return;
+        }
+
+        const batch = writeBatch(firestore);
+        codes.forEach(code => {
+            const couponRef = doc(firestore, 'coupons', code.toUpperCase());
+            batch.set(couponRef, {
+                id: code.toUpperCase(),
+                amount: Number(formData.amount),
+                expiresAt: formData.expiresAt,
+                isUsed: false,
+                createdAt: new Date().toISOString(),
+            });
+        });
+
+        try {
+            await batch.commit();
+            toast({ title: 'Success!', description: `${codes.length} coupons created successfully.` });
+            onClose();
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: `Failed to create coupons: ${error.message}` });
+        }
+    };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <Input name="code" placeholder="Coupon Code (e.g., WELCOME50)" value={formData.code} onChange={handleChange} required />
-            <Input name="amount" type="number" placeholder="Amount (e.g., 500)" value={formData.amount} onChange={handleChange} required />
-            <Input name="expiresAt" type="date" placeholder="Expiry Date" value={formData.expiresAt} onChange={handleChange} />
-            <div className="flex justify-end gap-4 pt-4">
-                <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                <Button type="submit">Save Coupon</Button>
-            </div>
-        </form>
+        <Tabs defaultValue="single">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="single">Single Coupon</TabsTrigger>
+                <TabsTrigger value="bulk">Bulk Create</TabsTrigger>
+            </TabsList>
+            <TabsContent value="single">
+                 <form onSubmit={handleSingleSubmit} className="space-y-4 pt-4">
+                    <Input name="code" placeholder="Coupon Code (e.g., WELCOME50)" value={formData.code} onChange={handleChange} required />
+                    <Input name="amount" type="number" placeholder="Amount (e.g., 500)" value={formData.amount} onChange={handleChange} required />
+                    <Input name="expiresAt" type="date" placeholder="Expiry Date" value={formData.expiresAt} onChange={handleChange} />
+                    <div className="flex justify-end gap-4 pt-4">
+                        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                        <Button type="submit">Save Coupon</Button>
+                    </div>
+                </form>
+            </TabsContent>
+            <TabsContent value="bulk">
+                <form onSubmit={handleBulkSubmit} className="space-y-4 pt-4">
+                     <p className="text-sm text-gray-500 dark:text-gray-400">Paste multiple coupon codes separated by new lines, commas, or spaces. All will have the same amount and expiry date.</p>
+                    <Textarea 
+                        placeholder="CODE1, CODE2, CODE3..." 
+                        value={bulkCodes}
+                        onChange={(e) => setBulkCodes(e.target.value)}
+                        rows={6}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input name="amount" type="number" placeholder="Amount for all coupons" value={formData.amount} onChange={handleChange} required />
+                        <Input name="expiresAt" type="date" placeholder="Expiry Date for all" value={formData.expiresAt} onChange={handleChange} />
+                    </div>
+                    <div className="flex justify-end gap-4 pt-4">
+                        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                        <Button type="submit">Create {bulkCodes.split(/[\n, ]+/).filter(c => c.trim() !== '').length} Coupons</Button>
+                    </div>
+                </form>
+            </TabsContent>
+        </Tabs>
     );
 };
 
@@ -483,7 +541,7 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
                 description: isEditing ? 'Session updated successfully.' : 'New exclusive session has been created.',
             });
             onClose();
-        } catch (error) {
+        } catch (error) => {
             toast({
                 variant: 'destructive',
                 title: 'Error',
@@ -642,11 +700,13 @@ export default function AdminPage() {
   const [mentees, setMentees] = useState<Mentee[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
 
   const [isLoadingMentors, setIsLoadingMentors] = useState(true);
   const [isLoadingMentees, setIsLoadingMentees] = useState(true);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [isLoadingPayments, setIsLoadingPayments] = useState(true);
+  const [isLoadingCoupons, setIsLoadingCoupons] = useState(true);
 
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
@@ -658,19 +718,22 @@ export default function AdminPage() {
     setIsLoadingMentees(true);
     setIsLoadingSessions(true);
     setIsLoadingPayments(true);
+    setIsLoadingCoupons(true);
 
     try {
-        const [mentorsSnap, menteesSnap, sessionsSnap, paymentsSnap] = await Promise.all([
+        const [mentorsSnap, menteesSnap, sessionsSnap, paymentsSnap, couponsSnap] = await Promise.all([
             getDocs(collection(firestore, 'mentors')),
             getDocs(collection(firestore, 'users')),
             getDocs(collection(firestore, 'sessions')),
             getDocs(collection(firestore, 'pending_payments')),
+            getDocs(collection(firestore, 'coupons')),
         ]);
 
         setMentors(mentorsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentor)));
         setMentees(menteesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentee)));
         setSessions(sessionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Session)));
         setPendingPayments(paymentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PendingPayment)));
+        setCoupons(couponsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon)));
 
     } catch (error) {
         toast({ variant: 'destructive', title: 'Error fetching data', description: error.message });
@@ -680,6 +743,7 @@ export default function AdminPage() {
         setIsLoadingMentees(false);
         setIsLoadingSessions(false);
         setIsLoadingPayments(false);
+        setIsLoadingCoupons(false);
     }
   };
 
@@ -743,31 +807,41 @@ export default function AdminPage() {
   };
 
   const handleApprovePayment = async (payment) => {
-    if (!firestore) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Firestore is not available.' });
+    if (!firestore || !user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Services not available.' });
         return;
     }
+
     const userRef = doc(firestore, 'users', payment.userId);
     const paymentRef = doc(firestore, 'pending_payments', payment.id);
+    const transactionRef = doc(collection(firestore, 'balance_transactions'));
 
     try {
         await runTransaction(firestore, async (transaction) => {
             const userDoc = await transaction.get(userRef);
-            if (!userDoc.exists()) {
-                throw new Error("User does not exist!");
-            }
+            if (!userDoc.exists()) throw new Error("User does not exist!");
+            
             const currentBalance = userDoc.data().balance || 0;
             const newBalance = currentBalance + payment.amount;
             
             transaction.update(userRef, { balance: newBalance });
             transaction.delete(paymentRef);
+            transaction.set(transactionRef, {
+                id: transactionRef.id,
+                userId: payment.userId,
+                amount: payment.amount,
+                source: 'bkash',
+                description: `bKash TrxID: ${payment.transactionId}`,
+                createdAt: new Date().toISOString(),
+            });
         });
-        toast({ title: 'Success!', description: `Payment approved. User ${payment.userId} balance updated.` });
-        fetchData(); // Refresh data
+
+        toast({ title: 'Success!', description: `Payment approved. User balance updated.` });
+        fetchData();
     } catch (error) {
         toast({ variant: 'destructive', title: 'Transaction Failed', description: error.message });
     }
-  };
+};
 
   const openModal = (type, data = null) => setModalState({ type, data });
   const closeModal = () => setModalState({ type: null, data: null });
@@ -784,17 +858,14 @@ export default function AdminPage() {
 
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-t-4 border-primary">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Content Management</h2>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                 <UsersIcon className="w-8 h-8 text-primary" />
                 <h3 className="text-lg font-semibold dark:text-white">Manage Mentors</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Create, edit, and view mentor profiles.
                 </p>
-                <Button
-                  onClick={() => openModal('mentor')}
-                  className="mt-2"
-                >
+                <Button onClick={() => openModal('mentor')} className="mt-2">
                   Create New Mentor
                 </Button>
               </div>
@@ -804,10 +875,7 @@ export default function AdminPage() {
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Create unique, bookable sessions offered by mentors.
                 </p>
-                <Button
-                  onClick={() => openModal('session')}
-                  className="mt-2"
-                >
+                <Button onClick={() => openModal('session')} className="mt-2">
                   Create New Session
                 </Button>
               </div>
@@ -817,10 +885,7 @@ export default function AdminPage() {
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                    Create articles, and add links to videos and websites.
                 </p>
-                <Button
-                  onClick={() => openModal('tip')}
-                  className="mt-2"
-                >
+                <Button onClick={() => openModal('tip')} className="mt-2">
                   Create New Tip
                 </Button>
               </div>
@@ -828,19 +893,26 @@ export default function AdminPage() {
                 <Ticket className="w-8 h-8 text-primary" />
                 <h3 className="text-lg font-semibold dark:text-white">Manage Coupons</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                   Create and manage promotional coupon codes for users.
+                   Create and manage promotional coupon codes.
                 </p>
-                <Button
-                  onClick={() => openModal('coupon')}
-                  className="mt-2"
-                >
-                  Create Coupon
+                <Button onClick={() => openModal('coupon')} className="mt-2">
+                  Create Coupons
+                </Button>
+              </div>
+              <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                <CreditCard className="w-8 h-8 text-primary" />
+                <h3 className="text-lg font-semibold dark:text-white">User Balances</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                   View mentee balances and transaction history.
+                </p>
+                <Button asChild className="mt-2">
+                  <Link href="/admin/balances">View Balances</Link>
                 </Button>
               </div>
             </div>
           </div>
           
-          <PaymentApprovalList payments={pendingPayments} onApprove={handleApprovePayment} isLoading={isLoadingPayments} />
+          <PaymentApprovalList payments={pendingPayments.filter(p => p.status === 'pending')} onApprove={handleApprovePayment} isLoading={isLoadingPayments} />
           
           <DataListView
             title="All Mentors"
@@ -923,6 +995,29 @@ export default function AdminPage() {
                     </div>
                 )}
             />
+            
+            <DataListView
+                title="All Coupons"
+                data={coupons}
+                isLoading={isLoadingCoupons}
+                icon={Ticket}
+                renderItem={(coupon) => (
+                    <div key={coupon.id} className={`p-3 rounded-lg flex justify-between items-center ${coupon.isUsed ? 'bg-gray-200 dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}`}>
+                        <div>
+                            <p className="font-bold text-primary">{coupon.id}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Amount: ৳{coupon.amount}</p>
+                        </div>
+                        {coupon.isUsed ? (
+                            <div className="text-right text-sm">
+                                <p className="font-semibold text-red-500">Redeemed</p>
+                                <p className="text-gray-500 dark:text-gray-400">by {coupon.usedBy}</p>
+                            </div>
+                        ) : (
+                            <p className="text-sm font-semibold text-green-600">Available</p>
+                        )}
+                    </div>
+                )}
+            />
 
             <DataListView
                 title="All Mentees (Users)"
@@ -989,8 +1084,8 @@ export default function AdminPage() {
         )}
         
         {modalState.type === 'coupon' && (
-            <Modal title="Create New Coupon" onClose={closeModal}>
-                <CouponForm onSave={handleSaveCoupon} onClose={closeModal} />
+            <Modal title="Manage Coupons" onClose={closeModal}>
+                <CouponForm onSave={handleSaveCoupon} onClose={closeModal} firestore={firestore} />
             </Modal>
         )}
     </div>

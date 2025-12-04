@@ -85,6 +85,8 @@ export interface Coupon {
     amount: number;
     expiresAt?: string; // ISO Date string
     isUsed: boolean;
+    usedBy?: string; // ID of the user who redeemed it
+    usedAt?: string; // ISO Date string of when it was redeemed
 }
 
 export interface PendingPayment {
@@ -93,5 +95,14 @@ export interface PendingPayment {
     transactionId: string;
     amount: number;
     status: 'pending' | 'approved' | 'rejected';
+    createdAt: string; // ISO Date string
+}
+
+export interface BalanceTransaction {
+    id: string;
+    userId: string;
+    amount: number;
+    source: 'coupon' | 'bkash' | 'session_payment';
+    description: string; // e.g., Coupon code 'GUIDE500' or 'bKash TrxID: XXXXX'
     createdAt: string; // ISO Date string
 }
