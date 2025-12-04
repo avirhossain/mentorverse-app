@@ -484,7 +484,7 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
             <Select onValueChange={(value) => handleSelectChange('type', value)} value={formData.type}>
                 <SelectTrigger>
                     <SelectValue placeholder="Select session type" />
-                </Trigger>
+                </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="Free">Free</SelectItem>
                     <SelectItem value="Paid">Paid</SelectItem>
@@ -541,7 +541,7 @@ const TipForm = ({ onSave, onClose }) => {
                 description: 'New tip has been created.',
             });
             onClose();
-        } catch (error) => {
+        } catch (error) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
