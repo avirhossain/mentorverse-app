@@ -1,0 +1,204 @@
+/**
+ * This ruleset enforces a security model for a mentorship platform.
+ *
+ * Core Philosophy: The security model is built on two main principles:
+ * 1. User-Owned Data: All data specific to a user (mentee profile, sessions, recommendations)
+ *    is stored in a private data tree under `/users/{userId}` and is only accessible by
+ *    that specific user or a system administrator.
+ * 2. Public Content with Admin Control: Publicly visible data like mentor profiles and unique
+ *    session offerings are readable by anyone but can only be created, updated, or
+ *    deleted by users with administrative privileges.
+ *
+ * Data Structure:
+ * - `/users/{menteeId}`: Contains private data for each mentee.
+ *   - `/users/{menteeId}/sessions`: A mentee's booked sessions.
+ *   - `/users/{menteeId}/recommendations`: A mentee's personalized recommendations.
+ * - `/mentors`: A public collection of all available mentor profiles.
+ * - `/unique_sessions`: A public collection of special session offerings.
+ * - `/roles_admin`: A private collection where document existence signifies a user's admin status.
+ *
+ * Key Security Decisions:
+ * - Admin Rights: A user is considered an admin if a document with their UID exists in the
+ *   `/roles_admin` collection. This provides a clear and secure way to manage roles.
+ * - Disallowed User Listing: To protect user privacy, it is not possible to list all
+ *   documents in the top-level `/users` collection.
+ * - Default Security: The rules default to denying access. Permissions are granted explicitly
+ *   for each specific path and operation.
+ *
+ * Denormalization for Authorization:
+ * To ensure fast and simple authorization checks, subcollection documents like 'sessions' and
+ * 'recommendations' contain a denormalized `menteeId` field. This allows rules to validate
+ * ownership directly from the document being written, avoiding slow and costly `get()` calls to
+ * parent documents. For example, when a session is created under `/users/user123/sessions/abc`,
+ * the rule verifies that the session document's internal `menteeId` field is also 'user123'.
+ *
+ * Structural Segregation:
+ * The data is segregated into separate collections based on access patterns. Private, user-owned
+ * data is nested within the `/users` collection, while public, admin-managed data exists in
+ * top-level collections like `/mentors` and `/unique_sessions`. This separation simplifies
+ * rules and improves query performance and security.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    //----------------------------------------------------------------//
+    // Helper Functions
+    //----------------------------------------------------------------//
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user is the owner of a document.
+     * @param userId The UID of the user to check against.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if the currently authenticated user has admin privileges.
+     * Admin status is granted if a document with the user's UID exists
+     * in the /roles_admin collection.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * Checks if the document being accessed already exists.
+     * Crucial for secure update and delete operations.
+     */
+    function isExistingDoc() {
+      return resource != null;
+    }
+
+    /**
+     * Combines owner and existence checks for secure updates and deletes.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && isExistingDoc();
+    }
+    
+    /**
+     * Combines admin and existence checks for secure updates and deletes.
+     */
+    function isExistingAdmin() {
+      return isAdmin() && isExistingDoc();
+    }
+    
+    /**
+     * Checks if the user is either the resource owner or an admin.
+     */
+    function isOwnerOrAdmin(userId) {
+      return isOwner(userId) || isAdmin();
+    }
+
+    /**
+     * Combines owner/admin and existence checks for secure updates and deletes.
+     */
+    function isExistingOwnerOrAdmin(userId) {
+      return (isOwner(userId) || isAdmin()) && isExistingDoc();
+    }
+
+    //----------------------------------------------------------------//
+    // Collection Rules
+    //----------------------------------------------------------------//
+
+    /**
+     * @description Manages admin roles. Only existing admins can create or delete other admins.
+     * @path /roles_admin/{userId}
+     * @allow (create) An admin creates a new admin document for another user.
+     * @deny (get) A non-admin user tries to read the list of admins.
+     * @principle Implements Database-level Access Control (DBAC) for administrative actions.
+     */
+    match /roles_admin/{userId} {
+      allow get: if false;
+      allow list: if false;
+      allow create: if isAdmin();
+      allow update: if isExistingAdmin();
+      allow delete: if isExistingAdmin();
+    }
+
+    /**
+     * @description Mentor profiles are public for anyone to read. Only admins can manage them.
+     * @path /mentors/{mentorId}
+     * @allow (get) Any user, signed in or not, can read a mentor's profile.
+     * @deny (create) A regular signed-in user tries to add a new mentor.
+     * @principle Implements a "Public Read with Admin-Only Writes" pattern for shared content.
+     */
+    match /mentors/{mentorId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isExistingAdmin();
+      allow delete: if isExistingAdmin();
+    }
+
+    /**
+     * @description Unique session offerings are public for anyone to read. Only admins can manage them.
+     * @path /unique_sessions/{uniqueSessionId}
+     * @allow (list) Any user, signed in or not, can list all unique session offerings.
+     * @deny (update) A non-admin user tries to change the details of a unique session.
+     * @principle Implements a "Public Read with Admin-Only Writes" pattern for shared content.
+     */
+    match /unique_sessions/{uniqueSessionId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isAdmin();
+      allow update: if isExistingAdmin();
+      allow delete: if isExistingAdmin();
+    }
+
+    /**
+     * @description User (mentee) profiles. A user can create their own profile and can only access their own.
+     * @path /users/{menteeId}
+     * @allow (create) A new user (auth.uid: 'user123') creates their own profile at `/users/user123`.
+     * @deny (list) An authenticated user tries to list all documents in the `/users` collection.
+     * @deny (get) A user ('user123') tries to read the profile of another user ('user456').
+     * @principle Enforces strict document ownership and self-creation, and prevents user enumeration.
+     */
+    match /users/{menteeId} {
+      allow get: if isOwner(menteeId);
+      allow list: if false;
+      allow create: if isOwner(menteeId) && request.resource.data.id == menteeId;
+      allow update: if isExistingOwner(menteeId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(menteeId);
+    }
+
+    /**
+     * @description A user's private session records. Only accessible by the user or an admin.
+     * @path /users/{menteeId}/sessions/{sessionId}
+     * @allow (list) A user ('user123') lists their own sessions under `/users/user123/sessions`.
+     * @deny (get) A user ('user456') tries to read a session belonging to 'user123'.
+     * @principle Restricts access to a user's own data tree using path-based ownership.
+     */
+    match /users/{menteeId}/sessions/{sessionId} {
+      allow get: if isOwnerOrAdmin(menteeId);
+      allow list: if isOwnerOrAdmin(menteeId);
+      allow create: if isOwnerOrAdmin(menteeId) && request.resource.data.menteeId == menteeId;
+      allow update: if isExistingOwnerOrAdmin(menteeId) && request.resource.data.menteeId == resource.data.menteeId;
+      allow delete: if isExistingOwnerOrAdmin(menteeId);
+    }
+
+    /**
+     * @description A user's private recommendations. Only accessible by the user or an admin.
+     * @path /users/{menteeId}/recommendations/{recommendationId}
+     * @allow (create) An admin creates a new recommendation for user 'user123' with the correct `menteeId`.
+     * @deny (create) A user ('user123') tries to create a recommendation for another user ('user456').
+     * @principle Validates relational integrity by ensuring the denormalized `menteeId` in the document matches the path.
+     */
+    match /users/{menteeId}/recommendations/{recommendationId} {
+      allow get: if isOwnerOrAdmin(menteeId);
+      allow list: if isOwnerOrAdmin(menteeId);
+      allow create: if isOwnerOrAdmin(menteeId) && request.resource.data.menteeId == menteeId;
+      allow update: if isExistingOwnerOrAdmin(menteeId) && request.resource.data.menteeId == resource.data.menteeId;
+      allow delete: if isExistingOwnerOrAdmin(menteeId);
+    }
+  }
+}

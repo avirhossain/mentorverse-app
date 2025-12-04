@@ -1,0 +1,337 @@
+{
+  "entities": {
+    "Mentor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Mentor",
+      "type": "object",
+      "description": "Represents a mentor in the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the mentor."
+        },
+        "name": {
+          "type": "string",
+          "description": "The mentor's full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The mentor's email address.",
+          "format": "email"
+        },
+        "bio": {
+          "type": "string",
+          "description": "A short biography of the mentor."
+        },
+        "expertise": {
+          "type": "array",
+          "description": "Areas of expertise of the mentor.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "availableTimeslots": {
+          "type": "array",
+          "description": "Available time slots for the mentor.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sessionCost": {
+          "type": "number",
+          "description": "The cost of a session with the mentor."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "bio",
+        "expertise",
+        "availableTimeslots",
+        "sessionCost"
+      ]
+    },
+    "Mentee": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Mentee",
+      "type": "object",
+      "description": "Represents a mentee in the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the mentee."
+        },
+        "name": {
+          "type": "string",
+          "description": "The mentee's full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The mentee's email address.",
+          "format": "email"
+        },
+        "interests": {
+          "type": "array",
+          "description": "The mentee's areas of interest.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mentorshipGoal": {
+          "type": "string",
+          "description": "The mentorship goal of the mentee."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "interests",
+        "mentorshipGoal"
+      ]
+    },
+    "Session": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Session",
+      "type": "object",
+      "description": "Represents a session between a mentor and a mentee.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the session."
+        },
+        "mentorId": {
+          "type": "string",
+          "description": "Reference to Mentor. (Relationship: Mentor 1:N Session)"
+        },
+        "menteeId": {
+          "type": "string",
+          "description": "Reference to Mentee. (Relationship: Mentee 1:N Session)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The start time of the session.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The end time of the session.",
+          "format": "date-time"
+        },
+        "cost": {
+          "type": "number",
+          "description": "The cost of the session."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Any notes related to the session."
+        }
+      },
+      "required": [
+        "id",
+        "mentorId",
+        "menteeId",
+        "startTime",
+        "endTime",
+        "cost"
+      ]
+    },
+    "UniqueSession": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UniqueSession",
+      "type": "object",
+      "description": "Represents a unique session offering created by the admin.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the unique session."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the unique session."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the unique session."
+        },
+        "mentorId": {
+          "type": "string",
+          "description": "Reference to Mentor. (Relationship: Mentor 1:N UniqueSession)"
+        },
+        "cost": {
+          "type": "number",
+          "description": "The cost of the unique session."
+        },
+        "availableSlots": {
+          "type": "number",
+          "description": "The number of available slots for the unique session."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "mentorId",
+        "cost",
+        "availableSlots"
+      ]
+    },
+    "Recommendation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Recommendation",
+      "type": "object",
+      "description": "Represents a recommendation for a mentee.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the recommendation."
+        },
+        "menteeId": {
+          "type": "string",
+          "description": "Reference to Mentee. (Relationship: Mentee 1:N Recommendation)"
+        },
+        "mentorId": {
+          "type": "string",
+          "description": "Reference to Mentor. (Relationship: Mentor 1:N Recommendation)"
+        },
+        "uniqueSessionId": {
+          "type": "string",
+          "description": "Reference to UniqueSession. (Relationship: UniqueSession 1:N Recommendation)"
+        },
+        "reason": {
+          "type": "string",
+          "description": "The reason for the recommendation."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The time the recommendation was made.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "menteeId",
+        "mentorId",
+        "uniqueSessionId",
+        "reason",
+        "timestamp"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "adminRole",
+          "schema": {
+            "$ref": "#/backend/entities/AdminRole"
+          },
+          "description": "Collection to store admin roles. The presence of a document with the user's ID signifies admin privileges.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase UID of the administrator."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/mentors/{mentorId}",
+        "definition": {
+          "entityName": "Mentor",
+          "schema": {
+            "$ref": "#/backend/entities/Mentor"
+          },
+          "description": "Collection to store mentor profiles.",
+          "params": [
+            {
+              "name": "mentorId",
+              "description": "The unique identifier of the mentor."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{menteeId}",
+        "definition": {
+          "entityName": "Mentee",
+          "schema": {
+            "$ref": "#/backend/entities/Mentee"
+          },
+          "description": "Collection to store mentee profiles.",
+          "params": [
+            {
+              "name": "menteeId",
+              "description": "The unique identifier of the mentee."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{menteeId}/sessions/{sessionId}",
+        "definition": {
+          "entityName": "Session",
+          "schema": {
+            "$ref": "#/backend/entities/Session"
+          },
+          "description": "Subcollection to store sessions booked by a specific mentee. Includes denormalized 'menteeId' for authorization independence.",
+          "params": [
+            {
+              "name": "menteeId",
+              "description": "The unique identifier of the mentee."
+            },
+            {
+              "name": "sessionId",
+              "description": "The unique identifier of the session."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/unique_sessions/{uniqueSessionId}",
+        "definition": {
+          "entityName": "UniqueSession",
+          "schema": {
+            "$ref": "#/backend/entities/UniqueSession"
+          },
+          "description": "Collection to store unique session offerings created by the admin.",
+          "params": [
+            {
+              "name": "uniqueSessionId",
+              "description": "The unique identifier of the unique session."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{menteeId}/recommendations/{recommendationId}",
+        "definition": {
+          "entityName": "Recommendation",
+          "schema": {
+            "$ref": "#/backend/entities/Recommendation"
+          },
+          "description": "Subcollection to store personalized mentor recommendations for a mentee. Includes denormalized 'menteeId' for authorization independence.",
+          "params": [
+            {
+              "name": "menteeId",
+              "description": "The unique identifier of the mentee."
+            },
+            {
+              "name": "recommendationId",
+              "description": "The unique identifier of the recommendation."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to securely manage mentors, mentees, sessions, unique session offerings, and personalized recommendations within the MentorVerse application. The structure emphasizes authorization independence, clarity, and scalability.\n\nAuthorization Independence (CRITICAL): To avoid hierarchical authorization dependencies (`get()`), the design denormalizes authorization context where necessary. For example, access to sessions within a mentee's profile does not require fetching the mentee's profile to verify ownership. Instead, the session document itself contains the `menteeId`. Similarly, global roles (admin) are managed via the existence of a document in dedicated collections, rather than relying on custom claims.\n\nStructural Segregation (Homogeneous Security Posture): The structure segregates data based on access needs.  User-owned data is stored under the `/users/{userId}` path, allowing for simple path-based ownership rules.  Admin-created unique sessions are stored in a separate collection, `/unique_sessions`, to distinguish them from user-created sessions.\n\nAccess Modeling (Standardization and Consistency): The structure uses consistent patterns for authorization:\n*   Private Data: Path-Based ownership is enforced for mentee-specific data (e.g., recommendations under `/users/{menteeId}/recommendations/{recommendationId}`).\n*   Collaborative Data:  Not explicitly needed in this design, as no entities require collaborative access.\n*   Global Roles (DBAC): Admin privileges are checked by existence in `/roles_admin/{uid}`.\n\nQAPs (Rules are not Filters): The structure supports secure `list` operations by ensuring that collections contain documents with homogeneous security requirements. For example, listing sessions is secure because access to each session is determined by the path (user-owned) and/or role, not by filtering based on document content.\n\nInvariants: The structure enforces data integrity by leveraging path-based ownership to ensure that mentees can only access their own sessions and recommendations. Timestamps are used to maintain the order and history of recommendations."
+  }
+}
