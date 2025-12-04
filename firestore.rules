@@ -26,7 +26,7 @@ service cloud.firestore {
      * Checks if the currently authenticated user is the admin by email.
      */
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'mazhar@admin.com';
+      return isSignedIn() && request.auth.token.email == 'mmavir89@gmail.com';
     }
 
     //----------------------------------------------------------------//

@@ -10,6 +10,7 @@ import { collection, query, orderBy, doc, runTransaction } from 'firebase/firest
 import type { Mentor, Session } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 
 const MentorCardSkeleton = () => (
@@ -134,7 +135,6 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
 
 const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete }) => {
     const [step, setStep] = React.useState(user ? 'form' : 'auth_check');
-    const [reason, setReason] = React.useState('');
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -214,7 +214,7 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
                             onClick={onLogin}
                             className="w-full py-3 font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-md"
                         >
-                            Login
+                            Login to Continue
                         </Button>
                     </div>
                 );
@@ -275,10 +275,10 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
 
 export default function HomePage() {
     const firestore = useFirestore();
-    const { user, isUserLoading } = useUser();
+    const { user } = useUser();
     const [sessionToBook, setSessionToBook] = useState<Session | null>(null);
-    const [showLoginModalFromBooking, setShowLoginModalFromBooking] = useState(false);
     const [bookingUpdate, setBookingUpdate] = useState(0);
+    const router = useRouter();
 
 
     const mentorsQuery = useMemoFirebase(() => {
@@ -298,7 +298,7 @@ export default function HomePage() {
         if (user) {
             setSessionToBook(session);
         } else {
-            setShowLoginModalFromBooking(true);
+            router.push('/login');
         }
     };
 
@@ -313,7 +313,7 @@ export default function HomePage() {
 
     return (
         <div className="min-h-screen bg-background font-sans">
-            <Header currentView="home" showLoginModal={showLoginModalFromBooking} setShowLoginModal={setShowLoginModalFromBooking} />
+            <Header currentView="home" />
 
             <section className="bg-primary/5 text-center py-20 px-4">
                 <div className="max-w-4xl mx-auto">
@@ -378,7 +378,7 @@ export default function HomePage() {
                     onClose={handleCloseModal}
                     onLogin={() => {
                         handleCloseModal();
-                        setShowLoginModalFromBooking(true);
+                        router.push('/login');
                     }}
                     onBookingComplete={handleBookingComplete}
                 />
