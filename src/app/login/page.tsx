@@ -4,7 +4,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore } from '@/firebase';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, FacebookAuthProvider, signInWithPopup } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/common/Header';
@@ -18,23 +18,29 @@ const GoogleIcon = (props) => (
     </svg>
 );
 
+const FacebookIcon = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="24" height="24" viewBox="0 0 48 48" {...props}>
+        <path fill="#039be5" d="M24 5A19 19 0 1 0 24 43A19 19 0 1 0 24 5Z"></path>
+        <path fill="#fff" d="M26.572,29.036h4.917l0.772-5.694h-5.689v-3.642c0-1.646,0.455-2.768,2.816-2.768l3.023,0v-5.094c-0.523-0.069-2.311-0.224-4.389-0.224c-4.438,0-7.486,2.713-7.486,7.696v4.033H16v5.694h4.593v13.729C21.902,42.87,22.939,43,24,43c0.41,0,0.814-0.02,1.21-0.057V29.036z"></path>
+    </svg>
+);
+
+
 export default function LoginPage() {
     const router = useRouter();
     const auth = useAuth();
     const firestore = useFirestore();
 
-    const handleGoogleSignIn = async () => {
+    const handleProviderSignIn = async (provider) => {
         if (!auth || !firestore) {
             console.error("Auth or Firestore service is not available.");
             return;
         }
 
-        const provider = new GoogleAuthProvider();
         try {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
 
-            // Check if user exists in Firestore, if not, create them
             const userDocRef = doc(firestore, "users", user.uid);
             const userDocSnap = await getDoc(userDocRef);
 
@@ -50,7 +56,6 @@ export default function LoginPage() {
                 });
             }
             
-            // Redirect based on admin email
             if (user.email === 'mmavir89@gmail.com') {
                 router.push('/admin');
             } else {
@@ -58,8 +63,7 @@ export default function LoginPage() {
             }
 
         } catch (error) {
-            console.error("Error during Google Sign-In:", error);
-            // Handle errors here, e.g., show a toast notification
+            console.error(`Error during ${provider.providerId} Sign-In:`, error);
         }
     };
 
@@ -67,23 +71,33 @@ export default function LoginPage() {
         <div className="min-h-screen bg-background">
             <Header />
             <div className="flex items-center justify-center" style={{minHeight: 'calc(100vh - 80px)'}}>
-                <div className="w-full max-w-sm p-8 space-y-8 bg-white rounded-xl shadow-2xl border-t-4 border-primary">
+                <div className="w-full max-w-sm p-8 space-y-6 bg-white rounded-xl shadow-2xl border-t-4 border-primary">
                     <div className="text-center">
                         <h1 className="text-3xl font-extrabold text-gray-900">
-                            Welcome Back
+                            Welcome
                         </h1>
                         <p className="mt-2 text-gray-500">
                             Sign in to continue to Guidelab
                         </p>
                     </div>
 
-                    <Button 
-                        onClick={handleGoogleSignIn} 
-                        className="w-full text-lg font-semibold py-6 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                    >
-                        <GoogleIcon className="mr-3"/>
-                        Sign in with Google
-                    </Button>
+                    <div className="space-y-4">
+                        <Button 
+                            onClick={() => handleProviderSignIn(new GoogleAuthProvider())} 
+                            className="w-full text-lg font-semibold py-6 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                        >
+                            <GoogleIcon className="mr-3"/>
+                            Sign in with Google
+                        </Button>
+
+                        <Button 
+                            onClick={() => handleProviderSignIn(new FacebookAuthProvider())} 
+                            className="w-full text-lg font-semibold py-6 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                        >
+                            <FacebookIcon className="mr-3"/>
+                            Sign in with Facebook
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>
