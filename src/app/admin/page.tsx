@@ -964,7 +964,7 @@ export default function AdminPage() {
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
                                 <span>by {session.mentorName}</span>
                                 <span>{session.date} at {session.time}</span>
-                                <span className={`font-semibold ${session.isFree ? 'text-green-600' : 'text-blue-600'}`}>
+                                <span className={`font-semibold ${session.isFree ? 'text-accent' : 'text-blue-600'}`}>
                                     {session.isFree ? 'Free' : `৳${session.price}`}
                                 </span>
                                 <span className="font-semibold text-gray-700 dark:text-gray-300">

@@ -86,7 +86,7 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
 
     return (
     <div className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-primary flex flex-col justify-between transition duration-300 hover:shadow-2xl hover:scale-[1.01] transform relative">
-         <div className={`absolute top-4 right-4 px-3 py-1 text-xs font-bold text-white rounded-full ${session.isFree ? 'bg-green-500' : 'bg-primary'}`}>
+         <div className={`absolute top-4 right-4 px-3 py-1 text-xs font-bold text-white rounded-full ${session.isFree ? 'bg-accent' : 'bg-primary'}`}>
             {session.isFree ? 'Free' : `৳${session.price}`}
         </div>
         <div>

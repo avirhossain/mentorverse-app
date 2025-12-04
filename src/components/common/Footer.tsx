@@ -14,12 +14,12 @@ const footerLinks = [
 
 export const Footer = () => {
     return (
-        <footer className="bg-gray-800 text-white">
+        <footer className="bg-primary text-primary-foreground">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8">
                     <div className="col-span-2 lg:col-span-2">
                         <h2 className="text-2xl font-extrabold text-white">Guidelab</h2>
-                        <p className="mt-2 text-gray-400">Your journey to mastery starts here.</p>
+                        <p className="mt-2 text-gray-300">Your journey to mastery starts here.</p>
                     </div>
 
                     <div className="col-span-2 lg:col-span-3">
@@ -29,7 +29,7 @@ export const Footer = () => {
                             <ul className="space-y-3">
                                 {footerLinks.slice(0, 3).map(link => (
                                     <li key={link.href}>
-                                        <Link href={link.href} className="flex items-center text-gray-300 hover:text-primary transition">
+                                        <Link href={link.href} className="flex items-center text-gray-200 hover:text-white transition">
                                              <link.icon className="w-4 h-4 mr-2" />
                                             {link.text}
                                         </Link>
@@ -39,7 +39,7 @@ export const Footer = () => {
                             <ul className="space-y-3">
                                 {footerLinks.slice(3).map(link => (
                                     <li key={link.href}>
-                                        <Link href={link.href} className="flex items-center text-gray-300 hover:text-primary transition">
+                                        <Link href={link.href} className="flex items-center text-gray-200 hover:text-white transition">
                                             <link.icon className="w-4 h-4 mr-2" />
                                             {link.text}
                                         </Link>
@@ -49,7 +49,7 @@ export const Footer = () => {
                         </div>
                     </div>
                 </div>
-                <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-500">
+                <div className="mt-8 pt-8 border-t border-primary/50 text-center text-gray-300">
                     <p>&copy; {new Date().getFullYear()} Guidelab. All rights reserved.</p>
                 </div>
             </div>
