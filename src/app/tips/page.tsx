@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
-import { Home, Zap, Lightbulb, User, X, Link as LinkIcon, Video, FileText } from 'lucide-react';
-import Link from 'next/link';
+import { Lightbulb, X, Link as LinkIcon, Video, FileText } from 'lucide-react';
+import { Header } from '@/components/common/Header';
 
 const MENTEE_TIPS = [
     { 
@@ -64,46 +64,6 @@ const MENTEE_TIPS = [
     },
 ];
 
-const Header = ({ isMenuOpen, setIsMenuOpen }) => (
-    <header className="sticky top-0 z-50 bg-white shadow-lg border-b border-primary/10">
-        <div className="max-w-7xl mx-auto p-4 flex justify-between items-center">
-            <Link href="/" className="text-2xl font-extrabold text-primary">Guidelab</Link>
-            
-            <nav className="hidden lg:flex space-x-6 items-center text-gray-600 font-medium">
-                <Link href="/" className='flex items-center transition px-3 py-2 rounded-lg hover:text-primary hover:bg-gray-100'>
-                    <Home className="w-5 h-5 mr-1" /> Home Page
-                </Link>
-                <Link href="/sessions" className='flex items-center transition px-3 py-2 rounded-lg hover:text-primary hover:bg-primary/5'>
-                    <Zap className="w-5 h-5 mr-1 text-primary fill-primary/10" /> Exclusive Session
-                </Link>
-                <Link href="/tips" className="flex items-center transition px-3 py-2 rounded-lg text-primary bg-primary/10 font-bold border border-primary/20">
-                    <Lightbulb className="w-5 h-5 mr-1" /> Tips & Resources
-                </Link>
-                <Link href="/account" className="px-3 py-2 text-white bg-primary hover:bg-primary/90 rounded-full transition shadow-md flex items-center">
-                    <User className="w-5 h-5 mr-2" /> Account
-                </Link>
-            </nav>
-            
-            <button className="lg:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16m-7 6h7"}></path>
-                </svg>
-            </button>
-        </div>
-        
-        {isMenuOpen && (
-            <div className="lg:hidden absolute w-full bg-white shadow-lg border-t border-gray-100 py-4 px-4 space-y-3">
-                <Link href="/" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Home className="w-5 h-5 mr-2" /> Home Page</Link>
-                <Link href="/sessions" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Zap className="w-5 h-5 mr-2" /> Exclusive Session</Link>
-                <Link href="/tips" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Lightbulb className="w-5 h-5 mr-2" /> Tips & Resources</Link>
-                <Link href="/account" className="w-full mt-2 px-4 py-2 text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-md flex items-center justify-center" onClick={() => setIsMenuOpen(false)}>
-                    <User className="w-5 h-5 mr-2" /> Account
-                </Link>
-            </div>
-        )}
-    </header>
-);
-
 const ArticleModal = ({ article, onClose }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-70 z-[110] flex items-center justify-center p-4">
@@ -164,7 +124,7 @@ export default function TipsPage() {
 
     return (
         <div className="bg-background min-h-screen pb-10">
-            <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+            <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} currentView="tips"/>
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 relative">
                 <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-8 flex items-center border-b pb-3 border-primary/20">
                     <Lightbulb className="w-8 h-8 mr-3 text-primary" />
