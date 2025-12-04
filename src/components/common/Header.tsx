@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -144,7 +145,6 @@ export const Header = ({ currentView, showLoginModal: showLoginModalProp, setSho
                     ) : (
                         <>
                             <NavLink href="/" view="home" icon={Home} text="Home" />
-                            <NavLink href="/sessions" view="exclusive" icon={Zap} text="Sessions" />
                             <NavLink href="/tips" view="tips" icon={Lightbulb} text="Tips" />
 
                             {!isUserLoading && (
@@ -183,7 +183,6 @@ export const Header = ({ currentView, showLoginModal: showLoginModalProp, setSho
                      ) : (
                         <>
                             <Link href="/" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Home className="w-5 h-5 mr-2" /> Home</Link>
-                            <Link href="/sessions" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Zap className="w-5 h-5 mr-2" /> Exclusive Sessions</Link>
                             <Link href="/tips" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Lightbulb className="w-5 h-5 mr-2" /> Tips & Resources</Link>
                             
                             {!isUserLoading && (

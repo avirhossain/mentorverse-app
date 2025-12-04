@@ -291,7 +291,7 @@ export default function HomePage() {
                         Connect with top-tier mentors, join exclusive sessions, and unlock your full potential with Guidelab.
                     </p>
                     <div className="mt-8 flex justify-center gap-4">
-                        <Link href="/sessions">
+                        <Link href="#sessions">
                             <Button size="lg" className="font-bold">
                                 <Zap className="mr-2" /> Explore Sessions
                             </Button>
@@ -330,7 +330,7 @@ export default function HomePage() {
                         {isLoadingSessions ? (
                              Array.from({ length: 3 }).map((_, index) => <SessionCardSkeleton key={index} />)
                         ) : (
-                            sessions?.slice(0, 3).map((session) => (
+                            sessions?.map((session) => (
                                 <SessionCard key={session.id} session={session} onBook={handleBookSession} />
                             ))
                         )}
