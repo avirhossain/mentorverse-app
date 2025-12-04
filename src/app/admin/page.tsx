@@ -704,15 +704,16 @@ export default function AdminPage() {
     fetchData(); // Refresh data
   };
   
-  const handleDelete = async (collectionName, docId, name) => {
+  const handleDelete = (collectionName, docId, name) => {
     if (!firestore) return;
-    try {
-        await deleteDoc(doc(firestore, collectionName, docId));
+    deleteDoc(doc(firestore, collectionName, docId))
+      .then(() => {
         toast({ title: 'Success!', description: `${name} has been deleted.` });
-        fetchData(); // Refresh data
-    } catch (error) {
+        fetchData();
+      })
+      .catch((error) => {
         toast({ variant: 'destructive', title: 'Error', description: `Failed to delete: ${error.message}` });
-    }
+      });
   };
 
   const handleSaveSession = async (sessionData) => {
