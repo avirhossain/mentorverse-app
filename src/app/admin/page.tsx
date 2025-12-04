@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FilePlus, Users as UsersIcon, X } from 'lucide-react';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { collection, addDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
+import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import { useUser } from '@/firebase';
+
 
 const Modal = ({ title, children, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
@@ -154,6 +157,15 @@ export default function AdminPage() {
   const [showMentorModal, setShowMentorModal] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const firestore = useFirestore();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+
+  useEffect(() => {
+    // If there's no user and we're not in the middle of loading one, sign in anonymously.
+    if (!user && !isUserLoading) {
+      initiateAnonymousSignIn(auth);
+    }
+  }, [user, isUserLoading, auth]);
 
   const handleSaveMentor = (mentorData) => {
     const mentorsCol = collection(firestore, 'mentors');

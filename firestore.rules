@@ -136,9 +136,9 @@ service cloud.firestore {
     match /mentors/{mentorId} {
       allow get: if true;
       allow list: if true;
-      allow create: if isAdmin();
-      allow update: if isExistingAdmin();
-      allow delete: if isExistingAdmin();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
     
     /**
@@ -151,9 +151,9 @@ service cloud.firestore {
     match /sessions/{sessionId} {
       allow get: if true;
       allow list: if true;
-      allow create: if isAdmin();
-      allow update: if isExistingAdmin();
-      allow delete: if isExistingAdmin();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**
