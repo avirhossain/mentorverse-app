@@ -72,39 +72,10 @@ service cloud.firestore {
     }
 
     /**
-     * Checks if the document being accessed already exists.
-     * Crucial for secure update and delete operations.
-     */
-    function isExistingDoc() {
-      return resource != null;
-    }
-
-    /**
-     * Combines owner and existence checks for secure updates and deletes.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && isExistingDoc();
-    }
-    
-    /**
-     * Combines admin and existence checks for secure updates and deletes.
-     */
-    function isExistingAdmin() {
-      return isAdmin() && isExistingDoc();
-    }
-    
-    /**
      * Checks if the user is either the resource owner or an admin.
      */
     function isOwnerOrAdmin(userId) {
       return isOwner(userId) || isAdmin();
-    }
-
-    /**
-     * Combines owner/admin and existence checks for secure updates and deletes.
-     */
-    function isExistingOwnerOrAdmin(userId) {
-      return (isOwner(userId) || isAdmin()) && isExistingDoc();
     }
 
     //----------------------------------------------------------------//
@@ -119,11 +90,7 @@ service cloud.firestore {
      * @principle Implements Database-level Access Control (DBAC) for administrative actions.
      */
     match /roles_admin/{userId} {
-      allow get: if isAdmin();
-      allow list: if isAdmin();
-      allow create: if isAdmin();
-      allow update: if isExistingAdmin();
-      allow delete: if isExistingAdmin();
+      allow read, write: if isAdmin();
     }
 
     /**
@@ -136,11 +103,9 @@ service cloud.firestore {
      * @principle Implements a "Public Read with Admin-Only Writes" pattern, with an exception for user reviews.
      */
     match /mentors/{mentorId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isAdmin();
-      allow update: if isExistingAdmin() || isSignedIn(); // Allows signed-in users to add reviews or admins to edit
-      allow delete: if isExistingAdmin();
+      allow get, list: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isSignedIn() || isAdmin(); // allows users to add reviews
     }
     
     /**
@@ -151,11 +116,9 @@ service cloud.firestore {
      * @principle Implements a "Public Read with Admin-Only Writes" pattern for shared content.
      */
     match /sessions/{sessionId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isAdmin();
-      allow update: if isSignedIn();
-      allow delete: if isExistingAdmin();
+      allow get, list: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isSignedIn(); // For booking a session
     }
 
     /**
@@ -166,11 +129,8 @@ service cloud.firestore {
      * @principle Implements a "Public Read with Admin-Only Writes" pattern for shared content.
      */
     match /unique_sessions/{uniqueSessionId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isAdmin();
-      allow update: if isExistingAdmin();
-      allow delete: if isExistingAdmin();
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
     }
 
     /**
@@ -180,11 +140,8 @@ service cloud.firestore {
      * @principle Implements a "Public Read with Admin-Only Writes" pattern.
      */
     match /tips/{tipId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
@@ -199,8 +156,8 @@ service cloud.firestore {
       allow get: if isOwnerOrAdmin(menteeId);
       allow list: if isAdmin();
       allow create: if isOwner(menteeId) && request.resource.data.id == menteeId;
-      allow update: if (isExistingOwner(menteeId) && request.resource.data.id == resource.data.id) || isExistingAdmin();
-      allow delete: if isExistingOwnerOrAdmin(menteeId);
+      allow update: if isOwnerOrAdmin(menteeId);
+      allow delete: if isOwnerOrAdmin(menteeId);
     }
 
     /**
@@ -211,11 +168,7 @@ service cloud.firestore {
      * @principle Restricts access to a user's own data tree using path-based ownership.
      */
     match /users/{menteeId}/sessions/{sessionId} {
-      allow get: if isOwnerOrAdmin(menteeId);
-      allow list: if isOwnerOrAdmin(menteeId);
-      allow create: if isOwnerOrAdmin(menteeId) && request.resource.data.menteeId == menteeId;
-      allow update: if isExistingOwnerOrAdmin(menteeId) && request.resource.data.menteeId == resource.data.menteeId;
-      allow delete: if isExistingOwnerOrAdmin(menteeId);
+      allow read, write: if isOwnerOrAdmin(menteeId);
     }
 
     /**
@@ -226,11 +179,7 @@ service cloud.firestore {
      * @principle Validates relational integrity by ensuring the denormalized `menteeId` in the document matches the path.
      */
     match /users/{menteeId}/recommendations/{recommendationId} {
-      allow get: if isOwnerOrAdmin(menteeId);
-      allow list: if isOwnerOrAdmin(menteeId);
-      allow create: if isOwnerOrAdmin(menteeId) && request.resource.data.menteeId == menteeId;
-      allow update: if isExistingOwnerOrAdmin(menteeId) && request.resource.data.menteeId == resource.data.menteeId;
-      allow delete: if isExistingOwnerOrAdmin(menteeId);
+      allow read, write: if isOwnerOrAdmin(menteeId);
     }
 
     /**
@@ -242,10 +191,7 @@ service cloud.firestore {
      */
     match /coupons/{couponId} {
       allow get: if isSignedIn();
-      allow list: if isAdmin();
-      allow create: if isAdmin();
-      allow update: if isExistingAdmin();
-      allow delete: if isExistingAdmin();
+      allow list, create, update, delete: if isAdmin();
     }
 
     /**
@@ -256,11 +202,8 @@ service cloud.firestore {
      * @principle User-self-creation, admin-only management.
      */
     match /pending_payments/{paymentId} {
-      allow get: if isAdmin();
-      allow list: if isAdmin();
       allow create: if isOwner(request.resource.data.userId);
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow get, list, update, delete: if isAdmin();
     }
   }
 }
