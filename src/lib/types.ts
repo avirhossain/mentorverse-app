@@ -1,3 +1,4 @@
+
 export interface Mentor {
   id: string; // Changed from number to string to align with Firestore document IDs
   name: string;
@@ -59,7 +60,6 @@ export interface Session {
     mentorId: string;
     date: string; // e.g., "25th November"
     time: string; // e.g., "11:00 AM"
-    seats: number;
     isFree: boolean;
     durationMinutes: number;
     price?: number; // Only for paid sessions
