@@ -62,7 +62,7 @@ export interface Session {
     time: string; // e.g., "11:00 AM"
     isFree: boolean;
     durationMinutes: number;
-    price?: number; // Only for paid sessions
+    price: number; // Only for paid sessions
     type: 'Free' | 'Paid';
     maxParticipants: number;
     jitsiLink: string;

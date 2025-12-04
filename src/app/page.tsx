@@ -70,6 +70,7 @@ const SessionCardSkeleton = () => (
         <div className="flex flex-wrap gap-x-4 gap-y-2">
           <Skeleton className="h-5 w-28" />
           <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-5 w-20" />
         </div>
       </div>
       <div className="mt-6">
@@ -80,11 +81,16 @@ const SessionCardSkeleton = () => (
 
 const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (session: Session) => void, user: any }) => {
     const isBooked = user && session.bookedBy?.includes(user.uid);
+    const availableSeats = session.maxParticipants - (session.bookedBy?.length || 0);
+    const isFull = availableSeats <= 0;
 
     return (
-    <div className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-primary flex flex-col justify-between transition duration-300 hover:shadow-2xl hover:scale-[1.01] transform">
+    <div className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-primary flex flex-col justify-between transition duration-300 hover:shadow-2xl hover:scale-[1.01] transform relative">
+         <div className={`absolute top-4 right-4 px-3 py-1 text-xs font-bold text-white rounded-full ${session.isFree ? 'bg-green-500' : 'bg-primary'}`}>
+            {session.isFree ? 'Free' : `৳${session.price}`}
+        </div>
         <div>
-            <h3 className="text-xl font-bold text-gray-800 mb-1">{session.title}</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-1 pr-16">{session.title}</h3>
             <p className="text-md text-gray-600 flex items-center mb-2">
                 <User className="w-4 h-4 mr-2 text-primary" />
                 Mentor:
@@ -92,7 +98,7 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
                     {session.mentorName}
                 </Link>
             </p>
-            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500">
+            <div className="flex flex-col gap-y-2 text-sm text-gray-500">
                 <p className="flex items-center font-medium">
                     <Calendar className="w-4 h-4 mr-1 text-primary/80" />
                     Date: <span className="text-gray-700 font-semibold ml-1">{session.date}</span>
@@ -101,13 +107,23 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
                     <Clock className="w-4 h-4 mr-1 text-primary/80" />
                     Time: <span className="text-gray-700 font-semibold ml-1">{session.time}</span>
                 </p>
+                <p className="flex items-center font-medium">
+                    <Users className="w-4 h-4 mr-1 text-primary/80" />
+                    Seats: <span className="text-gray-700 font-semibold ml-1">{availableSeats}/{session.maxParticipants} Left</span>
+                </p>
             </div>
         </div>
-        <Button onClick={() => onBook(session)} disabled={isBooked} className="w-full font-bold text-lg mt-6">
+        <Button 
+            onClick={() => onBook(session)} 
+            disabled={isBooked || isFull} 
+            className="w-full font-bold text-lg mt-6"
+        >
              {isBooked ? (
                 <>
                     <CheckCircle className="mr-2" /> Session Booked
                 </>
+            ) : isFull ? (
+                'Session Full'
             ) : (
                 'Book Session'
             )}
