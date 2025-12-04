@@ -1,5 +1,1 @@
-[
-    { "id": 1, "title": "Deep Dive into React Hooks & Context", "mentorName": "Jasmine Chen", "date": "25th November", "time": "11:00 AM", "seats": 15, "isFree": true, "durationMinutes": 60 },
-    { "id": 2, "title": "System Design Q&A: Scaling Databases", "mentorName": "Rajiv Sharma", "date": "28th November", "time": "05:00 PM", "seats": 20, "isFree": true, "durationMinutes": 90 },
-    { "id": 3, "title": "Career Path: From Junior to Senior Engineer", "mentorName": "Emily White", "date": "1st December", "time": "02:00 PM", "seats": 10, "isFree": true, "durationMinutes": 45 }
-]
+[]

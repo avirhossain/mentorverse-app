@@ -9,48 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useFirestore } from '@/firebase';
-import { collection, query, where, getDocs, updateDoc, arrayUnion, doc } from 'firebase/firestore';
+import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, query, where, getDocs, updateDoc, arrayUnion, doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import type { Mentee, Session } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
-
-const MOCK_USER = {
-    id: 'user-001',
-    name: 'Alexandra Reid',
-    email: 'alex.reid@example.com',
-    phone: '555-0101-555',
-    sex: 'Female',
-    institution: 'Tech University',
-    job: 'Senior Developer',
-    birthDate: '1995-10-25',
-    profileImageUrl: 'https://placehold.co/150x150/7c3aed/ffffff?text=AR',
-    balance: 500, // Starting balance
-};
-
-const MOCK_SESSIONS = [
-    { id: 1, title: 'Deep Dive into React Hooks', type: 'Coding', date: '2025-11-18', duration: '60 min', rating: 0, mentorName: 'Jasmine Chen', mentorId: '1' },
-    { id: 2, title: 'Introduction to Figma Design', type: 'Design', date: '2025-11-15', duration: '45 min', rating: 0, mentorName: 'Marcus Bell', mentorId: '2' },
-    { id: 3, title: 'Mastering Advanced SQL Queries', type: 'Data', date: '2025-11-10', duration: '90 min', rating: 0, mentorName: 'Anya Sharma', mentorId: '3' },
-    { id: 4, title: 'Effective Remote Team Communication', type: 'Soft Skills', date: '2025-11-05', duration: '30 min', rating: 0, mentorName: 'David Smith', mentorId: '4' },
-];
-
-const MOCK_BOOKMARKED_CONTENT = [
-    { id: 101, title: 'The 5-Minute Rule for Productivity', topic: 'Productivity Tip', type: 'Tip', icon: Clock },
-    { id: 102, title: 'CSS Grid vs Flexbox Cheat Sheet', topic: 'Web Dev Resource', type: 'Tip', icon: LayoutGrid },
-    { id: 103, title: 'Mastering Advanced SQL Queries', topic: 'Data Session', type: 'Session', mentorName: 'Mr. David Lee' },
-    { id: 104, title: 'Color Psychology in UI/UX', topic: 'Design Tip', type: 'Tip', icon: Heart },
-    { id: 105, title: 'Deep Dive into React Hooks', topic: 'Coding Session', type: 'Session', mentorName: 'Dr. John Smith' },
-];
-
-const getCategoryIcon = (type) => {
-    switch (type) {
-        case 'Coding': return Briefcase;
-        case 'Design': return Building;
-        case 'Data': return Zap;
-        case 'Soft Skills': return User;
-        default: return BookOpen;
-    }
-}
 
 const RatingStarsInput = ({ rating, setRating }) => (
     <div className="flex items-center text-yellow-400">
@@ -83,6 +47,7 @@ const ReviewModal = ({ session, user, onClose }) => {
         
         try {
             if (!firestore) throw new Error('Firestore not available');
+            if (!user) throw new Error('User not available');
 
             const mentorsRef = collection(firestore, 'mentors');
             const q = query(mentorsRef, where("name", "==", session.mentorName));
@@ -96,7 +61,7 @@ const ReviewModal = ({ session, user, onClose }) => {
             const mentorRef = doc(firestore, 'mentors', mentorDoc.id);
 
             const newReview = {
-                mentee: user.name,
+                mentee: user.displayName || 'Anonymous User',
                 date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                 rating,
                 text: comment,
@@ -174,7 +139,7 @@ const ProfileInputField = ({ label, value, onChange, icon: Icon, type = 'text', 
             </div>
             <input
                 type={type}
-                value={value}
+                value={value || ''}
                 onChange={onChange}
                 readOnly={readOnly}
                 className={`w-full p-3 text-gray-800 dark:text-white dark:bg-gray-800 focus:outline-none ${readOnly ? 'bg-gray-100 cursor-not-allowed dark:bg-gray-900' : ''}`}
@@ -236,17 +201,21 @@ const ProfilePictureUploader = ({ currentImage, onImageChange }) => {
 
 const ProfileDetails = ({ user, onSave }) => {
     const initialFormData = useMemo(() => ({
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        sex: user.sex,
-        institution: user.institution,
-        job: user.job,
-        birthDate: user.birthDate,
-        profileImageUrl: user.profileImageUrl,
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        sex: user.sex || '',
+        institution: user.institution || '',
+        job: user.job || '',
+        birthDate: user.birthDate || '',
+        profileImageUrl: user.profileImageUrl || 'https://placehold.co/150x150/7c3aed/ffffff?text=AR',
     }), [user]);
 
     const [formData, setFormData] = useState(initialFormData);
+
+    useEffect(() => {
+        setFormData(initialFormData);
+    }, [initialFormData]);
 
     const hasChanges = useMemo(() => {
         return ['name', 'phone', 'sex', 'institution', 'job', 'birthDate', 'profileImageUrl'].some(key => initialFormData[key] !== formData[key]);
@@ -260,28 +229,31 @@ const ProfileDetails = ({ user, onSave }) => {
         setFormData(prev => ({ ...prev, profileImageUrl: newImageUrl }));
     }, []);
 
-    const [message, setMessage] = useState('');
-    const showMessage = (msg) => {
-        setMessage(msg);
-        setTimeout(() => setMessage(''), 3000);
-    }
+    const { toast } = useToast();
 
-    const handleSubmit = () => {
-        console.log("Submitting changes:", formData);
-        onSave(formData);
-        showMessage('Profile saved successfully! (Simulated)');
+    const handleSubmit = async () => {
+        try {
+            await onSave(formData);
+            toast({ title: "Success!", description: "Profile saved successfully!" });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        }
     };
     
+    if (!user) {
+        return (
+            <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl border-t-4 border-primary h-full">
+                <Skeleton className="w-32 h-32 rounded-full mx-auto mb-6" />
+                <Skeleton className="h-6 w-3/4 mx-auto mb-4" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-5/6 mb-2" />
+            </div>
+        );
+    }
 
     return (
         <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl border-t-4 border-primary h-full relative">
-            {message && (
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 p-3 bg-green-500 text-white rounded-lg shadow-xl flex items-center space-x-2 animate-pulse">
-                    <CheckCircle className="w-5 h-5" />
-                    <span>{message}</span>
-                </div>
-            )}
-            
             <h2 className="text-3xl font-extrabold text-center text-gray-900 dark:text-white mb-6">
                 Your Profile Details
             </h2>
@@ -445,7 +417,7 @@ const WalletSection = ({ balance, onAddBalanceClick }) => (
         <div className="flex flex-col sm:flex-row items-center justify-between bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
             <div>
                 <p className="text-sm font-medium text-green-800 dark:text-green-300">Current Balance</p>
-                <p className="text-4xl font-black text-green-700 dark:text-white">৳{balance.toLocaleString()}</p>
+                <p className="text-4xl font-black text-green-700 dark:text-white">৳{(balance || 0).toLocaleString()}</p>
             </div>
             <Button 
                 onClick={onAddBalanceClick}
@@ -465,39 +437,44 @@ const ActivitySection = ({ sessions, onReview }) => (
             Previous Sessions
         </h2>
         <div className="space-y-4">
-            {sessions.map(session => {
-                const Icon = getCategoryIcon(session.type);
-                return (
-                    <div key={session.id} className="p-5 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col sm:flex-row items-start justify-between transition duration-200 hover:shadow-xl hover:border-l-4 border-primary/80 border-l-4 border-transparent">
-                        <div className="flex items-start flex-grow">
-                            <div className="p-3 bg-primary/10 dark:bg-primary/20 rounded-lg mr-4 flex-shrink-0">
-                                <Icon className="w-6 h-6 text-primary dark:text-primary/90" />
+             {!sessions ? (
+                <p className="text-gray-500 dark:text-gray-400">Loading sessions...</p>
+            ) : sessions.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400">You have no previous sessions.</p>
+            ) : (
+                sessions.map(session => {
+                    const Icon = Briefcase; // Simplified
+                    return (
+                        <div key={session.id} className="p-5 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col sm:flex-row items-start justify-between transition duration-200 hover:shadow-xl hover:border-l-4 border-primary/80 border-l-4 border-transparent">
+                            <div className="flex items-start flex-grow">
+                                <div className="p-3 bg-primary/10 dark:bg-primary/20 rounded-lg mr-4 flex-shrink-0">
+                                    <Icon className="w-6 h-6 text-primary dark:text-primary/90" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-1">{session.title}</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center space-x-4">
+                                        <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> {session.date}</span>
+                                        <span className="flex items-center"><Clock className="w-3 h-3 mr-1" /> {session.durationMinutes} min</span>
+                                    </p>
+                                    <p className="text-sm font-semibold text-primary dark:text-primary/90 mt-1">
+                                        Mentor: {session.mentorName}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-1">{session.title}</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center space-x-4">
-                                    <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> {session.date}</span>
-                                    <span className="flex items-center"><Clock className="w-3 h-3 mr-1" /> {session.duration}</span>
-                                </p>
-                                <p className="text-sm font-semibold text-primary dark:text-primary/90 mt-1">
-                                    Mentor: {session.mentorName}
-                                </p>
+                            <div className="mt-4 sm:mt-0 sm:text-right flex flex-col items-start sm:items-end flex-shrink-0 ml-0 sm:ml-4">
+                                <Button
+                                    onClick={() => onReview(session)}
+                                    variant="outline"
+                                    size="sm"
+                                >
+                                    <Star className="w-4 h-4 mr-2" />
+                                    Rate & Review
+                                </Button>
                             </div>
                         </div>
-                        <div className="mt-4 sm:mt-0 sm:text-right flex flex-col items-start sm:items-end flex-shrink-0 ml-0 sm:ml-4">
-                            <Button
-                                onClick={() => onReview(session)}
-                                variant="outline"
-                                size="sm"
-                                disabled={session.rating > 0} // Disable if already rated
-                            >
-                                <Star className="w-4 h-4 mr-2" />
-                                {session.rating > 0 ? 'Reviewed' : 'Rate & Review'}
-                            </Button>
-                        </div>
-                    </div>
-                );
-            })}
+                    );
+                })
+            )}
         </div>
     </section>
 );
@@ -510,46 +487,62 @@ const SavedContentSection = ({ content }) => (
             Bookmarked Content
         </h2>
         <div className="grid grid-cols-1 gap-4">
-            {content.map(item => {
-                const Icon = item.type === 'Tip' ? item.icon : getCategoryIcon(item.topic.replace(' Session', ''));
-                return (
-                    <div key={item.id} className="p-5 bg-white dark:bg-gray-800 rounded-xl shadow-lg border-l-4 border-red-500 transition duration-200 hover:shadow-xl flex items-start">
-                        <div className="p-3 bg-red-100 dark:bg-red-900/50 rounded-lg mr-4 flex-shrink-0">
-                            <Icon className="w-6 h-6 text-red-600 dark:text-red-400" />
-                        </div>
-                        <div className="flex-grow">
-                            <h3 className="text-xl font-bold dark:text-white truncate">{item.title}</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                {item.type}: {item.topic}
-                            </p>
-                            {item.mentorName && (
-                                <Link href="#" className="mt-1 text-xs font-semibold text-primary dark:text-primary/90 hover:underline flex items-center">
-                                    Mentor: {item.mentorName}
+            {content.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400">You have no bookmarked content.</p>
+            ) : (
+                content.map(item => {
+                    const Icon = item.type === 'Tip' ? item.icon : Briefcase;
+                    return (
+                        <div key={item.id} className="p-5 bg-white dark:bg-gray-800 rounded-xl shadow-lg border-l-4 border-red-500 transition duration-200 hover:shadow-xl flex items-start">
+                            <div className="p-3 bg-red-100 dark:bg-red-900/50 rounded-lg mr-4 flex-shrink-0">
+                                <Icon className="w-6 h-6 text-red-600 dark:text-red-400" />
+                            </div>
+                            <div className="flex-grow">
+                                <h3 className="text-xl font-bold dark:text-white truncate">{item.title}</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                    {item.type}: {item.topic}
+                                </p>
+                                {item.mentorName && (
+                                    <Link href="#" className="mt-1 text-xs font-semibold text-primary dark:text-primary/90 hover:underline flex items-center">
+                                        Mentor: {item.mentorName}
+                                    </Link>
+                                )}
+                                <Link href="#" className="mt-2 text-sm text-primary dark:text-primary/90 hover:underline flex items-center font-medium">
+                                    View Content <ChevronRight className="w-3 h-3 ml-1" />
                                 </Link>
-                            )}
-                            <Link href="#" className="mt-2 text-sm text-primary dark:text-primary/90 hover:underline flex items-center font-medium">
-                                View Content <ChevronRight className="w-3 h-3 ml-1" />
-                            </Link>
+                            </div>
                         </div>
-                    </div>
-                );
-            })}
+                    );
+                })
+            )}
         </div>
     </section>
 );
 
 export default function AccountPage() {
-    const [user, setUser] = useState(MOCK_USER);
+    const { user: authUser, isUserLoading } = useUser();
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    
+    const userDocRef = useMemoFirebase(() => {
+        if (!firestore || !authUser) return null;
+        return doc(firestore, 'users', authUser.uid);
+    }, [firestore, authUser]);
+
+    const { data: menteeData, isLoading: isMenteeLoading } = useDoc<Mentee>(userDocRef);
+
     const [showAddBalanceModal, setShowAddBalanceModal] = useState(false);
     const [sessionToReview, setSessionToReview] = useState(null);
     
-    const handleSaveProfile = (updatedData) => {
-        console.log("Saving profile data to database:", updatedData);
-        setUser(prev => ({...prev, ...updatedData}));
+    const handleSaveProfile = async (updatedData) => {
+        if (!userDocRef) throw new Error("User is not signed in.");
+        await setDoc(userDocRef, updatedData, { merge: true });
     };
 
     const handleBalanceUpdate = (amount) => {
-        setUser(prev => ({...prev, balance: prev.balance + amount}));
+         if (!userDocRef || !menteeData) return;
+        const newBalance = (menteeData.balance || 0) + amount;
+        updateDoc(userDocRef, { balance: newBalance });
     };
 
     const handleLogout = () => {
@@ -569,6 +562,8 @@ export default function AccountPage() {
         </div>
     );
 
+    const isLoading = isUserLoading || isMenteeLoading;
+
     return (
         <div className="min-h-screen bg-background dark:bg-gray-900 font-sans transition duration-300">
             <Header currentView="account"/>
@@ -583,13 +578,13 @@ export default function AccountPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <aside className="lg:col-span-1">
-                        <ProfileDetails user={user} onSave={handleSaveProfile} />
+                        <ProfileDetails user={isLoading ? null : menteeData} onSave={handleSaveProfile} />
                     </aside>
 
                     <div className="lg:col-span-2 space-y-8">
-                        <WalletSection balance={user.balance} onAddBalanceClick={() => setShowAddBalanceModal(true)} />
-                        <ActivitySection sessions={MOCK_SESSIONS} onReview={setSessionToReview} />
-                        <SavedContentSection content={MOCK_BOOKMARKED_CONTENT} />
+                        <WalletSection balance={menteeData?.balance || 0} onAddBalanceClick={() => setShowAddBalanceModal(true)} />
+                        <ActivitySection sessions={[]} onReview={setSessionToReview} />
+                        <SavedContentSection content={[]} />
                         <LogoutButton />
                     </div>
                 </div>
@@ -602,10 +597,10 @@ export default function AccountPage() {
                 />
             )}
             
-            {sessionToReview && (
+            {sessionToReview && authUser && (
                 <ReviewModal 
                     session={sessionToReview}
-                    user={user}
+                    user={authUser}
                     onClose={() => setSessionToReview(null)}
                 />
             )}

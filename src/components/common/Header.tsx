@@ -3,43 +3,68 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Home, Zap, Lightbulb, User, Shield, LogIn, ArrowRight, X } from 'lucide-react';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 
 const LoginModal = ({ onClose }) => {
     const router = useRouter();
     const auth = useAuth();
+    const firestore = useFirestore();
 
-    const handleLogin = (role: 'admin' | 'user') => {
-        if (!auth) {
-            console.error("Auth service is not available.");
+    const handleLogin = async (role: 'admin' | 'user') => {
+        if (!auth || !firestore) {
+            console.error("Auth or Firestore service is not available.");
             return;
         }
 
-        const email = role === 'admin' ? 'admin@mentees.com' : 'user@mentees.com';
+        const email = role === 'admin' ? 'mazhar@admin.com' : 'azgar@mentee.com';
         const password = 'password123'; // Dummy password
 
-        signInWithEmailAndPassword(auth, email, password)
-            .then(() => {
-                router.push(role === 'admin' ? '/admin' : '/account');
-                onClose();
-            })
-            .catch((error) => {
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                    createUserWithEmailAndPassword(auth, email, password)
-                        .then(() => {
-                            router.push(role === 'admin' ? '/admin' : '/account');
-                            onClose();
-                        })
-                        .catch((createError) => {
-                            console.error(`Error creating ${role} user:`, createError);
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            router.push(role === 'admin' ? '/admin' : '/account');
+            onClose();
+        } catch (error) {
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+                    
+                    // Create a user document in Firestore
+                    const userDocRef = doc(firestore, "users", user.uid);
+                    
+                    const userDocSnap = await getDoc(userDocRef);
+
+                    if (!userDocSnap.exists()) {
+                         await setDoc(userDocRef, {
+                            id: user.uid,
+                            email: user.email,
+                            name: role === 'admin' ? 'Mazhar Admin' : 'Azgar Mentee',
+                            balance: 0,
+                            interests: [],
+                            mentorshipGoal: '',
+                            status: 'active',
                         });
-                } else {
-                    console.error(`Error signing in as ${role}:`, error);
+                    }
+
+                    if (role === 'admin') {
+                        // Also create an admin role document
+                        const adminRoleRef = doc(firestore, "roles_admin", user.uid);
+                        await setDoc(adminRoleRef, { role: 'admin' });
+                    }
+
+                    router.push(role === 'admin' ? '/admin' : '/account');
+                    onClose();
+                } catch (createError) {
+                    console.error(`Error creating ${role} user:`, createError);
                 }
-            });
+            } else {
+                console.error(`Error signing in as ${role}:`, error);
+            }
+        }
     };
 
     return (
@@ -81,7 +106,7 @@ const LoginModal = ({ onClose }) => {
 export const Header = ({ currentView }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showLoginModal, setShowLoginModal] = useState(false);
-    const { user, isUserLoading } = useAuth();
+    const { user, isUserLoading } = useUser();
     const isAdminView = currentView === 'admin';
 
     const NavLink = ({ href, view, icon: Icon, text }) => (
