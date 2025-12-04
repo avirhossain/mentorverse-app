@@ -2,10 +2,10 @@
 import React from 'react';
 import { Shield, User, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth } from '@/firebase';
+import { useAuth, FirebaseClientProvider } from '@/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 
-export default function LoginPage() {
+function LoginCore() {
     const auth = useAuth();
 
     const handleLogin = (role: 'admin' | 'user') => {
@@ -26,7 +26,7 @@ export default function LoginPage() {
             })
             .catch((error) => {
                 // If the user doesn't exist, create it for this simulation
-                if (error.code === 'auth/user-not-found') {
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
                     console.log('User not found, creating a new one for simulation...');
                     createUserWithEmailAndPassword(auth, email, password)
                         .then((userCredential) => {
@@ -77,4 +77,12 @@ export default function LoginPage() {
             </div>
         </div>
     );
-};
+}
+
+export default function LoginPage() {
+    return (
+        <FirebaseClientProvider>
+            <LoginCore />
+        </FirebaseClientProvider>
+    );
+}
