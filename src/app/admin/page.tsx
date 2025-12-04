@@ -9,7 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { collection, getDocs, doc, runTransaction, deleteDoc, setDoc, updateDoc, addDoc } from 'firebase/firestore';
 import { useAuth, useFirestore, useUser } from '@/firebase';
-import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import type { Mentor, Mentee, Session, Tip, Coupon, PendingPayment } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -617,13 +616,10 @@ export default function AdminPage() {
 
 
   useEffect(() => {
-    if (!user && !isUserLoading && auth) {
-      initiateAnonymousSignIn(auth);
-    }
     if (user && firestore) {
       fetchData();
     }
-  }, [user, isUserLoading, auth, firestore]);
+  }, [user, firestore]);
 
   const handleSaveMentor = async (mentorData) => {
     if (!firestore) return;
