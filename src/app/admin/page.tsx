@@ -7,11 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { collection, getDocs, doc, runTransaction, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, runTransaction, deleteDoc, setDoc, updateDoc, addDoc } from 'firebase/firestore';
 import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { addDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
-import type { Mentor, Mentee } from '@/lib/types';
+import type { Mentor, Mentee, Session, Tip, Coupon, PendingPayment } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { v4 as uuidv4 } from 'uuid';
@@ -74,14 +73,19 @@ const CouponForm = ({ onSave, onClose }) => {
     );
 };
 
-const PaymentApprovalList = ({ payments, onApprove }) => (
+const PaymentApprovalList = ({ payments, onApprove, isLoading }) => (
     <div className="mt-8">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
             <Banknote className="w-6 h-6 mr-3 text-primary" />
             Pending bKash Payments
         </h2>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border-t-4 border-primary/50 space-y-3">
-            {payments && payments.length > 0 ? (
+             {isLoading ? (
+                <div className="space-y-3">
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                </div>
+            ) : payments && payments.length > 0 ? (
                 payments.map((payment) => (
                     <div key={payment.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
                         <div>
@@ -177,7 +181,7 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
             } else {
                 const mentorsCol = collection(firestore, 'mentors');
                 const mentorsSnapshot = await getDocs(mentorsCol);
-                const newId = `M${String(mentorsSnapshot.size + 1).padStart(2, '0')}`;
+                const newId = (mentorsSnapshot.size + 1).toString();
                 
                 const newMentor = {
                     ...processedData,
@@ -190,7 +194,7 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                 toast({ title: 'Success!', description: 'New mentor profile created.' });
             }
             onClose();
-        } catch (error) {
+        } catch (error) => {
             toast({
                 variant: 'destructive',
                 title: 'Error',
@@ -408,16 +412,11 @@ const SessionForm = ({ onSave, onClose }) => {
         }
 
         try {
-            const sessionsCol = collection(firestore, 'sessions');
-            const sessionsSnapshot = await getDocs(sessionsCol);
-            const newId = `Session${101 + sessionsSnapshot.size}`;
-            
             const jitsiRoomName = `GuidelabSession-${uuidv4()}`;
             const jitsiLink = `https://meet.jit.si/${jitsiRoomName}`;
 
             const newSession = {
                 ...formData,
-                id: newId,
                 isFree: formData.type === 'Free',
                 price: Number(formData.price),
                 maxParticipants: Number(formData.maxParticipants),
@@ -476,7 +475,6 @@ const SessionForm = ({ onSave, onClose }) => {
 
 const TipForm = ({ onSave, onClose }) => {
     const { toast } = useToast();
-    const firestore = useFirestore();
     const [formData, setFormData] = useState({
         type: 'Article',
         title: '',
@@ -497,22 +495,12 @@ const TipForm = ({ onSave, onClose }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!firestore) {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: `Firestore is not available.`,
-            });
-            return;
-        }
-
         try {
             const newTip = {
                 type: formData.type,
                 title: formData.title,
                 summary: formData.summary,
                 ...(formData.type === 'Article' ? { content: formData.content } : { link: formData.link }),
-                id: `Tip${Date.now()}`, // Simple unique ID
             };
             
             await onSave(newTip);
@@ -586,38 +574,69 @@ const DataListView = ({ title, data, isLoading, icon: Icon, renderItem }) => (
 export default function AdminPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [modalState, setModalState] = useState({ type: null, data: null });
+  
+  const [mentors, setMentors] = useState<Mentor[]>([]);
+  const [mentees, setMentees] = useState<Mentee[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
+
+  const [isLoadingMentors, setIsLoadingMentors] = useState(true);
+  const [isLoadingMentees, setIsLoadingMentees] = useState(true);
+  const [isLoadingPayments, setIsLoadingPayments] = useState(true);
 
   const firestore = useFirestore();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
 
+  const fetchData = async () => {
+    if (!firestore) return;
+    setIsLoadingMentors(true);
+    setIsLoadingMentees(true);
+    setIsLoadingPayments(true);
 
-  const mentorsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'mentors') : null, [firestore]);
-  const usersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
-  const pendingPaymentsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'pending_payments') : null, [firestore]);
+    try {
+        const [mentorsSnap, menteesSnap, paymentsSnap] = await Promise.all([
+            getDocs(collection(firestore, 'mentors')),
+            getDocs(collection(firestore, 'users')),
+            getDocs(collection(firestore, 'pending_payments')),
+        ]);
 
-  const { data: mentors, isLoading: isLoadingMentors } = useCollection<Mentor>(mentorsQuery);
-  const { data: mentees, isLoading: isLoadingMentees } = useCollection<Mentee>(usersQuery);
-  const { data: pendingPayments, isLoading: isLoadingPayments } = useCollection(pendingPaymentsQuery);
+        setMentors(mentorsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentor)));
+        setMentees(menteesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentee)));
+        setPendingPayments(paymentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PendingPayment)));
+
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Error fetching data', description: error.message });
+        console.error("Error fetching data:", error);
+    } finally {
+        setIsLoadingMentors(false);
+        setIsLoadingMentees(false);
+        setIsLoadingPayments(false);
+    }
+  };
 
 
   useEffect(() => {
     if (!user && !isUserLoading && auth) {
       initiateAnonymousSignIn(auth);
     }
-  }, [user, isUserLoading, auth]);
+    if (user && firestore) {
+      fetchData();
+    }
+  }, [user, isUserLoading, auth, firestore]);
 
-  const handleSaveMentor = (mentorData) => {
+  const handleSaveMentor = async (mentorData) => {
     if (!firestore) return;
     const mentorRef = doc(firestore, 'mentors', mentorData.id);
-    return setDocumentNonBlocking(mentorRef, mentorData, { merge: true });
+    await setDoc(mentorRef, mentorData, { merge: true });
+    fetchData(); // Refresh data
   };
   
-  const handleSaveMentee = (menteeData) => {
+  const handleSaveMentee = async (menteeData) => {
     if (!firestore) return;
     const menteeRef = doc(firestore, 'users', menteeData.id);
-    return updateDocumentNonBlocking(menteeRef, menteeData);
+    await updateDoc(menteeRef, menteeData);
+    fetchData(); // Refresh data
   };
   
   const handleDelete = async (collectionName, docId, name) => {
@@ -625,27 +644,31 @@ export default function AdminPage() {
     try {
         await deleteDoc(doc(firestore, collectionName, docId));
         toast({ title: 'Success!', description: `${name} has been deleted.` });
+        fetchData(); // Refresh data
     } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: `Failed to delete: ${error.message}` });
     }
   };
 
-  const handleSaveSession = (sessionData) => {
+  const handleSaveSession = async (sessionData) => {
     if (!firestore) return;
     const sessionsCol = collection(firestore, 'sessions');
-    return addDocumentNonBlocking(sessionsCol, sessionData);
+    await addDoc(sessionsCol, sessionData);
+    // No need to refresh sessions data as it's not displayed on this page
   };
   
-  const handleSaveTip = (tipData) => {
+  const handleSaveTip = async (tipData) => {
     if (!firestore) return;
     const tipsCol = collection(firestore, 'tips');
-    return addDocumentNonBlocking(tipsCol, tipData);
+    await addDoc(tipsCol, tipData);
+    // No need to refresh tips data
   };
 
-  const handleSaveCoupon = (couponData) => {
+  const handleSaveCoupon = async (couponData) => {
     if (!firestore) return;
     const couponRef = doc(firestore, 'coupons', couponData.id);
-    return setDocumentNonBlocking(couponRef, couponData, { merge: true });
+    await setDoc(couponRef, couponData, { merge: true });
+     // No need to refresh coupon data
   };
 
   const handleApprovePayment = async (payment) => {
@@ -669,6 +692,7 @@ export default function AdminPage() {
             transaction.delete(paymentRef);
         });
         toast({ title: 'Success!', description: `Payment approved. User ${payment.userId} balance updated.` });
+        fetchData(); // Refresh data
     } catch (error) {
         toast({ variant: 'destructive', title: 'Transaction Failed', description: error.message });
     }
@@ -749,7 +773,7 @@ export default function AdminPage() {
             </div>
           </div>
           
-          <PaymentApprovalList payments={pendingPayments} onApprove={handleApprovePayment} />
+          <PaymentApprovalList payments={pendingPayments} onApprove={handleApprovePayment} isLoading={isLoadingPayments} />
           
           <DataListView
             title="All Mentors"
