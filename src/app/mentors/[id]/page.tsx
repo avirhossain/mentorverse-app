@@ -334,7 +334,8 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
     );
 };
 
-export default function MentorPage({ params: { id } }: { params: { id: string } }) {
+export default function MentorPage({ params }: { params: { id: string } }) {
+    const { id } = params;
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const firestore = useFirestore();
 
