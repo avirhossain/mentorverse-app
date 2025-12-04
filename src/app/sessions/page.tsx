@@ -24,7 +24,7 @@ const SessionCardSkeleton = () => (
 );
 
 
-const RegistrationModal = ({ session, isLoggedIn, onClose, onSignUp }) => {
+const RegistrationModal = ({ session, isLoggedIn, onClose, onSignUp, onLogin }) => {
     const [step, setStep] = React.useState(isLoggedIn ? 'form' : 'auth_check');
     const [reason, setReason] = React.useState('');
     const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -34,22 +34,22 @@ const RegistrationModal = ({ session, isLoggedIn, onClose, onSignUp }) => {
             case 'auth_check':
                 return (
                     <div className="text-center py-6">
-                        <h3 className="text-2xl font-bold text-gray-800 mb-3">One step closer!</h3>
+                        <h3 className="text-2xl font-bold text-gray-800 mb-3">Please Login or Sign Up</h3>
                         <p className="text-gray-600 mb-6">
-                            Since you're a guest, please sign up or apply for a guest seat to secure your spot.
+                            To book a spot for this exclusive session, you need to be logged in.
                         </p>
                         <div className="space-y-3">
                             <button
-                                onClick={onSignUp} 
+                                onClick={onLogin}
                                 className="w-full py-3 font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-md"
                             >
-                                Sign Up & Book Now (Recommended)
+                                Login
                             </button>
                             <button
-                                onClick={() => setStep('form')}
+                                onClick={onSignUp} 
                                 className="w-full py-3 font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition"
                             >
-                                Continue as Guest (Limited Access)
+                                Sign Up
                             </button>
                         </div>
                     </div>
@@ -172,6 +172,11 @@ export default function ExclusiveSessionsPage() {
         setIsLoggedIn(true); 
     };
 
+    const handleLogin = () => {
+        console.log("Redirecting user to login...");
+        setIsLoggedIn(true); 
+    };
+
     return (
       <div className="min-h-screen bg-background font-sans">
         <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} currentView="exclusive" />
@@ -256,6 +261,7 @@ export default function ExclusiveSessionsPage() {
                 isLoggedIn={isLoggedIn}
                 onClose={handleCloseModal}
                 onSignUp={handleSignUp}
+                onLogin={handleLogin}
             />
         )}
       </div>
