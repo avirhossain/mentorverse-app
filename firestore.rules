@@ -119,8 +119,8 @@ service cloud.firestore {
      * @principle Implements Database-level Access Control (DBAC) for administrative actions.
      */
     match /roles_admin/{userId} {
-      allow get: if false;
-      allow list: if false;
+      allow get: if isAdmin();
+      allow list: if isAdmin();
       allow create: if isAdmin();
       allow update: if isExistingAdmin();
       allow delete: if isExistingAdmin();
@@ -256,13 +256,11 @@ service cloud.firestore {
      * @principle User-self-creation, admin-only management.
      */
     match /pending_payments/{paymentId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      allow get: if isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(request.resource.data.userId);
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
   }
 }
-
-    
