@@ -1,7 +1,7 @@
 
 'use client';
 import React, { useState, useEffect } from 'react';
-import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldX } from 'lucide-react';
+import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldX, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -375,9 +375,11 @@ const MenteeForm = ({ mentee, onSave, onClose }) => {
 };
 
 
-const SessionForm = ({ mentors, onSave, onClose }) => {
+const SessionForm = ({ session, mentors, onSave, onClose }) => {
     const { toast } = useToast();
     const firestore = useFirestore();
+    const isEditing = !!session;
+
     const [formData, setFormData] = useState({
         title: '',
         mentorId: '',
@@ -387,11 +389,12 @@ const SessionForm = ({ mentors, onSave, onClose }) => {
         type: 'Free',
         price: 0,
         maxParticipants: 10,
+        ...session,
     });
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type } = e.target;
+        setFormData(prev => ({ ...prev, [name]: type === 'number' ? Number(value) : value }));
     };
 
     const handleSelectChange = (name, value) => {
@@ -416,25 +419,36 @@ const SessionForm = ({ mentors, onSave, onClose }) => {
         }
 
         try {
-            const jitsiRoomName = `GuidelabSession-${uuidv4()}`;
-            const jitsiLink = `https://meet.jit.si/${jitsiRoomName}`;
-
-            const newSession = {
-                ...formData,
-                mentorName: selectedMentor.name,
-                isFree: formData.type === 'Free',
-                price: Number(formData.price),
-                maxParticipants: Number(formData.maxParticipants),
-                durationMinutes: Number(formData.durationMinutes),
-                jitsiLink: jitsiLink,
-                bookedBy: [],
-                status: 'scheduled',
-            };
+            let sessionData;
+            if (isEditing) {
+                sessionData = {
+                    ...formData,
+                    mentorName: selectedMentor.name,
+                    isFree: formData.type === 'Free',
+                    price: Number(formData.price),
+                    maxParticipants: Number(formData.maxParticipants),
+                    durationMinutes: Number(formData.durationMinutes),
+                };
+            } else {
+                const jitsiRoomName = `GuidelabSession-${uuidv4()}`;
+                const jitsiLink = `https://meet.jit.si/${jitsiRoomName}`;
+                sessionData = {
+                    ...formData,
+                    mentorName: selectedMentor.name,
+                    isFree: formData.type === 'Free',
+                    price: Number(formData.price),
+                    maxParticipants: Number(formData.maxParticipants),
+                    durationMinutes: Number(formData.durationMinutes),
+                    jitsiLink: jitsiLink,
+                    bookedBy: [],
+                    status: 'scheduled',
+                };
+            }
         
-            await onSave(newSession);
+            await onSave(sessionData);
             toast({
                 title: 'Success!',
-                description: 'New exclusive session has been created.',
+                description: isEditing ? 'Session updated successfully.' : 'New exclusive session has been created.',
             });
             onClose();
         } catch (error) {
@@ -470,7 +484,7 @@ const SessionForm = ({ mentors, onSave, onClose }) => {
             <Select onValueChange={(value) => handleSelectChange('type', value)} value={formData.type}>
                 <SelectTrigger>
                     <SelectValue placeholder="Select session type" />
-                </SelectTrigger>
+                </Trigger>
                 <SelectContent>
                     <SelectItem value="Free">Free</SelectItem>
                     <SelectItem value="Paid">Paid</SelectItem>
@@ -485,7 +499,7 @@ const SessionForm = ({ mentors, onSave, onClose }) => {
 
             <div className="flex justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                <Button type="submit">Save Session</Button>
+                <Button type="submit">{isEditing ? 'Save Changes' : 'Save Session'}</Button>
             </div>
         </form>
     );
@@ -527,7 +541,7 @@ const TipForm = ({ onSave, onClose }) => {
                 description: 'New tip has been created.',
             });
             onClose();
-        } catch (error) {
+        } catch (error) => {
             toast({
                 variant: 'destructive',
                 title: 'Error',
@@ -594,10 +608,12 @@ export default function AdminPage() {
   
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [mentees, setMentees] = useState<Mentee[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
 
   const [isLoadingMentors, setIsLoadingMentors] = useState(true);
   const [isLoadingMentees, setIsLoadingMentees] = useState(true);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [isLoadingPayments, setIsLoadingPayments] = useState(true);
 
   const firestore = useFirestore();
@@ -608,17 +624,20 @@ export default function AdminPage() {
     if (!firestore) return;
     setIsLoadingMentors(true);
     setIsLoadingMentees(true);
+    setIsLoadingSessions(true);
     setIsLoadingPayments(true);
 
     try {
-        const [mentorsSnap, menteesSnap, paymentsSnap] = await Promise.all([
+        const [mentorsSnap, menteesSnap, sessionsSnap, paymentsSnap] = await Promise.all([
             getDocs(collection(firestore, 'mentors')),
             getDocs(collection(firestore, 'users')),
+            getDocs(collection(firestore, 'sessions')),
             getDocs(collection(firestore, 'pending_payments')),
         ]);
 
         setMentors(mentorsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentor)));
         setMentees(menteesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentee)));
+        setSessions(sessionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Session)));
         setPendingPayments(paymentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PendingPayment)));
 
     } catch (error) {
@@ -627,6 +646,7 @@ export default function AdminPage() {
     } finally {
         setIsLoadingMentors(false);
         setIsLoadingMentees(false);
+        setIsLoadingSessions(false);
         setIsLoadingPayments(false);
     }
   };
@@ -665,23 +685,28 @@ export default function AdminPage() {
 
   const handleSaveSession = async (sessionData) => {
     if (!firestore) return;
-    const sessionsCol = collection(firestore, 'sessions');
-    await addDoc(sessionsCol, sessionData);
-    // No need to refresh sessions data as it's not displayed on this page
+    if (sessionData.id) { // Editing existing session
+      const sessionRef = doc(firestore, 'sessions', sessionData.id);
+      await setDoc(sessionRef, sessionData, { merge: true });
+    } else { // Creating new session
+      const sessionsCol = collection(firestore, 'sessions');
+      await addDoc(sessionsCol, sessionData);
+    }
+    fetchData(); // Refresh data
   };
   
   const handleSaveTip = async (tipData) => {
     if (!firestore) return;
     const tipsCol = collection(firestore, 'tips');
     await addDoc(tipsCol, tipData);
-    // No need to refresh tips data
+    fetchData();
   };
 
   const handleSaveCoupon = async (couponData) => {
     if (!firestore) return;
     const couponRef = doc(firestore, 'coupons', couponData.id);
     await setDoc(couponRef, couponData, { merge: true });
-     // No need to refresh coupon data
+    fetchData();
   };
 
   const handleApprovePayment = async (payment) => {
@@ -823,6 +848,41 @@ export default function AdminPage() {
            />
 
             <DataListView
+                title="All Sessions"
+                data={sessions}
+                isLoading={isLoadingSessions}
+                icon={Calendar}
+                renderItem={(session) => (
+                    <div key={session.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
+                        <div className="flex-grow">
+                            <span className="font-bold text-primary">{session.title}</span>
+                            <span className="ml-4 text-sm text-gray-500 dark:text-gray-400">by {session.mentorName} on {session.date} at {session.time}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => openModal('session', session)}><Edit className="w-4 h-4" /></Button>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete the session: {session.title}.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete('sessions', session.id, session.title)}>Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </div>
+                )}
+            />
+
+            <DataListView
                 title="All Mentees (Users)"
                 data={mentees}
                 isLoading={isLoadingMentees}
@@ -875,8 +935,8 @@ export default function AdminPage() {
         )}
 
         {modalState.type === 'session' && (
-            <Modal title="Create New Session" onClose={closeModal}>
-                <SessionForm mentors={mentors} onSave={handleSaveSession} onClose={closeModal} />
+            <Modal title={modalState.data ? "Edit Session" : "Create New Session"} onClose={closeModal}>
+                <SessionForm session={modalState.data} mentors={mentors} onSave={handleSaveSession} onClose={closeModal} />
             </Modal>
         )}
 
@@ -894,5 +954,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    
