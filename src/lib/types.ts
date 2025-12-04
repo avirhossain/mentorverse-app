@@ -1,5 +1,5 @@
 export interface Mentor {
-  id: number;
+  id: string; // Changed from number to string to align with Firestore document IDs
   name: string;
   title: string;
   company: string;
@@ -30,7 +30,7 @@ export interface Mentor {
   availability: {
     date: string;
     time: string;
-    id: number;
+    id: number; // Kept as number as it's for local key mapping
   }[];
   reviews: {
     mentee: string;
@@ -41,7 +41,7 @@ export interface Mentor {
 }
 
 export interface Session {
-    id: number;
+    id: string; // Changed from number to string
     title: string;
     mentorName: string;
     date: string;

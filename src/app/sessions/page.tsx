@@ -1,8 +1,11 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Zap, User, CheckCircle, Clock, Calendar, Users, X } from 'lucide-react';
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
+import type { Session } from '@/lib/types';
 
 const SessionCardSkeleton = () => (
   <div className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-primary flex flex-col md:flex-row justify-between items-start md:items-center">
@@ -147,28 +150,14 @@ export default function ExclusiveSessionsPage() {
     const [isLoggedIn, setIsLoggedIn] = React.useState(false); 
     const [sessionToBook, setSessionToBook] = React.useState(null);
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-    const [sessions, setSessions] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    
-    useEffect(() => {
-        const fetchSessions = async () => {
-            try {
-                const response = await fetch('/api/sessions');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch sessions');
-                }
-                const data = await response.json();
-                setSessions(data);
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+    const firestore = useFirestore();
 
-        fetchSessions();
-    }, []);
+    const sessionsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'sessions'), orderBy('date'));
+    }, [firestore]);
 
+    const { data: sessions, isLoading } = useCollection<Session>(sessionsQuery);
 
     const handleBookSeat = (session) => {
         setSessionToBook(session);
@@ -216,7 +205,7 @@ export default function ExclusiveSessionsPage() {
                 {isLoading ? (
                     Array.from({ length: 3 }).map((_, index) => <SessionCardSkeleton key={index} />)
                 ) : (
-                    sessions.map((session) => (
+                    sessions?.map((session) => (
                         <div 
                             key={session.id} 
                             className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-primary flex flex-col md:flex-row justify-between items-start md:items-center transition duration-300 hover:shadow-2xl hover:scale-[1.01] transform"

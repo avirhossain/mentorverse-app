@@ -1,9 +1,12 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Star, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
+import type { Mentor } from '@/lib/types';
 
 const MentorCardSkeleton = () => (
     <div className="bg-white rounded-xl shadow-lg p-5 sm:p-6 flex flex-col items-start border border-gray-100 h-full">
@@ -25,7 +28,7 @@ const MentorCardSkeleton = () => (
 );
 
 
-const MentorCard = ({ mentor }) => (
+const MentorCard = ({ mentor }: { mentor: Mentor }) => (
     <Link href={`/mentors/${mentor.id}`} className="group block h-full">
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition duration-300 p-5 sm:p-6 flex flex-col items-start border border-gray-100 h-full">
             <div className="flex items-start space-x-3 sm:space-x-4 mb-4">
@@ -58,27 +61,14 @@ const MentorCard = ({ mentor }) => (
 
 export default function HomePage() {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-    const [mentors, setMentors] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const firestore = useFirestore();
 
-    useEffect(() => {
-        const fetchMentors = async () => {
-            try {
-                const response = await fetch('/api/mentors');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch mentors');
-                }
-                const data = await response.json();
-                setMentors(data);
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+    const mentorsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'mentors'), orderBy('name'));
+    }, [firestore]);
 
-        fetchMentors();
-    }, []);
+    const { data: mentors, isLoading } = useCollection<Mentor>(mentorsQuery);
 
     return (
         <div className="min-h-screen bg-background font-sans">
@@ -92,7 +82,7 @@ export default function HomePage() {
                     {isLoading ? (
                         Array.from({ length: 4 }).map((_, index) => <MentorCardSkeleton key={index} />)
                     ) : (
-                        mentors.map((mentor) => (
+                        mentors?.map((mentor) => (
                             <MentorCard key={mentor.id} mentor={mentor} />
                         ))
                     )}

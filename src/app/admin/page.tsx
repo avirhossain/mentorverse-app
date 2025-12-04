@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { collection, addDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 
 const Modal = ({ title, children, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
@@ -43,7 +47,7 @@ const MentorForm = ({ onSave, onClose }) => {
     e.preventDefault();
     const newMentor = {
       ...formData,
-      id: Date.now(),
+      id: uuidv4(), // Generate a unique string ID
       rating: 0,
       ratingsCount: 0,
       skills: formData.skills.split(',').map(s => s.trim()),
@@ -106,7 +110,7 @@ const SessionForm = ({ onSave, onClose }) => {
         e.preventDefault();
         const newSession = {
             ...formData,
-            id: Date.now(),
+            id: uuidv4(), // Generate a unique string ID
             isFree: true,
             seats: Number(formData.seats),
             durationMinutes: Number(formData.durationMinutes),
@@ -149,23 +153,17 @@ export default function AdminPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showMentorModal, setShowMentorModal] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
+  const firestore = useFirestore();
 
-  const saveData = async (url, data) => {
-      const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-          const errorResult = await response.json();
-          throw new Error(errorResult.message || 'Something went wrong');
-      }
-      return response.json();
+  const handleSaveMentor = (mentorData) => {
+    const mentorsCol = collection(firestore, 'mentors');
+    return addDocumentNonBlocking(mentorsCol, mentorData);
   };
   
-  const handleSaveMentor = (mentorData) => saveData('/api/mentors', mentorData);
-  const handleSaveSession = (sessionData) => saveData('/api/sessions', sessionData);
+  const handleSaveSession = (sessionData) => {
+    const sessionsCol = collection(firestore, 'sessions');
+    return addDocumentNonBlocking(sessionsCol, sessionData);
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -188,7 +186,7 @@ export default function AdminPage() {
                 <UsersIcon className="w-8 h-8 text-primary" />
                 <h3 className="text-lg font-semibold dark:text-white">Manage Mentors</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Create, edit, and view mentor profiles. This data will be saved to a local JSON file.
+                  Create, edit, and view mentor profiles. Data is saved directly to Firestore.
                 </p>
                 <Button
                   onClick={() => setShowMentorModal(true)}
@@ -201,7 +199,7 @@ export default function AdminPage() {
                 <FilePlus className="w-8 h-8 text-primary" />
                 <h3 className="text-lg font-semibold dark:text-white">Manage Sessions</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Create unique, bookable sessions offered by mentors, complete with descriptions.
+                  Create unique, bookable sessions offered by mentors, saved to Firestore.
                 </p>
                 <Button
                   onClick={() => setShowSessionModal(true)}

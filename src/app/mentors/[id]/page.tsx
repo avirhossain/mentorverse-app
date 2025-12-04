@@ -1,8 +1,11 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Star, CheckCircle, Briefcase, GraduationCap, Clock, Calendar, MessageSquare, X, Zap } from 'lucide-react';
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { Mentor } from '@/lib/types';
 
 // --- Helper Components ---
 
@@ -161,7 +164,7 @@ const MentorDetailsSkeleton = () => (
 );
 
 
-const MentorDetailsPage = ({ mentor }) => {
+const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
     const [selectedSession, setSelectedSession] = React.useState(null);
     const [selectedTimeSlot, setSelectedTimeSlot] = React.useState(null);
     const [showCheckoutModal, setShowCheckoutModal] = React.useState(false);
@@ -333,30 +336,14 @@ const MentorDetailsPage = ({ mentor }) => {
 
 export default function MentorPage({ params }: { params: { id: string } }) {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-    const [mentor, setMentor] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const firestore = useFirestore();
 
-    useEffect(() => {
-        if (!params.id) return;
+    const mentorRef = useMemoFirebase(() => {
+        if (!firestore || !params.id) return null;
+        return doc(firestore, 'mentors', params.id);
+    }, [firestore, params.id]);
 
-        const fetchMentorDetails = async () => {
-            try {
-                const response = await fetch(`/api/mentors/${params.id}`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch mentor details');
-                }
-                const data = await response.json();
-                setMentor(data);
-            } catch (error) {
-                console.error(error);
-                setMentor(null);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchMentorDetails();
-    }, [params.id]);
+    const { data: mentor, isLoading } = useDoc<Mentor>(mentorRef);
 
     return (
         <div className="min-h-screen bg-background font-sans">
