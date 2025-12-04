@@ -853,12 +853,21 @@ export default function AdminPage() {
                 isLoading={isLoadingSessions}
                 icon={Calendar}
                 renderItem={(session) => (
-                    <div key={session.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
-                        <div className="flex-grow">
-                            <span className="font-bold text-primary">{session.title}</span>
-                            <span className="ml-4 text-sm text-gray-500 dark:text-gray-400">by {session.mentorName} on {session.date} at {session.time}</span>
+                    <div key={session.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                        <div className="flex-grow mb-2 sm:mb-0">
+                            <p className="font-bold text-primary">{session.title}</p>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
+                                <span>by {session.mentorName}</span>
+                                <span>{session.date} at {session.time}</span>
+                                <span className={`font-semibold ${session.isFree ? 'text-green-600' : 'text-blue-600'}`}>
+                                    {session.isFree ? 'Free' : `৳${session.price}`}
+                                </span>
+                                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                                    {session.bookedBy?.length || 0}/{session.maxParticipants} booked
+                                </span>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                             <Button variant="ghost" size="sm" onClick={() => openModal('session', session)}><Edit className="w-4 h-4" /></Button>
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
