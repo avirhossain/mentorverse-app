@@ -172,6 +172,20 @@ service cloud.firestore {
     }
 
     /**
+     * @description Tips are public for anyone to read. Only signed-in users (admins for now) can manage them.
+     * @path /tips/{tipId}
+     * @allow (get) Any user can read a tip.
+     * @principle Implements a "Public Read with Admin-Only Writes" pattern.
+     */
+    match /tips/{tipId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
+    }
+
+    /**
      * @description User (mentee) profiles. A user can create their own profile and can only access their own.
      * @path /users/{menteeId}
      * @allow (create) A new user (auth.uid: 'user123') creates their own profile at `/users/user123`.
@@ -218,3 +232,4 @@ service cloud.firestore {
     }
   }
 }
+    

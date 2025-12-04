@@ -2,67 +2,11 @@
 import React from 'react';
 import { Lightbulb, X, Link as LinkIcon, Video, FileText } from 'lucide-react';
 import { Header } from '@/components/common/Header';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
+import type { Tip } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const MENTEE_TIPS = [
-    { 
-        id: 1, 
-        type: 'Article', 
-        title: '5 Steps to Maximize Your Mentorship Session', 
-        summary: 'Learn how to prepare questions, set goals, and follow up effectively.',
-        content: `A successful mentorship session begins long before the video call starts.
-        
-        **1. Define Your Goals:** Know exactly what you want to achieve. Is it a career pivot? Solving a specific technical problem? Write it down.
-        
-        **2. Prepare Specific Questions:** Avoid vague questions like "How do I succeed?". Instead, ask: "Given my experience with X, what skill should I prioritize learning next to reach a Staff Engineer role?"
-        
-        **3. Share Context:** Send your mentor relevant documents (resume, code samples, company context) at least 24 hours in advance. This maximizes the time spent in the session.
-        
-        **4. Take Notes:** Be an active listener and write down key takeaways. Don't rely on memory.
-        
-        **5. Create an Action Plan:** End the session by summarizing the key advice and outlining 3 actionable steps you will take before your next meeting.`,
-        icon: FileText
-    },
-    { 
-        id: 2, 
-        type: 'YouTube', 
-        title: 'System Design Interview - The Complete Guide', 
-        link: 'https://www.youtube.com/watch?v=kYv9G_I4H7g', 
-        summary: 'A 45-minute video covering the fundamentals of system design for interviews.',
-        icon: Video
-    },
-    { 
-        id: 3, 
-        type: 'Website', 
-        title: 'Interview Cake: Coding Interview Prep', 
-        link: 'https://www.interviewcake.com/', 
-        summary: 'A comprehensive resource for algorithm practice and detailed explanations.',
-        icon: LinkIcon
-    },
-    { 
-        id: 4, 
-        type: 'Article', 
-        title: 'Mastering the Art of Negotiation', 
-        summary: 'Essential strategies for increasing your salary and benefits package.',
-        content: `Salary negotiation is a skill that directly impacts your lifetime earnings.
-        
-        **Do Your Research:** Use tools like Glassdoor and Levels.fyi to determine the market rate for your role and location. Your number should be backed by data.
-        
-        **Wait for the Offer:** Never provide your desired salary range first. Let the company make the first move.
-        
-        **Express Enthusiasm (But Don't Commit):** When an offer comes, thank them, express excitement, but state that you need a few days to review the full compensation package.
-        
-        **Make a Counter-Offer:** Be confident and propose a number 10-20% higher than their initial offer, supported by your recent achievements and market research.`,
-        icon: FileText
-    },
-    { 
-        id: 5, 
-        type: 'Website', 
-        title: 'Tailwind CSS Documentation', 
-        link: 'https://tailwindcss.com/docs', 
-        summary: 'The official documentation for the utility-first CSS framework.',
-        icon: LinkIcon
-    },
-];
 
 const ArticleModal = ({ article, onClose }) => {
     return (
@@ -96,10 +40,30 @@ const ArticleModal = ({ article, onClose }) => {
     );
 };
 
+const TipCardSkeleton = () => (
+    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg border-l-8 border-gray-200 flex items-center space-x-4 sm:space-x-6">
+        <Skeleton className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex-shrink-0" />
+        <div className="flex-grow space-y-2">
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-8 w-32 rounded-full mt-2" />
+        </div>
+    </div>
+);
+
 
 export default function TipsPage() {
     const [selectedArticle, setSelectedArticle] = React.useState(null);
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const firestore = useFirestore();
+
+    const tipsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'tips'), orderBy('title'));
+    }, [firestore]);
+
+    const { data: tips, isLoading } = useCollection<Tip>(tipsQuery);
+
 
     const handleResourceClick = (resource) => {
         if (resource.type === 'Article') {
@@ -135,49 +99,53 @@ export default function TipsPage() {
                 </p>
 
                 <div className="space-y-6">
-                    {MENTEE_TIPS.map((resource) => {
-                        const { Icon, color, fill } = getIconDetails(resource.type);
-                        
-                        const CardElement = resource.type === 'Article' ? 'button' : 'div';
-                        
-                        return (
-                            <CardElement 
-                                key={resource.id} 
-                                onClick={() => handleResourceClick(resource)}
-                                className={`
-                                    bg-white p-4 sm:p-6 rounded-xl shadow-lg border-l-8 border-primary
-                                    flex items-center space-x-4 sm:space-x-6 
-                                    transition duration-300 hover:shadow-xl transform hover:scale-[1.005] 
-                                    cursor-pointer group w-full text-left
-                                `}
-                            >
-                                <div className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex items-center justify-center ${fill} border-2 border-primary/20`}>
-                                    <Icon className={`w-8 h-8 sm:w-10 sm:h-10 ${color}`} />
-                                </div>
-
-                                <div className="flex-grow">
-                                    <h3 className="text-xl font-bold text-gray-800 group-hover:text-primary transition mb-1">
-                                        {resource.title}
-                                    </h3>
-                                    <p className="text-sm sm:text-base text-gray-600 mb-2">{resource.summary}</p>
-                                    
-                                    <div className="mt-2">
-                                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${resource.type === 'Article' ? 'bg-blue-500 text-white' : 'bg-primary/80 text-white'} flex items-center w-fit`}>
-                                            {resource.type === 'Article' ? (
-                                                <>
-                                                    <FileText className="w-3 h-3 mr-1" /> Read Article (Pop-up)
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <LinkIcon className="w-3 h-3 mr-1" /> View External Link
-                                                </>
-                                            )}
-                                        </span>
+                    {isLoading ? (
+                        Array.from({length: 4}).map((_, i) => <TipCardSkeleton key={i} />)
+                    ) : (
+                        tips?.map((resource) => {
+                            const { Icon, color, fill } = getIconDetails(resource.type);
+                            
+                            const CardElement = resource.type === 'Article' ? 'button' : 'div';
+                            
+                            return (
+                                <CardElement 
+                                    key={resource.id} 
+                                    onClick={() => handleResourceClick(resource)}
+                                    className={`
+                                        bg-white p-4 sm:p-6 rounded-xl shadow-lg border-l-8 border-primary
+                                        flex items-center space-x-4 sm:space-x-6 
+                                        transition duration-300 hover:shadow-xl transform hover:scale-[1.005] 
+                                        cursor-pointer group w-full text-left
+                                    `}
+                                >
+                                    <div className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex items-center justify-center ${fill} border-2 border-primary/20`}>
+                                        <Icon className={`w-8 h-8 sm:w-10 sm:h-10 ${color}`} />
                                     </div>
-                                </div>
-                            </CardElement>
-                        );
-                    })}
+
+                                    <div className="flex-grow">
+                                        <h3 className="text-xl font-bold text-gray-800 group-hover:text-primary transition mb-1">
+                                            {resource.title}
+                                        </h3>
+                                        <p className="text-sm sm:text-base text-gray-600 mb-2">{resource.summary}</p>
+                                        
+                                        <div className="mt-2">
+                                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${resource.type === 'Article' ? 'bg-blue-500 text-white' : 'bg-primary/80 text-white'} flex items-center w-fit`}>
+                                                {resource.type === 'Article' ? (
+                                                    <>
+                                                        <FileText className="w-3 h-3 mr-1" /> Read Article (Pop-up)
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <LinkIcon className="w-3 h-3 mr-1" /> View External Link
+                                                    </>
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </CardElement>
+                            );
+                        })
+                    )}
                 </div>
             </div>
 
@@ -190,3 +158,5 @@ export default function TipsPage() {
         </div>
     );
 };
+
+    

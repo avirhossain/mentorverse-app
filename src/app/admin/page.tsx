@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase } from 'lucide-react';
+import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import type { Mentor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const Modal = ({ title, children, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
@@ -285,6 +286,88 @@ const SessionForm = ({ onSave, onClose }) => {
     );
 };
 
+const TipForm = ({ onSave, onClose }) => {
+    const { toast } = useToast();
+    const firestore = useFirestore();
+    const [formData, setFormData] = useState({
+        type: 'Article',
+        title: '',
+        summary: '',
+        content: '',
+        link: '',
+    });
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleTypeChange = (value) => {
+        setFormData(prev => ({ ...prev, type: value }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!firestore) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: `Firestore is not available.`,
+            });
+            return;
+        }
+
+        try {
+            const tipsCol = collection(firestore, 'tips');
+            const newTip = {
+                ...formData,
+                id: `Tip${Date.now()}`, // Simple unique ID
+            };
+            
+            await onSave(newTip);
+            toast({
+                title: 'Success!',
+                description: 'New tip has been created.',
+            });
+            onClose();
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: `Failed to save tip: ${error.message}`,
+            });
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <Select onValueChange={handleTypeChange} defaultValue={formData.type}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Select a tip type" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="Article">Article</SelectItem>
+                    <SelectItem value="YouTube">YouTube</SelectItem>
+                    <SelectItem value="Website">Website</SelectItem>
+                </SelectContent>
+            </Select>
+            <Input name="title" placeholder="Tip Title" value={formData.title} onChange={handleChange} required />
+            <Input name="summary" placeholder="Brief Summary" value={formData.summary} onChange={handleChange} required />
+            {formData.type === 'Article' ? (
+                <Textarea name="content" placeholder="Full article content..." value={formData.content} onChange={handleChange} rows={6} />
+            ) : (
+                <Input name="link" placeholder="URL (e.g., https://youtube.com/...)" value={formData.link} onChange={handleChange} required />
+            )}
+            <div className="flex justify-end gap-4 pt-4">
+                <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                <Button type="submit">Save Tip</Button>
+            </div>
+        </form>
+    );
+};
+
+
 const DataListView = ({ title, data, isLoading, icon: Icon, renderItem }) => (
     <div className="mt-8">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
@@ -314,6 +397,8 @@ export default function AdminPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showMentorModal, setShowMentorModal] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
+  const [showTipModal, setShowTipModal] = useState(false);
+
   const firestore = useFirestore();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
@@ -325,8 +410,6 @@ export default function AdminPage() {
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // Assuming mentees are stored in a 'users' collection.
-    // This might need to be adjusted based on your actual data structure.
     return collection(firestore, 'users');
   }, [firestore]);
 
@@ -351,6 +434,13 @@ export default function AdminPage() {
     const sessionsCol = collection(firestore, 'sessions');
     return addDocumentNonBlocking(sessionsCol, sessionData);
   };
+  
+  const handleSaveTip = (tipData) => {
+    if (!firestore) return;
+    const tipsCol = collection(firestore, 'tips');
+    return addDocumentNonBlocking(tipsCol, tipData);
+  };
+
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -368,12 +458,12 @@ export default function AdminPage() {
 
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-t-4 border-primary">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Content Management</h2>
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-3">
               <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                 <UsersIcon className="w-8 h-8 text-primary" />
                 <h3 className="text-lg font-semibold dark:text-white">Manage Mentors</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Create, edit, and view mentor profiles. Data is saved directly to Firestore.
+                  Create, edit, and view mentor profiles.
                 </p>
                 <Button
                   onClick={() => setShowMentorModal(true)}
@@ -386,13 +476,26 @@ export default function AdminPage() {
                 <FilePlus className="w-8 h-8 text-primary" />
                 <h3 className="text-lg font-semibold dark:text-white">Manage Sessions</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Create unique, bookable sessions offered by mentors, saved to Firestore.
+                  Create unique, bookable sessions offered by mentors.
                 </p>
                 <Button
                   onClick={() => setShowSessionModal(true)}
                   className="mt-2"
                 >
                   Create New Session
+                </Button>
+              </div>
+               <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                <Lightbulb className="w-8 h-8 text-primary" />
+                <h3 className="text-lg font-semibold dark:text-white">Manage Tips</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                   Create articles, and add links to videos and websites.
+                </p>
+                <Button
+                  onClick={() => setShowTipModal(true)}
+                  className="mt-2"
+                >
+                  Create New Tip
                 </Button>
               </div>
             </div>
@@ -444,6 +547,12 @@ export default function AdminPage() {
       {showSessionModal && (
         <Modal title="Create New Session" onClose={() => setShowSessionModal(false)}>
           <SessionForm onSave={handleSaveSession} onClose={() => setShowSessionModal(false)} />
+        </Modal>
+      )}
+
+      {showTipModal && (
+        <Modal title="Create New Tip" onClose={() => setShowTipModal(false)}>
+          <TipForm onSave={handleSaveTip} onClose={() => setShowTipModal(false)} />
         </Modal>
       )}
     </div>

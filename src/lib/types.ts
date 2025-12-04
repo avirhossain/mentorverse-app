@@ -50,3 +50,14 @@ export interface Session {
     isFree: boolean;
     durationMinutes: number;
 }
+
+export interface Tip {
+  id: string;
+  type: 'Article' | 'YouTube' | 'Website';
+  title: string;
+  summary: string;
+  content?: string;
+  link?: string;
+}
+
+    
