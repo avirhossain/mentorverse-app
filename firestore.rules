@@ -23,10 +23,13 @@ service cloud.firestore {
     }
 
     /**
-     * Checks if the currently authenticated user is the admin by email.
+     * Checks if the currently authenticated user is the admin.
+     * Admin access is granted if the user's email is 'mmavir89@gmail.com'
+     * OR their phone number is '+8801673737971'.
      */
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'mmavir89@gmail.com';
+      return isSignedIn() && 
+        (request.auth.token.email == 'mmavir89@gmail.com' || request.auth.token.phone_number == '+8801673737971');
     }
 
     //----------------------------------------------------------------//

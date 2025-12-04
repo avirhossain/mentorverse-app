@@ -5,7 +5,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { GoogleAuthProvider, PhoneAuthProvider, FacebookAuthProvider } from 'firebase/auth';
+import { GoogleAuthProvider, PhoneAuthProvider, EmailAuthProvider } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 
 // Dynamically import firebaseui to ensure it's only run on the client
@@ -30,7 +30,8 @@ export default function LoginPage() {
     // If user is logged in, redirect them
     useEffect(() => {
         if (!isUserLoading && user) {
-            const targetRoute = user.email === 'mmavir89@gmail.com' ? '/admin' : '/';
+            const isAdmin = user.email === 'mmavir89@gmail.com' || user.phoneNumber === '+8801673737971';
+            const targetRoute = isAdmin ? '/admin' : '/';
             router.push(targetRoute);
         }
     }, [user, isUserLoading, router]);
@@ -52,7 +53,16 @@ export default function LoginPage() {
             signInSuccessUrl: '/',
             signInOptions: [
                 GoogleAuthProvider.PROVIDER_ID,
-                PhoneAuthProvider.PROVIDER_ID
+                {
+                    provider: PhoneAuthProvider.PROVIDER_ID,
+                    recaptchaParameters: {
+                        type: 'image', // 'image' or 'audio'
+                        size: 'invisible', // 'normal' or 'invisible' or 'compact'
+                        badge: 'bottomleft' //' bottomright' or 'inline' applies to invisible.
+                    },
+                    defaultCountry: 'BD' // Set default country to Bangladesh
+                },
+                EmailAuthProvider.PROVIDER_ID,
             ],
             callbacks: {
                 signInSuccessWithAuthResult: (authResult, redirectUrl) => {
@@ -121,3 +131,5 @@ export default function LoginPage() {
         </div>
     );
 }
+
+    
