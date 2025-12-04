@@ -14,6 +14,8 @@ import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import type { Mentor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { v4 as uuidv4 } from 'uuid';
+
 
 const Modal = ({ title, children, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
@@ -287,24 +289,29 @@ const SessionForm = ({ onSave, onClose }) => {
         mentorName: '',
         date: '',
         time: '',
-        seats: 10,
         durationMinutes: 60,
+        type: 'Free',
+        price: 0,
+        maxParticipants: 10,
     });
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    };
+
+    const handleTypeChange = (value) => {
+        setFormData(prev => ({
+            ...prev,
+            type: value,
+            price: value === 'Free' ? 0 : prev.price,
+        }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (!firestore) {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: `Firestore is not available.`,
-            });
+            toast({ variant: 'destructive', title: 'Error', description: 'Firestore is not available.' });
             return;
         }
 
@@ -312,13 +319,20 @@ const SessionForm = ({ onSave, onClose }) => {
             const sessionsCol = collection(firestore, 'sessions');
             const sessionsSnapshot = await getDocs(sessionsCol);
             const newId = `Session${101 + sessionsSnapshot.size}`;
+            
+            const jitsiRoomName = `GuidelabSession-${uuidv4()}`;
+            const jitsiLink = `https://meet.jit.si/${jitsiRoomName}`;
 
             const newSession = {
                 ...formData,
                 id: newId,
-                isFree: true,
-                seats: Number(formData.seats),
+                isFree: formData.type === 'Free',
+                price: Number(formData.price),
+                maxParticipants: Number(formData.maxParticipants),
                 durationMinutes: Number(formData.durationMinutes),
+                jitsiLink: jitsiLink,
+                bookedBy: [],
+                status: 'scheduled',
             };
         
             await onSave(newSession);
@@ -342,8 +356,24 @@ const SessionForm = ({ onSave, onClose }) => {
             <Input name="mentorName" placeholder="Mentor Name" value={formData.mentorName} onChange={handleChange} required />
             <Input name="date" type="text" placeholder="Date (e.g., 25th December)" value={formData.date} onChange={handleChange} required />
             <Input name="time" type="text" placeholder="Time (e.g., 11:00 AM)" value={formData.time} onChange={handleChange} required />
-            <Input name="seats" type="number" placeholder="Available Seats" value={formData.seats} onChange={handleChange} required />
             <Input name="durationMinutes" type="number" placeholder="Duration (in minutes)" value={formData.durationMinutes} onChange={handleChange} required />
+            
+            <Select onValueChange={handleTypeChange} defaultValue={formData.type}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Select session type" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="Free">Free</SelectItem>
+                    <SelectItem value="Paid">Paid</SelectItem>
+                </SelectContent>
+            </Select>
+
+            {formData.type === 'Paid' && (
+                <Input name="price" type="number" placeholder="Price (e.g., 50)" value={formData.price} onChange={handleChange} required />
+            )}
+
+            <Input name="maxParticipants" type="number" placeholder="Max Participants" value={formData.maxParticipants} onChange={handleChange} required />
+
             <div className="flex justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
                 <Button type="submit">Save Session</Button>

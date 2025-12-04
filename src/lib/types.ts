@@ -41,14 +41,20 @@ export interface Mentor {
 }
 
 export interface Session {
-    id: string; // Changed from number to string
+    id: string; 
     title: string;
     mentorName: string;
-    date: string;
-    time: string;
+    date: string; // e.g., "25th November"
+    time: string; // e.g., "11:00 AM"
     seats: number;
     isFree: boolean;
     durationMinutes: number;
+    price?: number; // Only for paid sessions
+    type: 'Free' | 'Paid';
+    maxParticipants: number;
+    jitsiLink: string;
+    bookedBy: string[]; // Array of user IDs who have booked
+    status: 'scheduled' | 'active' | 'completed';
 }
 
 export interface Tip {
