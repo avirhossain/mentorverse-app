@@ -335,13 +335,14 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
 };
 
 export default function MentorPage({ params }: { params: { id: string } }) {
+    const { id } = params;
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const firestore = useFirestore();
 
     const mentorRef = useMemoFirebase(() => {
-        if (!firestore || !params.id) return null;
-        return doc(firestore, 'mentors', params.id);
-    }, [firestore, params.id]);
+        if (!firestore || !id) return null;
+        return doc(firestore, 'mentors', id);
+    }, [firestore, id]);
 
     const { data: mentor, isLoading } = useDoc<Mentor>(mentorRef);
 
