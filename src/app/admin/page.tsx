@@ -583,7 +583,6 @@ export default function AdminPage() {
   const [isLoadingPayments, setIsLoadingPayments] = useState(true);
 
   const firestore = useFirestore();
-  const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
 

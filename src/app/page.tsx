@@ -3,7 +3,7 @@ import React from 'react';
 import { Shield, User, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 
 export default function LoginPage() {
     const auth = useAuth();
@@ -28,15 +28,13 @@ export default function LoginPage() {
                 // If the user doesn't exist, create it for this simulation
                 if (error.code === 'auth/user-not-found') {
                     console.log('User not found, creating a new one for simulation...');
-                    import('firebase/auth').then(({ createUserWithEmailAndPassword }) => {
-                        createUserWithEmailAndPassword(auth, email, password)
-                            .then((userCredential) => {
-                                console.log(`New ${role} user created and signed in:`, userCredential.user);
-                            })
-                            .catch((createError) => {
-                                console.error(`Error creating ${role} user:`, createError);
-                            });
-                    });
+                    createUserWithEmailAndPassword(auth, email, password)
+                        .then((userCredential) => {
+                            console.log(`New ${role} user created and signed in:`, userCredential.user);
+                        })
+                        .catch((createError) => {
+                            console.error(`Error creating ${role} user:`, createError);
+                        });
                 } else {
                     console.error(`Error signing in as ${role}:`, error);
                 }
