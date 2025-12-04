@@ -44,6 +44,7 @@ export interface Session {
     id: string; 
     title: string;
     mentorName: string;
+    mentorId?: string; // Optional field to link back to the mentor
     date: string; // e.g., "25th November"
     time: string; // e.g., "11:00 AM"
     seats: number;

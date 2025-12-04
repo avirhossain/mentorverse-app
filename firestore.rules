@@ -22,7 +22,7 @@
  * - Admin Rights: A user is considered an admin if a document with their UID exists in the
  *   `/roles_admin` collection. This provides a clear and secure way to manage roles.
  * - Disallowed User Listing: To protect user privacy, it is not possible to list all
- *   documents in the top-level `/users` collection.
+ *   documents in the top-level `/users` collection for non-admins.
  * - Default Security: The rules default to denying access. Permissions are granted explicitly
  *   for each specific path and operation.
  *
@@ -128,17 +128,19 @@ service cloud.firestore {
 
     /**
      * @description Mentor profiles are public for anyone to read. Only admins can manage them.
+     * Users can update a mentor's profile to add a review.
      * @path /mentors/{mentorId}
      * @allow (get) Any user, signed in or not, can read a mentor's profile.
+     * @allow (update) Any signed-in user can update a mentor (e.g. to add a review).
      * @deny (create) A regular signed-in user tries to add a new mentor.
-     * @principle Implements a "Public Read with Admin-Only Writes" pattern for shared content.
+     * @principle Implements a "Public Read with Admin-Only Writes" pattern, with an exception for user reviews.
      */
     match /mentors/{mentorId} {
       allow get: if true;
       allow list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow create: if isAdmin();
+      allow update: if isSignedIn(); // Allows signed-in users to add reviews.
+      allow delete: if isAdmin();
     }
     
     /**
@@ -195,7 +197,7 @@ service cloud.firestore {
      */
     match /users/{menteeId} {
       allow get: if isOwner(menteeId);
-      allow list: if isSignedIn();
+      allow list: if isAdmin(); // Only admins can list users.
       allow create: if isOwner(menteeId) && request.resource.data.id == menteeId;
       allow update: if isExistingOwner(menteeId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(menteeId);
@@ -254,11 +256,11 @@ service cloud.firestore {
      * @principle User-self-creation, admin-only management.
      */
     match /pending_payments/{paymentId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      allow get: if isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(request.resource.data.userId);
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
   }
 }

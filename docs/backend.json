@@ -30,6 +30,33 @@
             "type": "string"
           }
         },
+        "reviews": {
+          "type": "array",
+          "description": "A list of reviews submitted by mentees.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "mentee": {
+                "type": "string",
+                "description": "Name of the mentee who wrote the review."
+              },
+              "date": {
+                "type": "string",
+                "format": "date",
+                "description": "Date the review was submitted."
+              },
+              "rating": {
+                "type": "number",
+                "description": "Star rating from 1 to 5."
+              },
+              "text": {
+                "type": "string",
+                "description": "The text content of the review."
+              }
+            },
+            "required": ["mentee", "date", "rating", "text"]
+          }
+        },
         "availableTimeslots": {
           "type": "array",
           "description": "Available time slots for the mentor.",

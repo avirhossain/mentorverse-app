@@ -1,14 +1,17 @@
 'use client';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
-    User, BookOpen, Clock, Zap, Star, ChevronRight, Calendar, Phone, Cake, Building, Briefcase, Mail, CheckCircle, Save, UploadCloud, LogOut, LayoutGrid, Heart, Bookmark, Wallet, PlusCircle
+    User, BookOpen, Clock, Zap, Star, ChevronRight, Calendar, Phone, Cake, Building, Briefcase, Mail, CheckCircle, Save, UploadCloud, LogOut, LayoutGrid, Heart, Bookmark, Wallet, PlusCircle, X
 } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { useFirestore } from '@/firebase';
+import { collection, query, where, getDocs, updateDoc, arrayUnion, doc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 
 const MOCK_USER = {
@@ -25,10 +28,10 @@ const MOCK_USER = {
 };
 
 const MOCK_SESSIONS = [
-    { id: 1, title: 'Deep Dive into React Hooks', type: 'Coding', date: '2025-11-18', duration: '60 min', rating: 5, mentorName: 'Dr. John Smith' },
-    { id: 2, title: 'Introduction to Figma Design', type: 'Design', date: '2025-11-15', duration: '45 min', rating: 4, mentorName: 'Ms. Jane Doe' },
-    { id: 3, title: 'Mastering Advanced SQL Queries', type: 'Data', date: '2025-11-10', duration: '90 min', rating: 5, mentorName: 'Mr. David Lee' },
-    { id: 4, title: 'Effective Remote Team Communication', type: 'Soft Skills', date: '2025-11-05', duration: '30 min', rating: 3, mentorName: 'Dr. John Smith' },
+    { id: 1, title: 'Deep Dive into React Hooks', type: 'Coding', date: '2025-11-18', duration: '60 min', rating: 0, mentorName: 'Jasmine Chen', mentorId: '1' },
+    { id: 2, title: 'Introduction to Figma Design', type: 'Design', date: '2025-11-15', duration: '45 min', rating: 0, mentorName: 'Marcus Bell', mentorId: '2' },
+    { id: 3, title: 'Mastering Advanced SQL Queries', type: 'Data', date: '2025-11-10', duration: '90 min', rating: 0, mentorName: 'Anya Sharma', mentorId: '3' },
+    { id: 4, title: 'Effective Remote Team Communication', type: 'Soft Skills', date: '2025-11-05', duration: '30 min', rating: 0, mentorName: 'David Smith', mentorId: '4' },
 ];
 
 const MOCK_BOOKMARKED_CONTENT = [
@@ -48,6 +51,107 @@ const getCategoryIcon = (type) => {
         default: return BookOpen;
     }
 }
+
+const RatingStarsInput = ({ rating, setRating }) => (
+    <div className="flex items-center text-yellow-400">
+        {[...Array(5)].map((_, i) => (
+            <Star
+                key={i}
+                className={`w-8 h-8 cursor-pointer transition duration-150 ${i < rating ? 'fill-yellow-400' : 'fill-transparent stroke-current'}`}
+                strokeWidth={2}
+                onClick={() => setRating(i + 1)}
+            />
+        ))}
+    </div>
+);
+
+
+const ReviewModal = ({ session, user, onClose }) => {
+    const [rating, setRating] = useState(0);
+    const [comment, setComment] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const firestore = useFirestore();
+    const { toast } = useToast();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (rating === 0) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please provide a rating.' });
+            return;
+        }
+        setIsSubmitting(true);
+        
+        try {
+            if (!firestore) throw new Error('Firestore not available');
+
+            const mentorsRef = collection(firestore, 'mentors');
+            const q = query(mentorsRef, where("name", "==", session.mentorName));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                throw new Error(`Mentor '${session.mentorName}' not found.`);
+            }
+
+            const mentorDoc = querySnapshot.docs[0];
+            const mentorRef = doc(firestore, 'mentors', mentorDoc.id);
+
+            const newReview = {
+                mentee: user.name,
+                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                rating,
+                text: comment,
+            };
+            
+            await updateDoc(mentorRef, {
+                reviews: arrayUnion(newReview)
+            });
+
+            toast({ title: 'Success!', description: 'Your review has been submitted.' });
+            onClose();
+
+        } catch (error) {
+            console.error("Error submitting review:", error);
+            toast({ variant: 'destructive', title: 'Submission Failed', description: error.message });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg transform transition-all">
+                <div className="p-4 flex justify-between items-center border-b dark:border-gray-700">
+                    <h3 className="text-2xl font-bold text-gray-800 dark:text-white">Rate Session: {session.title}</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                    <div>
+                        <label className="block text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Your Rating</label>
+                        <RatingStarsInput rating={rating} setRating={setRating} />
+                    </div>
+                    <div>
+                        <label htmlFor="comment" className="block text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">Your Comments (Optional)</label>
+                        <Textarea
+                            id="comment"
+                            value={comment}
+                            onChange={(e) => setComment(e.target.value)}
+                            placeholder={`How was your session with ${session.mentorName}?`}
+                            rows={5}
+                        />
+                    </div>
+                    <div className="flex justify-end pt-2">
+                        <Button type="submit" disabled={isSubmitting} className="font-bold text-lg">
+                            {isSubmitting ? 'Submitting...' : 'Submit Review'}
+                        </Button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 
 const RatingStars = ({ count }) => (
     <div className="flex items-center text-yellow-400">
@@ -354,7 +458,7 @@ const WalletSection = ({ balance, onAddBalanceClick }) => (
 );
 
 
-const ActivitySection = ({ sessions }) => (
+const ActivitySection = ({ sessions, onReview }) => (
     <section>
         <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-6 flex items-center">
             <Clock className="w-8 h-8 mr-3 text-primary" />
@@ -364,8 +468,8 @@ const ActivitySection = ({ sessions }) => (
             {sessions.map(session => {
                 const Icon = getCategoryIcon(session.type);
                 return (
-                    <div key={session.id} className="p-5 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between transition duration-200 hover:shadow-xl hover:border-l-4 border-primary/80 border-l-4 border-transparent">
-                        <div className="flex items-start">
+                    <div key={session.id} className="p-5 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col sm:flex-row items-start justify-between transition duration-200 hover:shadow-xl hover:border-l-4 border-primary/80 border-l-4 border-transparent">
+                        <div className="flex items-start flex-grow">
                             <div className="p-3 bg-primary/10 dark:bg-primary/20 rounded-lg mr-4 flex-shrink-0">
                                 <Icon className="w-6 h-6 text-primary dark:text-primary/90" />
                             </div>
@@ -375,15 +479,21 @@ const ActivitySection = ({ sessions }) => (
                                     <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> {session.date}</span>
                                     <span className="flex items-center"><Clock className="w-3 h-3 mr-1" /> {session.duration}</span>
                                 </p>
+                                <p className="text-sm font-semibold text-primary dark:text-primary/90 mt-1">
+                                    Mentor: {session.mentorName}
+                                </p>
                             </div>
                         </div>
                         <div className="mt-4 sm:mt-0 sm:text-right flex flex-col items-start sm:items-end flex-shrink-0 ml-0 sm:ml-4">
-                            <Link href="#" className="text-sm font-semibold text-primary dark:text-primary/90 hover:underline flex items-center">
-                                Mentor: {session.mentorName} <ChevronRight className="w-4 h-4 ml-1" />
-                            </Link>
-                            <div className="mt-1">
-                                <RatingStars count={session.rating} />
-                            </div>
+                            <Button
+                                onClick={() => onReview(session)}
+                                variant="outline"
+                                size="sm"
+                                disabled={session.rating > 0} // Disable if already rated
+                            >
+                                <Star className="w-4 h-4 mr-2" />
+                                {session.rating > 0 ? 'Reviewed' : 'Rate & Review'}
+                            </Button>
                         </div>
                     </div>
                 );
@@ -391,6 +501,7 @@ const ActivitySection = ({ sessions }) => (
         </div>
     </section>
 );
+
 
 const SavedContentSection = ({ content }) => (
     <section className="mt-8">
@@ -431,6 +542,7 @@ export default function AccountPage() {
     const [user, setUser] = useState(MOCK_USER);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [showAddBalanceModal, setShowAddBalanceModal] = useState(false);
+    const [sessionToReview, setSessionToReview] = useState(null);
     
     const handleSaveProfile = (updatedData) => {
         console.log("Saving profile data to database:", updatedData);
@@ -477,7 +589,7 @@ export default function AccountPage() {
 
                     <div className="lg:col-span-2 space-y-8">
                         <WalletSection balance={user.balance} onAddBalanceClick={() => setShowAddBalanceModal(true)} />
-                        <ActivitySection sessions={MOCK_SESSIONS} />
+                        <ActivitySection sessions={MOCK_SESSIONS} onReview={setSessionToReview} />
                         <SavedContentSection content={MOCK_BOOKMARKED_CONTENT} />
                         <LogoutButton />
                     </div>
@@ -488,6 +600,14 @@ export default function AccountPage() {
                 <AddBalanceModal 
                     onClose={() => setShowAddBalanceModal(false)}
                     onBalanceUpdate={handleBalanceUpdate}
+                />
+            )}
+            
+            {sessionToReview && (
+                <ReviewModal 
+                    session={sessionToReview}
+                    user={user}
+                    onClose={() => setSessionToReview(null)}
                 />
             )}
         </div>
