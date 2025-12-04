@@ -716,9 +716,7 @@ export default function AdminPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <Header
-        currentView="admin"
-      />
+      <Header currentView="admin" />
       <main className="flex-1 p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
           <div className="space-y-2 mb-8">
