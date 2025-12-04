@@ -201,14 +201,14 @@ const ProfilePictureUploader = ({ currentImage, onImageChange }) => {
 
 const ProfileDetails = ({ user, onSave }) => {
     const initialFormData = useMemo(() => ({
-        name: user.name || '',
-        email: user.email || '',
-        phone: user.phone || '',
-        sex: user.sex || '',
-        institution: user.institution || '',
-        job: user.job || '',
-        birthDate: user.birthDate || '',
-        profileImageUrl: user.profileImageUrl || 'https://placehold.co/150x150/7c3aed/ffffff?text=AR',
+        name: user?.name || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        sex: user?.sex || '',
+        institution: user?.institution || '',
+        job: user?.job || '',
+        birthDate: user?.birthDate || '',
+        profileImageUrl: user?.profileImageUrl || 'https://placehold.co/150x150/7c3aed/ffffff?text=AR',
     }), [user]);
 
     const [formData, setFormData] = useState(initialFormData);

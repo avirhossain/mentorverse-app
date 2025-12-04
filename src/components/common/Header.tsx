@@ -24,7 +24,7 @@ const LoginModal = ({ onClose }) => {
         const password = 'password123'; // Dummy password
 
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            await signInWithEmailAndPassword(auth, email, password);
             router.push(role === 'admin' ? '/admin' : '/account');
             onClose();
         } catch (error) {
