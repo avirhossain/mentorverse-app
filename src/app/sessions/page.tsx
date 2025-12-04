@@ -29,6 +29,14 @@ const RegistrationModal = ({ session, isLoggedIn, onClose, onSignUp, onLogin }) 
     const [reason, setReason] = React.useState('');
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+    useEffect(() => {
+        if (isLoggedIn) {
+            setStep('form');
+        } else {
+            setStep('auth_check');
+        }
+    }, [isLoggedIn]);
+
     const renderContent = () => {
         switch (step) {
             case 'auth_check':
@@ -168,12 +176,12 @@ export default function ExclusiveSessionsPage() {
     };
 
     const handleSignUp = () => {
-        console.log("Redirecting user to sign-up...");
+        console.log("Simulating user sign-up...");
         setIsLoggedIn(true); 
     };
 
     const handleLogin = () => {
-        console.log("Redirecting user to login...");
+        console.log("Simulating user login...");
         setIsLoggedIn(true); 
     };
 
