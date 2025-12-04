@@ -181,7 +181,7 @@ service cloud.firestore {
      */
     match /users/{menteeId} {
       allow get: if isOwner(menteeId);
-      allow list: if false;
+      allow list: if isSignedIn();
       allow create: if isOwner(menteeId) && request.resource.data.id == menteeId;
       allow update: if isExistingOwner(menteeId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(menteeId);
