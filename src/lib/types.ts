@@ -60,4 +60,18 @@ export interface Tip {
   link?: string;
 }
 
-    
+export interface Coupon {
+    id: string; // The coupon code itself
+    amount: number;
+    expiresAt?: string; // ISO Date string
+    isUsed: boolean;
+}
+
+export interface PendingPayment {
+    id: string;
+    userId: string;
+    transactionId: string;
+    amount: number;
+    status: 'pending' | 'approved' | 'rejected';
+    createdAt: string; // ISO Date string
+}

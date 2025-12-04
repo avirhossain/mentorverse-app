@@ -1,10 +1,15 @@
 'use client';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
-    User, BookOpen, Clock, Zap, Star, ChevronRight, Calendar, Phone, Cake, Building, Briefcase, Mail, CheckCircle, Save, UploadCloud, LogOut, LayoutGrid, Heart, Bookmark
+    User, BookOpen, Clock, Zap, Star, ChevronRight, Calendar, Phone, Cake, Building, Briefcase, Mail, CheckCircle, Save, UploadCloud, LogOut, LayoutGrid, Heart, Bookmark, Wallet, PlusCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
+
 
 const MOCK_USER = {
     id: 'user-001',
@@ -16,6 +21,7 @@ const MOCK_USER = {
     job: 'Senior Developer',
     birthDate: '1995-10-25',
     profileImageUrl: 'https://placehold.co/150x150/7c3aed/ffffff?text=AR',
+    balance: 500, // Starting balance
 };
 
 const MOCK_SESSIONS = [
@@ -243,6 +249,111 @@ const ProfileDetails = ({ user, onSave }) => {
     );
 };
 
+const AddBalanceModal = ({ onClose, onBalanceUpdate }) => {
+    const [couponCode, setCouponCode] = useState('');
+    const [bkashId, setBkashId] = useState('');
+    const [message, setMessage] = useState({ type: '', text: '' });
+
+    const handleCouponSubmit = (e) => {
+        e.preventDefault();
+        setMessage({ type: '', text: '' });
+        // Mock coupon validation
+        if (couponCode.toUpperCase() === 'GUIDE500') {
+            onBalanceUpdate(500); // Simulate adding 500
+            setMessage({ type: 'success', text: 'Successfully added ৳500 to your balance!' });
+            setTimeout(onClose, 2000);
+        } else {
+            setMessage({ type: 'error', text: 'Invalid coupon code. Please try again.' });
+        }
+    };
+
+    const handleBkashSubmit = (e) => {
+        e.preventDefault();
+        setMessage({ type: 'info', text: 'We are verifying your payment and will get back to you within 3 hours.' });
+        // In a real app, you'd send this to the backend
+        console.log('bKash Transaction ID submitted:', bkashId);
+        setTimeout(onClose, 3000);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md transform transition-all">
+                <div className="p-4 flex justify-between items-center border-b dark:border-gray-700">
+                    <h3 className="text-2xl font-bold text-gray-800 dark:text-white">Add Balance</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+                <div className="p-6">
+                    <Tabs defaultValue="coupon" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="coupon">Coupon Code</TabsTrigger>
+                            <TabsTrigger value="bkash">bKash Payment</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="coupon">
+                            <form onSubmit={handleCouponSubmit} className="space-y-4 mt-4">
+                                <p className="text-sm text-gray-600 dark:text-gray-300">Enter a valid coupon code to add balance to your account.</p>
+                                <Input 
+                                    placeholder="Enter Coupon Code" 
+                                    value={couponCode} 
+                                    onChange={(e) => setCouponCode(e.target.value)} 
+                                    className="text-center text-lg tracking-widest"
+                                    required
+                                />
+                                <Button type="submit" className="w-full">Redeem Coupon</Button>
+                            </form>
+                        </TabsContent>
+                        <TabsContent value="bkash">
+                            <form onSubmit={handleBkashSubmit} className="space-y-4 mt-4">
+                                <p className="text-sm text-gray-600 dark:text-gray-300">Submit your bKash payment transaction ID for manual verification.</p>
+                                <Input 
+                                    placeholder="Enter bKash TrxID" 
+                                    value={bkashId} 
+                                    onChange={(e) => setBkashId(e.target.value)} 
+                                    className="text-center"
+                                    required
+                                />
+                                <Button type="submit" className="w-full">Submit for Verification</Button>
+                            </form>
+                        </TabsContent>
+                    </Tabs>
+                    {message.text && (
+                        <div className={`mt-4 p-3 rounded-lg text-center text-sm font-medium ${
+                            message.type === 'success' ? 'bg-green-100 text-green-800' : 
+                            message.type === 'error' ? 'bg-red-100 text-red-800' :
+                            'bg-blue-100 text-blue-800'
+                        }`}>
+                            {message.text}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const WalletSection = ({ balance, onAddBalanceClick }) => (
+    <section className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl border-t-4 border-green-500 mb-8">
+        <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-4 flex items-center">
+            <Wallet className="w-8 h-8 mr-3 text-green-600" />
+            My Wallet
+        </h2>
+        <div className="flex flex-col sm:flex-row items-center justify-between bg-green-50 dark:bg-green-900/20 p-6 rounded-lg">
+            <div>
+                <p className="text-sm font-medium text-green-800 dark:text-green-300">Current Balance</p>
+                <p className="text-4xl font-black text-green-700 dark:text-white">৳{balance.toLocaleString()}</p>
+            </div>
+            <Button 
+                onClick={onAddBalanceClick}
+                className="mt-4 sm:mt-0 w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold"
+            >
+                <PlusCircle className="mr-2" /> Add Balance
+            </Button>
+        </div>
+    </section>
+);
+
+
 const ActivitySection = ({ sessions }) => (
     <section>
         <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-6 flex items-center">
@@ -317,11 +428,17 @@ const SavedContentSection = ({ content }) => (
 );
 
 export default function AccountPage() {
-    const user = MOCK_USER;
-    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const [user, setUser] = useState(MOCK_USER);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [showAddBalanceModal, setShowAddBalanceModal] = useState(false);
     
     const handleSaveProfile = (updatedData) => {
         console.log("Saving profile data to database:", updatedData);
+        setUser(prev => ({...prev, ...updatedData}));
+    };
+
+    const handleBalanceUpdate = (amount) => {
+        setUser(prev => ({...prev, balance: prev.balance + amount}));
     };
 
     const handleLogout = () => {
@@ -359,12 +476,20 @@ export default function AccountPage() {
                     </aside>
 
                     <div className="lg:col-span-2 space-y-8">
+                        <WalletSection balance={user.balance} onAddBalanceClick={() => setShowAddBalanceModal(true)} />
                         <ActivitySection sessions={MOCK_SESSIONS} />
                         <SavedContentSection content={MOCK_BOOKMARKED_CONTENT} />
                         <LogoutButton />
                     </div>
                 </div>
             </div>
+
+            {showAddBalanceModal && (
+                <AddBalanceModal 
+                    onClose={() => setShowAddBalanceModal(false)}
+                    onBalanceUpdate={handleBalanceUpdate}
+                />
+            )}
         </div>
     );
 };

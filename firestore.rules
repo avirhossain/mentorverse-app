@@ -230,6 +230,35 @@ service cloud.firestore {
       allow update: if isExistingOwnerOrAdmin(menteeId) && request.resource.data.menteeId == resource.data.menteeId;
       allow delete: if isExistingOwnerOrAdmin(menteeId);
     }
+
+    /**
+     * @description Coupon codes for adding balance.
+     * @path /coupons/{couponId}
+     * @allow (get) Any authenticated user can attempt to read a coupon.
+     * @allow (list, create, update, delete) Only admins can manage coupons.
+     * @principle Public read for redemption, admin-only writes for management.
+     */
+    match /coupons/{couponId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isExistingAdmin();
+      allow delete: if isExistingAdmin();
+    }
+
+    /**
+     * @description Pending payments for manual verification.
+     * @path /pending_payments/{paymentId}
+     * @allow (create) A user can submit a payment for verification for themselves.
+     * @allow (list, get, update, delete) Only admins can manage pending payments.
+     * @principle User-self-creation, admin-only management.
+     */
+    match /pending_payments/{paymentId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(request.resource.data.userId);
+      allow update: if isExistingAdmin();
+      allow delete: if isExistingAdmin();
+    }
   }
 }
-    
