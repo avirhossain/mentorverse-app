@@ -4,6 +4,7 @@ import {
     User, BookOpen, Clock, Zap, Star, ChevronRight, Calendar, Phone, Cake, Building, Briefcase, Mail, CheckCircle, Save, UploadCloud, LogOut, LayoutGrid, Heart, Bookmark
 } from 'lucide-react';
 import Link from 'next/link';
+import { Header } from '@/components/common/Header';
 
 const MOCK_USER = {
     id: 'user-001',
@@ -317,6 +318,7 @@ const SavedContentSection = ({ content }) => (
 
 export default function AccountPage() {
     const user = MOCK_USER;
+    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     
     const handleSaveProfile = (updatedData) => {
         console.log("Saving profile data to database:", updatedData);
@@ -340,13 +342,15 @@ export default function AccountPage() {
     );
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-900 p-4 sm:p-8 font-sans transition duration-300">
-            <div className="max-w-6xl mx-auto">
-                <header className="py-6 border-b-2 border-primary/20 dark:border-primary/70 mb-8">
-                  <Link href="/" className="text-4xl font-extrabold text-gray-900 dark:text-white flex items-center">
+        <div className="min-h-screen bg-background dark:bg-gray-900 font-sans transition duration-300">
+            <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} currentView="account"/>
+
+            <div className="max-w-6xl mx-auto p-4 sm:p-8">
+                <header className="py-6 mb-8">
+                  <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white flex items-center">
                       <User className="w-8 h-8 mr-3 text-primary" />
                       Account Dashboard
-                  </Link>
+                  </h1>
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

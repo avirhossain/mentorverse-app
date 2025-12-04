@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Home, Zap, Lightbulb, User, Shield } from 'lucide-react';
 
-export const Header = ({ isMenuOpen, setIsMenuOpen, currentView, setCurrentView }) => (
+export const Header = ({ isMenuOpen, setIsMenuOpen, currentView }) => (
     <header className="sticky top-0 z-50 bg-white shadow-lg border-b border-primary/10">
         <div className="max-w-7xl mx-auto p-4 flex justify-between items-center">
             <Link href="/home" className="text-2xl font-extrabold text-primary">Guidelab</Link>
@@ -31,7 +31,7 @@ export const Header = ({ isMenuOpen, setIsMenuOpen, currentView, setCurrentView 
                  <Link href="/admin" className={`flex items-center transition px-3 py-2 rounded-lg ${currentView === 'admin' ? 'text-primary bg-primary/10 font-bold' : 'hover:text-primary hover:bg-gray-100'}`}>
                     <Shield className="w-5 h-5 mr-1" />Admin
                 </Link>
-                <Link href="/account" className="px-3 py-2 text-white bg-primary hover:bg-primary/90 rounded-full transition shadow-md flex items-center">
+                <Link href="/account" className={`flex items-center transition px-3 py-2 rounded-full ${currentView === 'account' ? 'text-white bg-primary font-bold' : 'text-white bg-primary hover:bg-primary/90'}`}>
                     <User className="w-5 h-5 mr-2" /> Account
                 </Link>
             </nav>
