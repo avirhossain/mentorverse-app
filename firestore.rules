@@ -138,9 +138,9 @@ service cloud.firestore {
     match /mentors/{mentorId} {
       allow get: if true;
       allow list: if true;
-      allow create: if isAdmin();
+      allow create: if isSignedIn();
       allow update: if isSignedIn(); // Allows signed-in users to add reviews.
-      allow delete: if isAdmin();
+      allow delete: if isSignedIn();
     }
     
     /**
