@@ -376,12 +376,12 @@ const MenteeForm = ({ mentee, onSave, onClose }) => {
 };
 
 
-const SessionForm = ({ onSave, onClose }) => {
+const SessionForm = ({ mentors, onSave, onClose }) => {
     const { toast } = useToast();
     const firestore = useFirestore();
     const [formData, setFormData] = useState({
         title: '',
-        mentorName: '',
+        mentorId: '',
         date: '',
         time: '',
         durationMinutes: 60,
@@ -391,22 +391,28 @@ const SessionForm = ({ onSave, onClose }) => {
     });
 
     const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleTypeChange = (value) => {
-        setFormData(prev => ({
-            ...prev,
-            type: value,
-            price: value === 'Free' ? 0 : prev.price,
-        }));
+    const handleSelectChange = (name, value) => {
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!firestore) {
             toast({ variant: 'destructive', title: 'Error', description: 'Firestore is not available.' });
+            return;
+        }
+        if (!formData.mentorId) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please select a mentor.' });
+            return;
+        }
+        
+        const selectedMentor = mentors.find(m => m.id === formData.mentorId);
+        if (!selectedMentor) {
+             toast({ variant: 'destructive', title: 'Error', description: 'Selected mentor not found.' });
             return;
         }
 
@@ -416,6 +422,7 @@ const SessionForm = ({ onSave, onClose }) => {
 
             const newSession = {
                 ...formData,
+                mentorName: selectedMentor.name,
                 isFree: formData.type === 'Free',
                 price: Number(formData.price),
                 maxParticipants: Number(formData.maxParticipants),
@@ -443,12 +450,25 @@ const SessionForm = ({ onSave, onClose }) => {
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <Input name="title" placeholder="Session Title" value={formData.title} onChange={handleChange} required />
-            <Input name="mentorName" placeholder="Mentor Name" value={formData.mentorName} onChange={handleChange} required />
+            
+            <Select onValueChange={(value) => handleSelectChange('mentorId', value)} value={formData.mentorId}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Select a mentor" />
+                </SelectTrigger>
+                <SelectContent>
+                    {mentors.map(mentor => (
+                        <SelectItem key={mentor.id} value={mentor.id}>
+                            {mentor.name}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+
             <Input name="date" type="text" placeholder="Date (e.g., 25th December)" value={formData.date} onChange={handleChange} required />
             <Input name="time" type="text" placeholder="Time (e.g., 11:00 AM)" value={formData.time} onChange={handleChange} required />
             <Input name="durationMinutes" type="number" placeholder="Duration (in minutes)" value={formData.durationMinutes} onChange={handleChange} required />
             
-            <Select onValueChange={handleTypeChange} defaultValue={formData.type}>
+            <Select onValueChange={(value) => handleSelectChange('type', value)} value={formData.type}>
                 <SelectTrigger>
                     <SelectValue placeholder="Select session type" />
                 </SelectTrigger>
@@ -859,7 +879,7 @@ export default function AdminPage() {
 
         {modalState.type === 'session' && (
             <Modal title="Create New Session" onClose={closeModal}>
-                <SessionForm onSave={handleSaveSession} onClose={closeModal} />
+                <SessionForm mentors={mentors} onSave={handleSaveSession} onClose={closeModal} />
             </Modal>
         )}
 

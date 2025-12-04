@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Home, Zap, Lightbulb, User, Shield, LogIn, ArrowRight, X, LogOut } from 'lucide-react';
@@ -103,9 +103,13 @@ const LoginModal = ({ onClose }) => {
 };
 
 
-export const Header = ({ currentView }) => {
+export const Header = ({ currentView, showLoginModal: showLoginModalProp, setShowLoginModal: setShowLoginModalProp }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [showLoginModal, setShowLoginModal] = useState(false);
+    const [internalShowLoginModal, setInternalShowLoginModal] = useState(false);
+
+    const showLoginModal = showLoginModalProp !== undefined ? showLoginModalProp : internalShowLoginModal;
+    const setShowLoginModal = setShowLoginModalProp !== undefined ? setShowLoginModalProp : setInternalShowLoginModal;
+
     const { user, isUserLoading } = useUser();
     const auth = useAuth();
     const isAdminView = currentView === 'admin';

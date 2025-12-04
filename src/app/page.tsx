@@ -1,13 +1,15 @@
 'use client';
-import React from 'react';
-import { Star, CheckCircle, Zap, User, Calendar, Clock, Users } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Star, CheckCircle, Zap, User, Calendar, Clock, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, orderBy, doc, runTransaction } from 'firebase/firestore';
 import type { Mentor, Session } from '@/lib/types';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+
 
 const MentorCardSkeleton = () => (
     <div className="bg-white rounded-xl shadow-lg p-5 sm:p-6 flex flex-col items-start border border-gray-100 h-full">
@@ -75,13 +77,16 @@ const SessionCardSkeleton = () => (
     </div>
   );
 
-const SessionCard = ({ session }: { session: Session }) => (
+const SessionCard = ({ session, onBook }: { session: Session, onBook: (session: Session) => void }) => (
     <div className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-primary flex flex-col justify-between transition duration-300 hover:shadow-2xl hover:scale-[1.01] transform">
         <div>
             <h3 className="text-xl font-bold text-gray-800 mb-1">{session.title}</h3>
             <p className="text-md text-gray-600 flex items-center mb-2">
                 <User className="w-4 h-4 mr-2 text-primary" />
-                Mentor: <span className="font-extrabold text-primary ml-1">{session.mentorName}</span>
+                Mentor:
+                <Link href={`/mentors/${session.mentorId}`} className="font-extrabold text-primary ml-1 hover:underline">
+                    {session.mentorName}
+                </Link>
             </p>
             <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500">
                 <p className="flex items-center font-medium">
@@ -94,17 +99,158 @@ const SessionCard = ({ session }: { session: Session }) => (
                 </p>
             </div>
         </div>
-        <Link href="/sessions" className="w-full mt-6">
-            <Button className="w-full font-bold text-lg">
-                View Session
-            </Button>
-        </Link>
+        <Button onClick={() => onBook(session)} className="w-full font-bold text-lg mt-6">
+            Book Session
+        </Button>
     </div>
 );
+
+const RegistrationModal = ({ session, user, onClose, onLogin }) => {
+    const [step, setStep] = React.useState(user ? 'form' : 'auth_check');
+    const [reason, setReason] = React.useState('');
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const { toast } = useToast();
+    const firestore = useFirestore();
+
+    useEffect(() => {
+        if (user) {
+            setStep('form');
+        } else {
+            setStep('auth_check');
+        }
+    }, [user]);
+
+    const handleBooking = async () => {
+        if (!user || !firestore) {
+            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to book.' });
+            return;
+        }
+
+        setIsSubmitting(true);
+        const sessionRef = doc(firestore, 'sessions', session.id);
+        const userRef = doc(firestore, 'users', user.uid);
+
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                const sessionDoc = await transaction.get(sessionRef);
+                const userDoc = await transaction.get(userRef);
+
+                if (!sessionDoc.exists()) throw new Error("Session does not exist.");
+                if (!userDoc.exists()) throw new Error("User profile not found.");
+
+                const currentSessionData = sessionDoc.data() as Session;
+                const currentUserData = userDoc.data();
+
+                if ((currentSessionData.bookedBy?.length || 0) >= currentSessionData.maxParticipants) {
+                    throw new Error("This session is already full.");
+                }
+                if (currentSessionData.bookedBy?.includes(user.uid)) {
+                    throw new Error("You have already booked this session.");
+                }
+                if (!currentSessionData.isFree) {
+                    const price = currentSessionData.price || 0;
+                    const balance = currentUserData.balance || 0;
+                    if (balance < price) {
+                        throw new Error("Insufficient balance.");
+                    }
+                    transaction.update(userRef, { balance: balance - price });
+                }
+
+                transaction.update(sessionRef, {
+                    bookedBy: [...(currentSessionData.bookedBy || []), user.uid]
+                });
+            });
+
+            toast({ title: 'Success!', description: 'You have successfully booked the session.' });
+            setStep('thank_you');
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Booking Failed', description: error.message });
+            setIsSubmitting(false);
+        }
+    };
+    
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        handleBooking();
+    };
+
+    const renderContent = () => {
+        switch (step) {
+            case 'auth_check':
+                return (
+                    <div className="text-center py-6">
+                        <h3 className="text-2xl font-bold text-gray-800 mb-3">Please Login to Book</h3>
+                        <p className="text-gray-600 mb-6">
+                            To book a spot for this exclusive session, you need to have an account.
+                        </p>
+                        <Button
+                            onClick={onLogin}
+                            className="w-full py-3 font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-md"
+                        >
+                            Login
+                        </Button>
+                    </div>
+                );
+
+            case 'form':
+                return (
+                    <form onSubmit={handleSubmit} className="pt-2">
+                        <h3 className="text-2xl font-bold text-gray-800 mb-2">Register for the Session</h3>
+                        <p className="text-md text-primary font-semibold mb-4">{session.title}</p>
+                        <button 
+                            type="submit" 
+                            className="w-full py-3 text-lg font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-md flex items-center justify-center disabled:opacity-50"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? 'Processing...' : session.isFree ? 'Book for Free' : `Pay ৳${session.price} & Book`}
+                        </button>
+                    </form>
+                );
+
+            case 'thank_you':
+                return (
+                    <div className="text-center py-8">
+                        <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                        <h3 className="text-2xl font-bold text-gray-800 mb-2">Registration Submitted!</h3>
+                        <p className="text-gray-600 mb-6">
+                            Thank you! You've successfully booked **{session.title}**. We have sent a confirmation and calendar invite to your email.
+                        </p>
+                        <button 
+                            onClick={onClose} 
+                            className="mt-4 w-full py-2 font-semibold text-white bg-primary hover:bg-primary/90 rounded-lg transition"
+                        >
+                            Close
+                        </button>
+                    </div>
+                );
+
+            default:
+                return null;
+        }
+    };
+    
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all">
+                <div className="p-4 flex justify-end">
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+                <div className="px-6 pb-6 pt-0">
+                    {renderContent()}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 
 export default function HomePage() {
     const firestore = useFirestore();
+    const { user, isUserLoading } = useUser();
+    const [sessionToBook, setSessionToBook] = useState<Session | null>(null);
+    const [showLoginModalFromBooking, setShowLoginModalFromBooking] = useState(false);
 
     const mentorsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -119,9 +265,21 @@ export default function HomePage() {
     const { data: mentors, isLoading: isLoadingMentors } = useCollection<Mentor>(mentorsQuery);
     const { data: sessions, isLoading: isLoadingSessions } = useCollection<Session>(sessionsQuery);
 
+    const handleBookSession = (session: Session) => {
+        if (user) {
+            setSessionToBook(session);
+        } else {
+            setShowLoginModalFromBooking(true);
+        }
+    };
+
+    const handleCloseModal = () => {
+        setSessionToBook(null);
+    };
+
     return (
         <div className="min-h-screen bg-background font-sans">
-            <Header currentView="home"/>
+            <Header currentView="home" showLoginModal={showLoginModalFromBooking} setShowLoginModal={setShowLoginModalFromBooking} />
 
             <section className="bg-primary/5 text-center py-20 px-4">
                 <div className="max-w-4xl mx-auto">
@@ -172,12 +330,24 @@ export default function HomePage() {
                              Array.from({ length: 3 }).map((_, index) => <SessionCardSkeleton key={index} />)
                         ) : (
                             sessions?.slice(0, 3).map((session) => (
-                                <SessionCard key={session.id} session={session} />
+                                <SessionCard key={session.id} session={session} onBook={handleBookSession} />
                             ))
                         )}
                     </div>
                 </section>
             </main>
+
+            {sessionToBook && (
+                <RegistrationModal
+                    session={sessionToBook}
+                    user={user}
+                    onClose={handleCloseModal}
+                    onLogin={() => {
+                        handleCloseModal();
+                        setShowLoginModalFromBooking(true);
+                    }}
+                />
+            )}
         </div>
     );
 };
