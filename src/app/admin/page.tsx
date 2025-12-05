@@ -528,8 +528,9 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
         learningObjectives: '',
         whoIsItFor: '',
         setupRequirements: '',
+        specialRequests: [],
         ...session,
-        learningObjectives: Array.isArray(session?.learningObjectives) ? session.learningObjectives.join(', ') : '',
+        learningObjectives: Array.isArray(session?.learningObjectives) ? session.learningObjectives.join('\n') : '',
     });
 
     const handleChange = (e) => {
@@ -566,7 +567,7 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
                 price: Number(formData.price),
                 maxParticipants: Number(formData.maxParticipants),
                 durationMinutes: Number(formData.durationMinutes),
-                learningObjectives: formData.learningObjectives.split(',').map(s => s.trim()).filter(s => s),
+                learningObjectives: formData.learningObjectives.split('\n').map(s => s.trim()).filter(s => s),
             };
 
             let sessionData;
@@ -635,10 +636,21 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
 
             <Input name="maxParticipants" type="number" placeholder="Max Participants" value={formData.maxParticipants} onChange={handleChange} required />
             
-            <Textarea name="learningObjectives" placeholder="What will they learn? (comma-separated)" value={formData.learningObjectives} onChange={handleChange} />
+            <Textarea name="learningObjectives" placeholder="What will they learn? (one per line)" value={formData.learningObjectives} onChange={handleChange} rows={4} />
             <Textarea name="whoIsItFor" placeholder="Who is this session for?" value={formData.whoIsItFor} onChange={handleChange} />
             <Textarea name="setupRequirements" placeholder="Setup requirements (e.g., Laptop, Specific software)" value={formData.setupRequirements} onChange={handleChange} />
 
+            {isEditing && formData.specialRequests && formData.specialRequests.length > 0 && (
+                <div className="space-y-3 p-4 border rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                    <h4 className="font-semibold text-lg text-gray-800 dark:text-white">Special Requests from Mentees</h4>
+                    {formData.specialRequests.map((req, index) => (
+                        <div key={index} className="p-3 border rounded-md bg-white dark:bg-gray-800">
+                             <p className="text-sm text-gray-700 dark:text-gray-200">"{req.request}"</p>
+                             <p className="text-xs text-right text-gray-500 dark:text-gray-400 font-medium">- {req.userName}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             <div className="flex justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>

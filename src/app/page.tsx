@@ -137,17 +137,17 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
             </div>
         </div>
         <div className="mt-6">
-            {isBooked ? (
-                 <div className="text-center">
-                    <Button asChild variant={canJoin ? 'default' : 'outline'} disabled={!canJoin}>
-                        <a href={canJoin ? session.jitsiLink : undefined} target="_blank" rel="noopener noreferrer" className="w-full font-bold">
-                            <Video className="mr-2" /> Join Session
-                        </a>
-                    </Button>
-                    <p className="text-xs text-gray-500 mt-2">Link will be active 10m before the session starts.</p>
-                </div>
-            ) : (
-                <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+                {isBooked ? (
+                     <div className="text-center w-full">
+                        <Button asChild variant={canJoin ? 'default' : 'outline'} disabled={!canJoin}>
+                            <a href={canJoin ? session.jitsiLink : undefined} target="_blank" rel="noopener noreferrer" className="w-full font-bold">
+                                <Video className="mr-2" /> Join Session
+                            </a>
+                        </Button>
+                        <p className="text-xs text-gray-500 mt-2">Link will be active 10m before the session starts.</p>
+                    </div>
+                ) : (
                     <Button 
                         onClick={() => onBook(session)} 
                         disabled={isFull} 
@@ -155,13 +155,13 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
                     >
                          {isFull ? 'Session Full' : 'Book Session'}
                     </Button>
-                    <Button asChild variant="outline">
-                        <Link href={`/sessions/${session.id}`}>
-                            See More
-                        </Link>
-                    </Button>
-                </div>
-            )}
+                )}
+                 <Button asChild variant="outline">
+                    <Link href={`/sessions/${session.id}`}>
+                        See More
+                    </Link>
+                </Button>
+            </div>
         </div>
     </div>
     )
@@ -467,5 +467,3 @@ export default function HomePage() {
         </div>
     );
 };
-
-    

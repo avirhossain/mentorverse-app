@@ -1,15 +1,17 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { doc, runTransaction } from 'firebase/firestore';
-import type { Session } from '@/lib/types';
+import { doc, runTransaction, updateDoc, arrayUnion } from 'firebase/firestore';
+import type { Session, Mentee } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Computer, Users, Video, X } from 'lucide-react';
+import { CheckCircle, Clock, Computer, Users, Video, X, MessageSquare, Send } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { Textarea } from '@/components/ui/textarea';
 
 const DetailSection = ({ icon: Icon, title, children }) => (
     <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-primary/20">
@@ -67,7 +69,7 @@ const BookingModal = ({ session, user, onClose, onBookingComplete }) => {
                 if (!userDoc.exists()) throw new Error("User profile not found.");
 
                 const currentSessionData = sessionDoc.data() as Session;
-                const currentUserData = userDoc.data();
+                const currentUserData = userDoc.data() as Mentee;
 
                 if ((currentSessionData.bookedBy?.length || 0) >= currentSessionData.maxParticipants) {
                     throw new Error("This session is already full.");
@@ -115,16 +117,85 @@ const BookingModal = ({ session, user, onClose, onBookingComplete }) => {
     );
 };
 
+const SpecialRequestModal = ({ session, user, onClose, onComplete }) => {
+    const [requestText, setRequestText] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const firestore = useFirestore();
+    const { toast } = useToast();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!firestore || !user || !requestText.trim()) return;
+
+        setIsSubmitting(true);
+        const sessionRef = doc(firestore, 'sessions', session.id);
+
+        try {
+            await updateDoc(sessionRef, {
+                specialRequests: arrayUnion({
+                    userId: user.uid,
+                    userName: user.displayName || 'Anonymous',
+                    request: requestText,
+                    createdAt: new Date().toISOString(),
+                })
+            });
+            toast({ title: 'Success!', description: 'Your special request has been sent.' });
+            onComplete();
+            onClose();
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Submission Failed', description: error.message });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center p-4">
+            <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all">
+                <div className="p-4 flex justify-between items-center border-b">
+                    <h3 className="text-2xl font-bold text-gray-800 flex items-center">
+                        <MessageSquare className="w-6 h-6 mr-2 text-primary" />
+                        Special Request
+                    </h3>
+                    <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
+                </div>
+                <div className="p-6 space-y-4">
+                    <p className="text-gray-600">
+                        Have a specific question or topic you'd like the mentor to cover? Let them know!
+                    </p>
+                    <Textarea 
+                        value={requestText}
+                        onChange={(e) => setRequestText(e.target.value)}
+                        placeholder="E.g., Can we discuss salary negotiation strategies?"
+                        maxLength={90}
+                        rows={3}
+                        required
+                    />
+                    <div className="text-right text-sm text-gray-500">
+                        {requestText.length} / 90
+                    </div>
+                </div>
+                 <div className="px-6 pb-6">
+                    <Button type="submit" disabled={isSubmitting} className="w-full font-bold text-lg">
+                        {isSubmitting ? 'Sending...' : 'Send Request'}
+                    </Button>
+                </div>
+            </form>
+        </div>
+    );
+};
+
 export default function SessionDetailsPage({ params }: { params: { id: string } }) {
     const firestore = useFirestore();
     const { user } = useUser();
     const [bookingUpdate, setBookingUpdate] = useState(0);
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+    const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
     
     const sessionRef = useMemoFirebase(() => {
-        if (!firestore || !params.id) return null;
+        if (!firestore) return null;
         return doc(firestore, 'sessions', params.id);
-    }, [firestore, params, bookingUpdate]);
+    }, [firestore, params]);
 
     const { data: session, isLoading } = useDoc<Session>(sessionRef);
     
@@ -217,13 +288,17 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
                                 <p className="flex items-center"><Video className="w-5 h-5 mr-2 text-primary/70" /> <strong>Platform:</strong> <span className="ml-auto">Jitsi Meet</span></p>
                             </div>
                             {isBooked ? (
-                                <div className="text-center mt-6">
+                                <div className="text-center mt-6 space-y-3">
                                     <Button asChild variant={canJoin ? 'default' : 'outline'} disabled={!canJoin} className="w-full font-bold">
                                         <a href={canJoin ? session.jitsiLink : undefined} target="_blank" rel="noopener noreferrer">
                                             <Video className="mr-2" /> Join Session
                                         </a>
                                     </Button>
                                     <p className="text-xs text-gray-500 mt-2">Link will be active 10m before the session starts.</p>
+                                    <Button variant="secondary" onClick={() => setIsRequestModalOpen(true)} className="w-full">
+                                        <MessageSquare className="w-4 h-4 mr-2"/>
+                                        Make a Special Request
+                                    </Button>
                                 </div>
                             ) : (
                                  <Button 
@@ -245,6 +320,14 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
                     user={user}
                     onClose={() => setIsBookingModalOpen(false)}
                     onBookingComplete={handleBookingComplete}
+                />
+            )}
+             {isRequestModalOpen && isBooked && user && (
+                <SpecialRequestModal
+                    session={session}
+                    user={user}
+                    onClose={() => setIsRequestModalOpen(false)}
+                    onComplete={handleBookingComplete}
                 />
             )}
         </div>

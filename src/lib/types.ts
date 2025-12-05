@@ -86,6 +86,12 @@ export interface Session {
     learningObjectives?: string[];
     whoIsItFor?: string;
     setupRequirements?: string;
+    specialRequests?: {
+        userId: string;
+        userName: string;
+        request: string;
+        createdAt: string;
+    }[];
 }
 
 export interface Tip {
