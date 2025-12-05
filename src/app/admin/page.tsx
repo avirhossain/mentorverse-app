@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label';
 
 
 const Modal = ({ title, children, onClose }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl transform transition-all">
       <div className="p-4 flex justify-between items-center border-b dark:border-gray-700">
         <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{title}</h3>
@@ -1348,9 +1348,9 @@ export default function AdminPage() {
             ]}
             renderActions={(mentor) => (
                 <>
-                    <Link href={`/mentors/${mentor.id}`} passHref>
-                        <Button asChild variant="ghost" size="sm"><a><Eye className="w-4 h-4" /></a></Button>
-                    </Link>
+                    <Button asChild variant="ghost" size="sm">
+                        <Link href={`/mentors/${mentor.id}`}><Eye className="w-4 h-4" /></Link>
+                    </Button>
                     {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('mentor', mentor)}><Edit className="w-4 h-4" /></Button>}
                     {canDelete && <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -1387,9 +1387,9 @@ export default function AdminPage() {
                 ]}
                 renderActions={(session) => (
                      <>
-                        <Link href={`/admin/sessions/${session.id}`} passHref>
-                            <Button asChild variant="ghost" size="sm"><a><Eye className="w-4 h-4" /></a></Button>
-                        </Link>
+                        <Button asChild variant="ghost" size="sm">
+                            <Link href={`/admin/sessions/${session.id}`}><Eye className="w-4 h-4" /></Link>
+                        </Button>
                         {session.status === 'scheduled' && canWrite && (
                             <Button size="sm" onClick={() => handleUpdateSessionStatus(session, 'active')}>
                                 <PlayCircle className="w-4 h-4 mr-2" />
@@ -1477,9 +1477,9 @@ export default function AdminPage() {
                 ]}
                 renderActions={(mentee) => (
                     <>
-                        <Link href={`/account?userId=${mentee.id}`} passHref>
-                           <Button asChild variant="ghost" size="sm"><a><Eye className="w-4 h-4" /></a></Button>
-                        </Link>
+                        <Button asChild variant="ghost" size="sm">
+                           <Link href={`/account?userId=${mentee.id}`}><Eye className="w-4 h-4" /></Link>
+                        </Button>
                         {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('mentee', mentee)}><Edit className="w-4 h-4" /></Button>}
                         {canDelete && <AlertDialog>
                             <AlertDialogTrigger asChild>
