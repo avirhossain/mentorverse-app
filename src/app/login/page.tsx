@@ -24,7 +24,7 @@ const loginSchema = z.object({
 
 export default function LoginPage() {
     const router = useRouter();
-    const { user, isUserLoading } = useUser();
+    const { user, isAdmin, isAuthCheckComplete } = useUser();
     const auth = useAuth();
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -60,33 +60,18 @@ export default function LoginPage() {
         return { isNewUser };
     };
 
-    const handleRedirect = async (user: User) => {
-        const { isNewUser } = await createUserProfile(user);
-        
-        // Check if the user is an admin by querying the 'admins' collection
-        if (firestore && user.email) {
-            const adminDocRef = doc(firestore, 'admins', user.email);
-            const adminDocSnap = await getDoc(adminDocRef);
-            if (adminDocSnap.exists()) {
+    // This effect handles redirection after a user logs in.
+    useEffect(() => {
+        if (isAuthCheckComplete && user) {
+            if (isAdmin) {
                 router.push('/admin');
-                return;
+            } else {
+                 // Non-admin users are redirected to the homepage or account page.
+                router.push('/');
             }
         }
-        
-        if (isNewUser) {
-            // New regular users go to their account page
-            router.push('/account');
-        } else {
-            // Existing regular users go to the homepage
-            router.push('/');
-        }
-    }
+    }, [user, isAdmin, isAuthCheckComplete, router]);
 
-    useEffect(() => {
-        if (!isUserLoading && user) {
-            handleRedirect(user);
-        }
-    }, [user, isUserLoading]);
 
     const handleLogin = async (values: z.infer<typeof loginSchema>) => {
         if (!auth) return;
@@ -95,8 +80,8 @@ export default function LoginPage() {
         const { identifier, password } = values;
         
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
-            // handleRedirect is now called by the useEffect hook
+            // After sign-in, the useEffect will handle the redirection.
+            await signInWithEmailAndPassword(auth, identifier, password);
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -115,7 +100,8 @@ export default function LoginPage() {
         const provider = new GoogleAuthProvider();
         try {
             const result = await signInWithPopup(auth, provider);
-            // handleRedirect is now called by the useEffect hook
+            // After sign-in, the useEffect will handle redirection which also handles profile creation.
+            await createUserProfile(result.user);
         } catch (error: any) {
              toast({
                 variant: 'destructive',
@@ -126,13 +112,22 @@ export default function LoginPage() {
         }
     };
 
-    if (isUserLoading || user) {
+    if (isAuthCheckComplete && user) {
         return (
+             <div className="flex items-center justify-center min-h-screen">
+                <p>Redirecting...</p>
+            </div>
+        );
+    }
+    
+    if (!isAuthCheckComplete) {
+         return (
              <div className="flex items-center justify-center min-h-screen">
                 <p>Loading...</p>
             </div>
         );
     }
+
 
     return (
         <div className="min-h-screen bg-background">
