@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -8,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword, User, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, User } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +17,7 @@ import { Shield } from 'lucide-react';
 
 const adminLoginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
+  password: z.string().min(1, { message: 'Password is required.' }),
 });
 
 export default function AdminLoginPage() {
@@ -30,6 +30,7 @@ export default function AdminLoginPage() {
         resolver: zodResolver(adminLoginSchema),
         defaultValues: {
             email: '',
+            password: '',
         },
     });
 
@@ -66,36 +67,10 @@ export default function AdminLoginPage() {
         setIsLoading(true);
 
         try {
-            let userCredential;
-            const tempPassword = 'password123'; // A temporary, known password for this process
-
-            try {
-                // Try to sign in first
-                userCredential = await signInWithEmailAndPassword(auth, values.email, tempPassword);
-            } catch (error: any) {
-                // If the user does not exist, create them.
-                if (error.code === 'auth/user-not-found') {
-                     try {
-                        userCredential = await createUserWithEmailAndPassword(auth, values.email, tempPassword);
-                    } catch (creationError: any) {
-                        // This might fail if the user exists but the password is wrong.
-                        // In a real scenario, you'd want a password reset flow.
-                        // For this direct entry goal, we will inform the user of the password mismatch.
-                        throw new Error('An account exists, but the password was incorrect. Cannot proceed with direct entry.');
-                    }
-                } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-login-credentials') {
-                    // This case means the user exists but the password doesn't match our temp one.
-                    // This is a complex state to recover from without user interaction (password reset).
-                    // For now, we will block this to prevent unexpected behavior.
-                     throw new Error('Admin account exists with a different password. Please use the "Forgot Password" flow on the main login page to reset it if needed.');
-                }
-                else {
-                    throw error; // Re-throw other sign-in errors
-                }
-            }
+            const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
             
             if (!userCredential) {
-                throw new Error("Could not sign in or create admin user.");
+                throw new Error("Could not sign in admin user.");
             }
 
             // Set the custom claim and then force a token refresh.
@@ -113,7 +88,7 @@ export default function AdminLoginPage() {
             toast({
                 variant: 'destructive',
                 title: 'Admin Login Failed',
-                description: error.message || 'Could not grant admin access. Please check server logs.',
+                description: error.message || 'Could not grant admin access. Please check credentials.',
             });
             setIsLoading(false);
         }
@@ -130,7 +105,7 @@ export default function AdminLoginPage() {
                             Admin Access
                         </h1>
                         <p className="mt-2 text-gray-500">
-                            Enter the admin email for direct access.
+                            Sign in to the admin dashboard.
                         </p>
                     </div>
 
@@ -144,6 +119,19 @@ export default function AdminLoginPage() {
                                         <FormLabel>Admin Email</FormLabel>
                                         <FormControl>
                                             <Input placeholder="admin@example.com" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Password</FormLabel>
+                                        <FormControl>
+                                            <Input type="password" placeholder="••••••••" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
