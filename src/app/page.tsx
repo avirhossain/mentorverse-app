@@ -210,6 +210,7 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
         setIsSubmitting(true);
         const sessionRef = doc(firestore, 'sessions', session.id);
         const userRef = doc(firestore, 'users', user.uid);
+        const userSessionRef = doc(collection(firestore, `users/${user.uid}/sessions`));
 
         try {
             await runTransaction(firestore, async (transaction) => {
@@ -255,6 +256,21 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
                 transaction.update(sessionRef, {
                     bookedBy: [...(currentSessionData.bookedBy || []), user.uid]
                 });
+
+                transaction.set(userSessionRef, {
+                    id: userSessionRef.id,
+                    title: currentSessionData.title,
+                    mentorName: currentSessionData.mentorName,
+                    mentorId: currentSessionData.mentorId,
+                    date: currentSessionData.date,
+                    time: currentSessionData.time,
+                    isFree: currentSessionData.isFree,
+                    jitsiLink: currentSessionData.jitsiLink,
+                    durationMinutes: currentSessionData.durationMinutes,
+                    price: price,
+                    status: 'scheduled',
+                    createdAt: new Date().toISOString(),
+                 });
             });
             
             onBookingComplete();
@@ -339,7 +355,7 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
                     <div className="text-center py-8">
                         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                         <h3 className="text-2xl font-bold text-gray-800 mb-2">Booking Confirmed!</h3>
-                        <p className="text-gray-600 mb-6">You've successfully booked **{session.title}**. A confirmation has been sent to your email.</p>
+                        <p className="text-gray-600 mb-6">You've successfully booked **{session.title}**. You can view your upcoming sessions in your account dashboard.</p>
                         <Button onClick={onClose} className="w-full">Close</Button>
                     </div>
                 );
@@ -381,7 +397,7 @@ export default function HomePage() {
 
     const sessionsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'sessions'), orderBy('date'));
+        return query(collection(firestore, 'sessions'), orderBy('createdAt', 'desc'));
     }, [firestore, bookingUpdate]);
 
     const { data: mentors, isLoading: isLoadingMentors } = useCollection<Mentor>(mentorsQuery);
@@ -407,7 +423,7 @@ export default function HomePage() {
             <section className="bg-primary/5 text-center py-20 px-4">
                 <div className="max-w-4xl mx-auto">
                     <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight">
-                        Your dream and journey starts now.
+                        Your Dream and Journey Start Now
                     </h1>
                     <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
                         Connect with top-tier mentors, join exclusive sessions, and unlock your full potential with Guidelab.
@@ -475,5 +491,3 @@ export default function HomePage() {
         </div>
     );
 };
-
-    
