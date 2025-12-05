@@ -2,7 +2,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -74,26 +73,39 @@ export default function AdminLoginPage() {
                 // Try to sign in first
                 userCredential = await signInWithEmailAndPassword(auth, values.email, tempPassword);
             } catch (error: any) {
-                // If the user does not exist or password is wrong, create/reset the user.
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                // If the user does not exist, create them.
+                if (error.code === 'auth/user-not-found') {
                      try {
-                        // Attempt to create the user. If it fails because user exists, it means password is wrong, but we can't reset it without user interaction.
-                        // For this direct entry, we will just create the user if they don't exist.
                         userCredential = await createUserWithEmailAndPassword(auth, values.email, tempPassword);
                     } catch (creationError: any) {
-                        // If user already exists, it implies a password mismatch.
-                        // Since we can't reset it here, we will just sign them in again with the known temp password
-                        // This might fail if the user changed their password, but it fulfills the "direct entry" goal for a known state.
-                         userCredential = await signInWithEmailAndPassword(auth, values.email, tempPassword);
+                        // This might fail if the user exists but the password is wrong.
+                        // In a real scenario, you'd want a password reset flow.
+                        // For this direct entry goal, we will inform the user of the password mismatch.
+                        throw new Error('An account exists, but the password was incorrect. Cannot proceed with direct entry.');
                     }
-                } else {
+                } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-login-credentials') {
+                    // This case means the user exists but the password doesn't match our temp one.
+                    // This is a complex state to recover from without user interaction (password reset).
+                    // For now, we will block this to prevent unexpected behavior.
+                     throw new Error('Admin account exists with a different password. Please use the "Forgot Password" flow on the main login page to reset it if needed.');
+                }
+                else {
                     throw error; // Re-throw other sign-in errors
                 }
             }
             
+            if (!userCredential) {
+                throw new Error("Could not sign in or create admin user.");
+            }
+
             // Set the custom claim and then force a token refresh.
             await setAdminClaim(userCredential.user);
             await userCredential.user.getIdTokenResult(true); 
+
+            toast({
+                title: 'Admin Access Granted',
+                description: 'Redirecting to the dashboard...',
+            });
 
             router.push('/admin');
 
@@ -101,7 +113,7 @@ export default function AdminLoginPage() {
             toast({
                 variant: 'destructive',
                 title: 'Admin Login Failed',
-                description: 'Could not grant admin access. Please check server logs.',
+                description: error.message || 'Could not grant admin access. Please check server logs.',
             });
             setIsLoading(false);
         }
