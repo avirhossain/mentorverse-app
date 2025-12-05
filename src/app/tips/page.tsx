@@ -3,7 +3,7 @@
 import React from 'react';
 import { Lightbulb, X, Link as LinkIcon, Video, FileText } from 'lucide-react';
 import { Header } from '@/components/common/Header';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import type { Tip } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,18 +12,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 const ArticleModal = ({ article, onClose }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-70 z-[110] flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl h-[90vh] overflow-hidden transform transition-all flex flex-col">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl h-[90vh] overflow-hidden transform transition-all flex flex-col">
                 
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
-                    <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white z-10">
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center">
                         <FileText className="w-5 h-5 mr-2 text-primary" /> {article.title}
                     </h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition">
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                         <X className="w-6 h-6" />
                     </button>
                 </div>
 
-                <div className="p-6 overflow-y-auto text-gray-700 leading-relaxed space-y-4">
+                <div className="p-6 overflow-y-auto text-gray-700 dark:text-gray-300 leading-relaxed space-y-4">
                     <p className="font-semibold text-lg text-primary border-b pb-2 mb-4">{article.summary}</p>
                     {article.content.split('\n\n').map((paragraph, index) => (
                         <p key={index} className="mb-4 whitespace-pre-line">
@@ -32,7 +32,7 @@ const ArticleModal = ({ article, onClose }) => {
                             )}
                         </p>
                     ))}
-                    <div className="pt-4 mt-6 border-t text-sm text-gray-500">
+                    <div className="pt-4 mt-6 border-t border-gray-200 dark:border-gray-600 text-sm text-gray-500 dark:text-gray-400">
                         <p>This article is provided for your learning. Remember to apply the advice to your specific situation.</p>
                     </div>
                 </div>
@@ -42,7 +42,7 @@ const ArticleModal = ({ article, onClose }) => {
 };
 
 const TipCardSkeleton = () => (
-    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg border-l-8 border-gray-200 flex items-center space-x-4 sm:space-x-6">
+    <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg border-l-8 border-gray-200 flex items-center space-x-4 sm:space-x-6">
         <Skeleton className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex-shrink-0" />
         <div className="flex-grow space-y-2">
             <Skeleton className="h-6 w-3/4" />
@@ -55,14 +55,12 @@ const TipCardSkeleton = () => (
 
 export default function TipsPage() {
     const [selectedArticle, setSelectedArticle] = React.useState(null);
-    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const firestore = useFirestore();
-    const { isAuthCheckComplete } = useUser();
 
     const tipsQuery = useMemoFirebase(() => {
-        if (!firestore || !isAuthCheckComplete) return null;
+        if (!firestore) return null;
         return query(collection(firestore, 'tips'), orderBy('title'));
-    }, [firestore, isAuthCheckComplete]);
+    }, [firestore]);
 
     const { data: tips, isLoading } = useCollection<Tip>(tipsQuery);
 
@@ -78,30 +76,30 @@ export default function TipsPage() {
     const getIconDetails = (type) => {
         switch (type) {
             case 'Article':
-                return { Icon: FileText, color: 'text-blue-600', fill: 'bg-blue-100' };
+                return { Icon: FileText, color: 'text-blue-600 dark:text-blue-400', fill: 'bg-blue-100 dark:bg-blue-900/50' };
             case 'YouTube':
-                return { Icon: Video, color: 'text-red-600', fill: 'bg-red-100' };
+                return { Icon: Video, color: 'text-red-600 dark:text-red-400', fill: 'bg-red-100 dark:bg-red-900/50' };
             case 'Website':
-                return { Icon: LinkIcon, color: 'text-green-600', fill: 'bg-green-100' };
+                return { Icon: LinkIcon, color: 'text-green-600 dark:text-green-400', fill: 'bg-green-100 dark:bg-green-900/50' };
             default:
-                return { Icon: Lightbulb, color: 'text-gray-600', fill: 'bg-gray-100' };
+                return { Icon: Lightbulb, color: 'text-gray-600 dark:text-gray-400', fill: 'bg-gray-100 dark:bg-gray-700' };
         }
     };
 
     return (
-        <div className="bg-background min-h-screen pb-10">
-            <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} currentView="tips"/>
+        <div className="bg-background dark:bg-gray-900 min-h-screen pb-10">
+            <Header currentView="tips"/>
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 relative">
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-8 flex items-center border-b pb-3 border-primary/20">
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-8 flex items-center border-b pb-3 border-primary/20">
                     <Lightbulb className="w-8 h-8 mr-3 text-primary" />
                     Mentees Tips & Essential Resources
                 </h2>
-                <p className="text-lg text-gray-600 mb-10">
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-10">
                     Curated articles, videos, and websites to help you prepare for sessions, level up your skills, and accelerate your career growth.
                 </p>
 
                 <div className="space-y-6">
-                    {isLoading || !isAuthCheckComplete ? (
+                    {isLoading ? (
                         Array.from({length: 4}).map((_, i) => <TipCardSkeleton key={i} />)
                     ) : (
                         tips?.map((resource) => {
@@ -114,7 +112,7 @@ export default function TipsPage() {
                                     key={resource.id} 
                                     onClick={() => handleResourceClick(resource)}
                                     className={`
-                                        bg-white p-4 sm:p-6 rounded-xl shadow-lg border-l-8 border-primary
+                                        bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg border-l-8 border-primary
                                         flex items-center space-x-4 sm:space-x-6 
                                         transition duration-300 hover:shadow-xl transform hover:scale-[1.005] 
                                         cursor-pointer group w-full text-left
@@ -125,10 +123,10 @@ export default function TipsPage() {
                                     </div>
 
                                     <div className="flex-grow">
-                                        <h3 className="text-xl font-bold text-gray-800 group-hover:text-primary transition mb-1">
+                                        <h3 className="text-xl font-bold text-gray-800 dark:text-white group-hover:text-primary transition mb-1">
                                             {resource.title}
                                         </h3>
-                                        <p className="text-sm sm:text-base text-gray-600 mb-2">{resource.summary}</p>
+                                        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mb-2">{resource.summary}</p>
                                         
                                         <div className="mt-2">
                                             <span className={`px-3 py-1 text-xs font-semibold rounded-full ${resource.type === 'Article' ? 'bg-blue-500 text-white' : 'bg-primary/80 text-white'} flex items-center w-fit`}>

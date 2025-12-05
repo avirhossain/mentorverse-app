@@ -330,15 +330,14 @@ const BookingSection = ({ mentor, sessions, onBook }) => {
 
 const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
     const firestore = useFirestore();
-    const { isAuthCheckComplete } = useUser();
     const [showCheckoutModal, setShowCheckoutModal] = React.useState(false);
     const [selectedBooking, setSelectedBooking] = React.useState<Session | null>(null);
     const [bookingUpdate, setBookingUpdate] = React.useState(0);
 
     const mentorSessionsQuery = useMemoFirebase(() => {
-        if (!firestore || !mentor || !isAuthCheckComplete) return null;
+        if (!firestore || !mentor) return null;
         return query(collection(firestore, 'sessions'), where('mentorId', '==', mentor.id));
-    }, [firestore, mentor, isAuthCheckComplete]);
+    }, [firestore, mentor]);
 
     const { data: mentorSessions } = useCollection<Session>(mentorSessionsQuery);
 
@@ -451,13 +450,12 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
 
 export default function MentorPage({ params }: { params: { id: string } }) {
     const firestore = useFirestore();
-    const { isAuthCheckComplete } = useUser();
     const resolvedParams = React.use(params);
 
     const mentorRef = useMemoFirebase(() => {
-        if (!firestore || !isAuthCheckComplete) return null;
+        if (!firestore) return null;
         return doc(firestore, 'mentors', resolvedParams.id);
-    }, [firestore, resolvedParams.id, isAuthCheckComplete]);
+    }, [firestore, resolvedParams.id]);
 
     const { data: mentor, isLoading } = useDoc<Mentor>(mentorRef);
 
@@ -465,7 +463,7 @@ export default function MentorPage({ params }: { params: { id: string } }) {
         <div className="min-h-screen bg-background font-sans">
             <Header />
             <main>
-                {isLoading || !isAuthCheckComplete ? <MentorDetailsSkeleton /> : <MentorDetailsPage mentor={mentor} />}
+                {isLoading ? <MentorDetailsSkeleton /> : <MentorDetailsPage mentor={mentor} />}
             </main>
         </div>
     );

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from '@/firebase';
-import { collection, query, orderBy, doc, runTransaction, addDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, runTransaction, addDoc, arrayUnion } from 'firebase/firestore';
 import type { Mentor, Session, Mentee } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -240,8 +240,7 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
                     transaction.update(userRef, { balance: newBalance });
 
                     // Create a balance transaction record for auditing
-                    const transactionsRef = collection(firestore, 'balance_transactions');
-                    const newTransactionRef = doc(transactionsRef);
+                    const newTransactionRef = doc(collection(firestore, 'balance_transactions'));
                     transaction.set(newTransactionRef, {
                         id: newTransactionRef.id,
                         userId: user.uid,
@@ -253,7 +252,7 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
                 }
 
                 transaction.update(sessionRef, {
-                    bookedBy: [...(currentSessionData.bookedBy || []), user.uid]
+                    bookedBy: arrayUnion(user.uid)
                 });
 
                 transaction.set(userSessionRef, {
@@ -293,8 +292,8 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
             case 'auth_check':
                 return (
                     <div className="text-center py-6">
-                        <h3 className="text-2xl font-bold text-gray-800 mb-3">Please Login to Book</h3>
-                        <p className="text-gray-600 mb-6">To book a spot for this exclusive session, you need to have an account.</p>
+                        <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-3">Please Login to Book</h3>
+                        <p className="text-gray-600 dark:text-gray-300 mb-6">To book a spot for this exclusive session, you need to have an account.</p>
                         <Button onClick={onLogin} className="w-full">Login to Continue</Button>
                     </div>
                 );
@@ -303,8 +302,8 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
                 return (
                      <div className="text-center py-6">
                         <Wallet className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-gray-800 mb-3">Insufficient Balance</h3>
-                        <p className="text-gray-600 mb-6">
+                        <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-3">Insufficient Balance</h3>
+                        <p className="text-gray-600 dark:text-gray-300 mb-6">
                             Your current balance is not enough to book this session. Please add funds to your wallet and try again.
                         </p>
                         <Button onClick={() => router.push('/account')} className="w-full">Go to My Wallet</Button>
@@ -314,27 +313,27 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
             case 'confirmation':
                 return (
                     <div className="pt-2">
-                        <h3 className="text-2xl font-bold text-gray-800 mb-2">Confirm Your Booking</h3>
+                        <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Confirm Your Booking</h3>
                         <p className="text-md text-primary font-semibold mb-4">{session.title}</p>
                         
-                        <div className="border rounded-lg p-4 bg-gray-50 mb-6 space-y-2">
-                             <p className="flex justify-between text-gray-700">
+                        <div className="border border-primary/20 rounded-lg p-4 bg-primary/5 dark:bg-gray-700 mb-6 space-y-2">
+                             <p className="flex justify-between text-gray-700 dark:text-gray-200">
                                 <span className="font-medium">Session Cost:</span>
                                 <span className="font-semibold">{session.isFree ? 'Free' : `৳${session.price}`}</span>
                             </p>
-                             <p className="flex justify-between text-gray-700">
+                             <p className="flex justify-between text-gray-700 dark:text-gray-200">
                                 <span className="font-medium">Your Balance:</span>
                                 <span className="font-semibold">৳{menteeData?.balance || 0}</span>
                             </p>
                             {!session.isFree && (
-                                <p className="flex justify-between text-lg font-bold pt-2 border-t mt-2">
+                                <p className="flex justify-between text-lg font-bold pt-2 border-t border-primary/10 mt-2">
                                     <span>New Balance:</span>
                                     <span className="text-green-600">৳{(menteeData?.balance || 0) - session.price}</span>
                                 </p>
                             )}
                         </div>
 
-                        <p className="text-sm text-gray-500 mb-4">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                             By clicking confirm, you agree to book this session. 
                             {!session.isFree && ` ৳${session.price} will be deducted from your account balance.`}
                         </p>
@@ -353,8 +352,8 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
                 return (
                     <div className="text-center py-8">
                         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-gray-800 mb-2">Booking Confirmed!</h3>
-                        <p className="text-gray-600 mb-6">You've successfully booked **{session.title}**. You can view your upcoming sessions in your account dashboard.</p>
+                        <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Booking Confirmed!</h3>
+                        <p className="text-gray-600 dark:text-gray-300 mb-6">You've successfully booked **{session.title}**. You can view your upcoming sessions in your account dashboard.</p>
                         <Button onClick={onClose} className="w-full">Close</Button>
                     </div>
                 );
@@ -383,21 +382,21 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
 
 export default function HomePage() {
     const firestore = useFirestore();
-    const { user, isAuthCheckComplete } = useUser();
+    const { user } = useUser();
     const [sessionToBook, setSessionToBook] = useState<Session | null>(null);
     const [bookingUpdate, setBookingUpdate] = useState(0);
     const router = useRouter();
 
 
     const mentorsQuery = useMemoFirebase(() => {
-        if (!firestore || !isAuthCheckComplete) return null;
+        if (!firestore) return null;
         return query(collection(firestore, 'mentors'), orderBy('name'));
-    }, [firestore, isAuthCheckComplete]);
+    }, [firestore]);
 
     const sessionsQuery = useMemoFirebase(() => {
-        if (!firestore || !isAuthCheckComplete) return null;
+        if (!firestore) return null;
         return query(collection(firestore, 'sessions'), orderBy('createdAt', 'desc'));
-    }, [firestore, isAuthCheckComplete, bookingUpdate]);
+    }, [firestore, bookingUpdate]);
 
     const { data: mentors, isLoading: isLoadingMentors } = useCollection<Mentor>(mentorsQuery);
     const { data: sessions, isLoading: isLoadingSessions } = useCollection<Session>(sessionsQuery);
@@ -421,10 +420,10 @@ export default function HomePage() {
 
             <section className="bg-primary/5 text-center py-20 px-4">
                 <div className="max-w-4xl mx-auto">
-                    <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight">
+                    <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 dark:text-white leading-tight">
                         Your Dream and Journey Start Now
                     </h1>
-                    <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
+                    <p className="mt-4 text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
                         Connect with top-tier mentors, join exclusive sessions, and unlock your full potential with Mentees.
                     </p>
                     <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
@@ -445,7 +444,7 @@ export default function HomePage() {
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-16">
                 <section id="mentors">
-                    <h2 className="text-3xl sm:text-4xl font-extrabold text-center text-gray-900 mb-8 sm:mb-10">
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-center text-gray-900 dark:text-white mb-8 sm:mb-10">
                         Featured Mentors
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
@@ -460,7 +459,7 @@ export default function HomePage() {
                 </section>
 
                 <section id="sessions">
-                    <h2 className="text-3xl sm:text-4xl font-extrabold text-center text-gray-900 mb-8 sm:mb-10">
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-center text-gray-900 dark:text-white mb-8 sm:mb-10">
                         Upcoming Sessions
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

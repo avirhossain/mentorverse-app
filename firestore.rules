@@ -9,6 +9,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      // Admin status is determined by a custom claim on the auth token.
       return request.auth.token.admin == true;
     }
 
@@ -16,38 +17,42 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    // Admins can do anything
+    // Admins can do anything.
     match /{document=**} {
       allow read, write: if isAdmin();
     }
     
-    // Mentees (users) collection
+    // Mentees (users) collection:
+    // - Users can read and update their own profile.
+    // - Any authenticated user can create their own profile document.
     match /users/{userId} {
       allow read, update: if isOwner(userId);
-      allow create: if isAuth(); // Allow any authenticated user to create their own profile
+      allow create: if isAuth(); 
     }
 
-    // Subcollections for users
+    // User subcollections (e.g., their own sessions list) are owned by the user.
     match /users/{userId}/{subcollection}/{docId} {
         allow read, write: if isOwner(userId);
     }
     
-    // Publicly readable collections
+    // PUBLICLY READABLE collections for all visitors.
     match /mentors/{mentorId} {
-      allow read: if isAuth();
-    }
-    
-    match /sessions/{sessionId} {
-      allow read: if isAuth();
-      // Allow authenticated users to book a session (update the 'bookedBy' array)
-      allow update: if isAuth() && 'bookedBy' in request.resource.data && !(request.resource.data.bookedBy is list);
+      allow read: if true;
     }
     
     match /tips/{tipId} {
-      allow read: if isAuth();
+      allow read: if true;
     }
 
-    // Write-once collections for specific actions
+    // SESSIONS collection:
+    // - Anyone can read the list of sessions.
+    // - Authenticated users can update a session to book it.
+    match /sessions/{sessionId} {
+      allow read: if true;
+      allow update: if isAuth();
+    }
+    
+    // WRITE-ONCE collections for specific actions by any authenticated user.
     match /mentor_applications/{applicationId} {
         allow create: if isAuth();
     }
@@ -56,17 +61,15 @@ service cloud.firestore {
         allow create: if isAuth();
     }
 
-    // Payment related collections should be secure
     match /pending_payments/{paymentId} {
-        allow create: if isAuth(); // Allow users to submit payments
+        allow create: if isAuth();
     }
     
+    // SECURE collections that should not be directly accessed by clients.
     match /coupons/{couponId} {
-        // Users can't read coupons directly, but can redeem them via a transaction
-        allow read: if false; 
+        allow read, write: if false; 
     }
     
-    // Balance transactions should only be created by backend/transactions
     match /balance_transactions/{transactionId} {
         allow read, write: if false;
     }
