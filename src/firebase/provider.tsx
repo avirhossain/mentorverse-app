@@ -3,7 +3,7 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, collection, query, where, getDocs, doc } from 'firebase/firestore';
+import { Firestore } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import type { AdminUser } from '@/lib/types';
@@ -13,7 +13,6 @@ import type { AdminUser } from '@/lib/types';
 interface UserAuthState {
   user: User | null;
   isAdmin: boolean;
-  currentAdmin: AdminUser | null;
   isUserLoading: boolean;
   isAuthCheckComplete: boolean; // New flag
   userError: Error | null;
@@ -57,7 +56,6 @@ export const FirebaseProvider: React.FC<{
   const [userAuthState, setUserAuthState] = useState<UserAuthState>({
     user: null,
     isAdmin: false,
-    currentAdmin: null,
     isUserLoading: true,
     isAuthCheckComplete: false, // Start as false
     userError: null,
@@ -66,7 +64,7 @@ export const FirebaseProvider: React.FC<{
   // Effect to subscribe to Firebase auth state changes
   useEffect(() => {
     if (!auth || !firestore) {
-      setUserAuthState({ user: null, isAdmin: false, currentAdmin: null, isUserLoading: false, isAuthCheckComplete: true, userError: new Error("Auth or Firestore service not provided.") });
+      setUserAuthState({ user: null, isAdmin: false, isUserLoading: false, isAuthCheckComplete: true, userError: new Error("Auth or Firestore service not provided.") });
       return;
     }
 
@@ -75,28 +73,24 @@ export const FirebaseProvider: React.FC<{
       async (firebaseUser) => {
         if (firebaseUser) {
             try {
-                // Check if the user is in the 'admins' collection
-                const adminRef = doc(firestore, 'admins', firebaseUser.email!);
-                const adminDoc = await getDocs(query(collection(firestore, 'admins'), where('email', '==', firebaseUser.email)));
+                // Force refresh to get the latest claims
+                const idTokenResult = await firebaseUser.getIdTokenResult(true);
+                const isAdmin = !!idTokenResult.claims.admin;
+                
+                setUserAuthState({ user: firebaseUser, isAdmin: isAdmin, isUserLoading: false, isAuthCheckComplete: true, userError: null });
 
-                if (!adminDoc.empty) {
-                    const adminData = adminDoc.docs[0].data() as AdminUser;
-                    setUserAuthState({ user: firebaseUser, isAdmin: true, currentAdmin: adminData, isUserLoading: false, isAuthCheckComplete: true, userError: null });
-                } else {
-                    setUserAuthState({ user: firebaseUser, isAdmin: false, currentAdmin: null, isUserLoading: false, isAuthCheckComplete: true, userError: null });
-                }
             } catch (error) {
                  console.error("FirebaseProvider: Error checking admin status:", error);
-                 setUserAuthState({ user: firebaseUser, isAdmin: false, currentAdmin: null, isUserLoading: false, isAuthCheckComplete: true, userError: error as Error });
+                 setUserAuthState({ user: firebaseUser, isAdmin: false, isUserLoading: false, isAuthCheckComplete: true, userError: error as Error });
             }
         } else {
             // No user is logged in
-            setUserAuthState({ user: null, isAdmin: false, currentAdmin: null, isUserLoading: false, isAuthCheckComplete: true, userError: null });
+            setUserAuthState({ user: null, isAdmin: false, isUserLoading: false, isAuthCheckComplete: true, userError: null });
         }
       },
       (error) => {
         console.error("FirebaseProvider: onAuthStateChanged error:", error);
-        setUserAuthState({ user: null, isAdmin: false, currentAdmin: null, isUserLoading: false, isAuthCheckComplete: true, userError: error });
+        setUserAuthState({ user: null, isAdmin: false, isUserLoading: false, isAuthCheckComplete: true, userError: error });
       }
     );
     return () => unsubscribe();
@@ -173,6 +167,6 @@ export const useUser = (): UserHookResult => {
   if (context === undefined) {
     throw new Error('useUser must be used within a FirebaseProvider.');
   }
-  const { user, isUserLoading, userError, isAdmin, currentAdmin, isAuthCheckComplete } = context;
-  return { user, isUserLoading, userError, isAdmin, currentAdmin, isAuthCheckComplete };
+  const { user, isUserLoading, userError, isAdmin, isAuthCheckComplete } = context;
+  return { user, isUserLoading, userError, isAdmin, isAuthCheckComplete };
 };

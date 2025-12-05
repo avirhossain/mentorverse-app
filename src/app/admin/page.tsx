@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown, Eye, Phone, PlayCircle, UserCog } from 'lucide-react';
@@ -17,8 +16,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRouter } from 'next/navigation';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 
 
 const Modal = ({ title, children, onClose }) => (
@@ -754,71 +751,54 @@ const DataListView = ({ title, data, isLoading, icon: Icon, columns, emptyMessag
     </div>
 );
 
-const AdminManagement = ({ firestore, toast, openModal, fetchAdmins, currentAdmin }) => {
+const AdminManagement = ({ toast }) => {
     const [newAdminEmail, setNewAdminEmail] = useState('');
-    const [permissions, setPermissions] = useState({ canRead: true, canWrite: false, canDelete: false });
+    const [newAdminPassword, setNewAdminPassword] = useState('');
     const [isAdding, setIsAdding] = useState(false);
-
-    const adminsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'admins') : null, [firestore, fetchAdmins]);
-    const { data: admins, isLoading, error } = useCollection<AdminUser>(adminsQuery);
-    
-    // This effect ensures the primary super admin exists.
-    useEffect(() => {
-        if (!isLoading && (!admins || admins.length === 0) && firestore) {
-            const initialAdminEmail = 'mmavir89@gmail.com';
-            const adminRef = doc(firestore, 'admins', initialAdminEmail);
-            getDocs(collection(firestore, 'admins')).then(snapshot => {
-                if (snapshot.empty) {
-                    setDoc(adminRef, { 
-                        email: initialAdminEmail, 
-                        createdAt: new Date().toISOString(),
-                        canRead: true,
-                        canWrite: true,
-                        canDelete: true
-                    });
-                }
-            });
-        }
-    }, [admins, isLoading, firestore]);
 
     const handleAddAdmin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!firestore || !newAdminEmail) return;
-        setIsAdding(true);
-        const adminRef = doc(firestore, 'admins', newAdminEmail);
-        try {
-            await setDoc(adminRef, { 
-                email: newAdminEmail, 
-                createdAt: new Date().toISOString(),
-                ...permissions
+        if (!newAdminEmail || !newAdminPassword) {
+            toast({
+                variant: 'destructive',
+                title: 'Missing Fields',
+                description: 'Please enter both an email and a password.',
             });
-            toast({ title: 'Success!', description: `${newAdminEmail} has been added as an admin.` });
+            return;
+        }
+        setIsAdding(true);
+
+        try {
+            const response = await fetch('/api/set-admin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: newAdminEmail, password: newAdminPassword }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to create admin user.');
+            }
+
+            toast({
+                title: 'Admin Created',
+                description: `${newAdminEmail} has been successfully made an administrator.`,
+            });
             setNewAdminEmail('');
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to add admin.' });
+            setNewAdminPassword('');
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Error Creating Admin',
+                description: error.message,
+            });
         } finally {
             setIsAdding(false);
         }
     };
-
-    const handleRemoveAdmin = async (email: string) => {
-        if (!firestore) return;
-        if (email === 'mmavir89@gmail.com') {
-            toast({ variant: 'destructive', title: 'Action Forbidden', description: 'Cannot remove the primary administrator.' });
-            return;
-        }
-        const adminRef = doc(firestore, 'admins', email);
-        try {
-            await deleteDoc(adminRef);
-            toast({ title: 'Success!', description: `${email} has been removed from admins.` });
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to remove admin.' });
-        }
-    };
-    
-    const PermissionIcon = ({ granted }) => (
-        <Check className={`w-4 h-4 ${granted ? 'text-green-500' : 'text-gray-300'}`} />
-    );
 
     return (
         <div className="mt-8">
@@ -835,110 +815,23 @@ const AdminManagement = ({ firestore, toast, openModal, fetchAdmins, currentAdmi
                         onChange={(e) => setNewAdminEmail(e.target.value)}
                         required
                     />
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-                        <Label>Permissions:</Label>
-                         <div className="flex items-center space-x-2">
-                            <Checkbox id="canRead" checked={permissions.canRead} onCheckedChange={(checked) => setPermissions(p => ({...p, canRead: !!checked}))} />
-                            <Label htmlFor="canRead">Read</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Checkbox id="canWrite" checked={permissions.canWrite} onCheckedChange={(checked) => setPermissions(p => ({...p, canWrite: !!checked}))} />
-                            <Label htmlFor="canWrite">Write</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Checkbox id="canDelete" checked={permissions.canDelete} onCheckedChange={(checked) => setPermissions(p => ({...p, canDelete: !!checked}))} />
-                            <Label htmlFor="canDelete">Delete</Label>
-                        </div>
-                    </div>
+                    <Input 
+                        type="password"
+                        placeholder="Password (min. 6 characters)"
+                        value={newAdminPassword}
+                        onChange={(e) => setNewAdminPassword(e.target.value)}
+                        required
+                    />
                     <Button type="submit" disabled={isAdding}>{isAdding ? 'Adding...' : 'Add Admin'}</Button>
                 </form>
-                <div className="space-y-2">
-                    <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Current Admins</h3>
-                     {isLoading ? (
-                        <Skeleton className="h-8 w-full" />
-                    ) : (
-                        admins?.map(admin => (
-                            <div key={admin.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                                <span className="md:col-span-4 font-mono text-gray-800 dark:text-gray-200 truncate">{admin.email}</span>
-                                <div className="md:col-span-5 flex items-center gap-4 text-xs">
-                                     <span className="flex items-center gap-1"><PermissionIcon granted={admin.canRead} /> Read</span>
-                                     <span className="flex items-center gap-1"><PermissionIcon granted={admin.canWrite} /> Write</span>
-                                     <span className="flex items-center gap-1"><PermissionIcon granted={admin.canDelete} /> Delete</span>
-                                </div>
-                                <div className="md:col-span-3 flex justify-start md:justify-end items-center gap-2">
-                                     <Button 
-                                        variant="ghost" 
-                                        size="sm"
-                                        onClick={() => openModal('admin_perms', admin)}
-                                    >
-                                        <Edit className="w-4 h-4" />
-                                    </Button>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="text-red-500 hover:text-red-700" 
-                                        onClick={() => handleRemoveAdmin(admin.email)}
-                                        disabled={admin.email === 'mmavir89@gmail.com'}
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
             </div>
         </div>
     );
 };
 
-const EditAdminPermsForm = ({ admin, onSave, onClose }) => {
-    const [permissions, setPermissions] = useState({
-        canRead: admin.canRead || false,
-        canWrite: admin.canWrite || false,
-        canDelete: admin.canDelete || false,
-    });
-    const { toast } = useToast();
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            await onSave(admin.email, permissions);
-            toast({ title: 'Success!', description: 'Admin permissions updated.' });
-            onClose();
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to update permissions.' });
-        }
-    };
-
-    return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <p className="font-semibold text-lg">Editing permissions for: <span className="font-mono text-primary break-all">{admin.email}</span></p>
-            <div className="flex flex-col space-y-4">
-                 <div className="flex items-center space-x-3 p-3 border rounded-md">
-                    <Checkbox id="editCanRead" checked={permissions.canRead} onCheckedChange={(checked) => setPermissions(p => ({...p, canRead: !!checked}))} />
-                    <Label htmlFor="editCanRead" className="text-base">Can Read: View all data in the admin panel.</Label>
-                </div>
-                <div className="flex items-center space-x-3 p-3 border rounded-md">
-                    <Checkbox id="editCanWrite" checked={permissions.canWrite} onCheckedChange={(checked) => setPermissions(p => ({...p, canWrite: !!checked}))} />
-                    <Label htmlFor="editCanWrite" className="text-base">Can Write: Create and edit mentors, sessions, and other content.</Label>
-                </div>
-                <div className="flex items-center space-x-3 p-3 border rounded-md">
-                    <Checkbox id="editCanDelete" checked={permissions.canDelete} onCheckedChange={(checked) => setPermissions(p => ({...p, canDelete: !!checked}))} />
-                    <Label htmlFor="editCanDelete" className="text-base">Can Delete: Remove mentors, sessions, and other content.</Label>
-                </div>
-            </div>
-             <div className="flex justify-end gap-4 pt-4">
-                <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                <Button type="submit">Save Permissions</Button>
-            </div>
-        </form>
-    );
-};
-
 
 export default function AdminPage() {
-  const { user, isUserLoading, currentAdmin } = useUser();
+  const { user, isUserLoading, isAdmin } = useUser();
   const router = useRouter();
   const [modalState, setModalState] = useState({ type: null, data: null });
   
@@ -960,10 +853,9 @@ export default function AdminPage() {
   const [isLoadingMentorApps, setIsLoadingMentorApps] = useState(true);
   const [isLoadingSupport, setIsLoadingSupport] = useState(true);
   
-  const [adminFetchTrigger, setAdminFetchTrigger] = useState(0);
+  const canWrite = isAdmin;
+  const canDelete = isAdmin;
 
-  const superAdminEmail = 'mmavir89@gmail.com';
-  const isSuperAdmin = user?.email === superAdminEmail;
 
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -1016,10 +908,10 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    if (firestore) {
+    if (firestore && isAdmin) {
       fetchData();
     }
-  }, [firestore, isUserLoading, user, router]);
+  }, [firestore, isUserLoading, user, isAdmin, router]);
 
     const handleSaveMentor = async (mentorData: Omit<Mentor, 'id'> & { id?: string }, isEditing: boolean) => {
         if (!firestore) return;
@@ -1172,21 +1064,26 @@ export default function AdminPage() {
             });
         }
     };
-    
-    const handleUpdateAdminPermissions = async (email: string, permissions: { canRead: boolean, canWrite: boolean, canDelete: boolean }) => {
-        if (!firestore) return;
-        const adminRef = doc(firestore, 'admins', email);
-        await updateDoc(adminRef, permissions);
-        setAdminFetchTrigger(t => t + 1); // Trigger a re-fetch in the child component
-    };
 
 
   const openModal = (type, data = null) => setModalState({ type, data });
   const closeModal = () => setModalState({ type: null, data: null });
   
-  const canWrite = currentAdmin?.canWrite ?? false;
-  const canDelete = currentAdmin?.canDelete ?? false;
-
+  if (isUserLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <div className="p-8">
+            <Skeleton className="h-8 w-1/4 mb-4" />
+            <Skeleton className="h-4 w-1/2" />
+        </div>
+        <div className="flex-1 p-8 space-y-8">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header currentView="admin" />
@@ -1253,7 +1150,7 @@ export default function AdminPage() {
             </div>
           </div>
           
-          {isSuperAdmin && <AdminManagement firestore={firestore} toast={toast} openModal={openModal} fetchAdmins={adminFetchTrigger} currentAdmin={currentAdmin} />}
+          {isAdmin && <AdminManagement toast={toast} />}
 
           <PaymentApprovalList 
             payments={pendingPayments.filter(p => p.status === 'pending')} 
@@ -1513,12 +1410,6 @@ export default function AdminPage() {
         {modalState.type === 'mentor' && canWrite && (
             <Modal title={modalState.data ? "Edit Mentor" : "Create New Mentor"} onClose={closeModal}>
                 <MentorForm mentor={modalState.data} onSave={handleSaveMentor} onClose={closeModal} />
-            </Modal>
-        )}
-        
-        {modalState.type === 'admin_perms' && isSuperAdmin && (
-            <Modal title="Edit Admin Permissions" onClose={closeModal}>
-                <EditAdminPermsForm admin={modalState.data} onSave={handleUpdateAdminPermissions} onClose={closeModal} />
             </Modal>
         )}
 

@@ -20,24 +20,30 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { uid } = await req.json();
+    const { email, password } = await req.json();
 
-    if (!uid) {
-      return NextResponse.json({ error: 'UID is required' }, { status: 400 });
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
     
-    // Ensure the user exists before setting a claim
-    await admin.auth().getUser(uid);
+    // Create the user
+    const userRecord = await admin.auth().createUser({
+        email,
+        password,
+    });
+    
+    // Set custom claim
+    await admin.auth().setCustomUserClaims(userRecord.uid, { admin: true });
 
-    await admin.auth().setCustomUserClaims(uid, { admin: true });
-
-    return NextResponse.json({ message: `Admin claim set for user ${uid}` }, { status: 200 });
+    return NextResponse.json({ message: `Admin user ${email} created with UID ${userRecord.uid}` }, { status: 200 });
 
   } catch (error: any) {
     console.error('Error in set-admin API:', error);
-    // Distinguish between user not found and other errors
-    if (error.code === 'auth/user-not-found') {
-        return NextResponse.json({ error: 'User not found.' }, { status: 404 });
+    if (error.code === 'auth/email-already-exists') {
+        return NextResponse.json({ error: 'This email is already in use.' }, { status: 409 });
+    }
+    if (error.code === 'auth/invalid-password') {
+        return NextResponse.json({ error: 'Password must be at least 6 characters long.' }, { status: 400 });
     }
     return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }

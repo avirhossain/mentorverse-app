@@ -2,8 +2,73 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return request.auth.token.admin == true;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Admins can do anything
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if isAdmin();
+    }
+    
+    // Mentees (users) collection
+    match /users/{userId} {
+      allow read, update: if isOwner(userId);
+      allow create: if isAuth(); // Allow any authenticated user to create their own profile
+    }
+
+    // Subcollections for users
+    match /users/{userId}/{subcollection}/{docId} {
+        allow read, write: if isOwner(userId);
+    }
+    
+    // Publicly readable collections
+    match /mentors/{mentorId} {
+      allow read: if isAuth();
+    }
+    
+    match /sessions/{sessionId} {
+      allow read: if isAuth();
+      // Allow authenticated users to book a session (update the 'bookedBy' array)
+      allow update: if isAuth() && 'bookedBy' in request.resource.data && !(request.resource.data.bookedBy is list);
+    }
+    
+    match /tips/{tipId} {
+      allow read: if isAuth();
+    }
+
+    // Write-once collections for specific actions
+    match /mentor_applications/{applicationId} {
+        allow create: if isAuth();
+    }
+    
+    match /support_requests/{requestId} {
+        allow create: if isAuth();
+    }
+
+    // Payment related collections should be secure
+    match /pending_payments/{paymentId} {
+        allow create: if isAuth(); // Allow users to submit payments
+    }
+    
+    match /coupons/{couponId} {
+        // Users can't read coupons directly, but can redeem them via a transaction
+        allow read: if false; 
+    }
+    
+    // Balance transactions should only be created by backend/transactions
+    match /balance_transactions/{transactionId} {
+        allow read, write: if false;
     }
   }
 }
