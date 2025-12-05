@@ -1,6 +1,7 @@
 
 
 
+
 export interface Mentor {
   id: string; // Changed from number to string to align with Firestore document IDs
   name: string;
@@ -52,6 +53,7 @@ export interface Mentee {
   mentorshipGoal: string;
   balance: number;
   status: 'active' | 'suspended';
+  role: 'admin' | 'user';
 }
 
 

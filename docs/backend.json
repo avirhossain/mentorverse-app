@@ -124,6 +124,11 @@
             "type": "string",
             "enum": ["active", "suspended"],
             "description": "The current status of the mentee's account."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "user"],
+          "description": "The user's role in the system."
         }
       },
       "required": [
@@ -132,7 +137,8 @@
         "email",
         "interests",
         "mentorshipGoal",
-        "status"
+        "status",
+        "role"
       ]
     },
     "Session": {

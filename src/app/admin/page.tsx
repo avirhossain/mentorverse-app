@@ -410,6 +410,7 @@ const MenteeForm = ({ mentee, onSave, onClose }) => {
         interests: '',
         balance: 0,
         status: 'active',
+        role: 'user',
         ...mentee,
         interests: mentee?.interests?.join(', ') || '',
     });
@@ -421,8 +422,8 @@ const MenteeForm = ({ mentee, onSave, onClose }) => {
         setFormData(prev => ({ ...prev, [name]: type === 'number' ? Number(value) : value }));
     };
     
-    const handleStatusChange = (value) => {
-        setFormData(prev => ({ ...prev, status: value }));
+    const handleStatusChange = (name, value) => {
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e) => {
@@ -447,15 +448,26 @@ const MenteeForm = ({ mentee, onSave, onClose }) => {
             <Input name="interests" placeholder="Interests (comma-separated)" value={formData.interests} onChange={handleChange} />
             <Input name="balance" type="number" placeholder="Account Balance" value={formData.balance} onChange={handleChange} required />
 
-            <Select onValueChange={handleStatusChange} value={formData.status}>
-                <SelectTrigger>
-                    <SelectValue placeholder="Select account status" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="suspended">Suspended</SelectItem>
-                </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-4">
+                <Select onValueChange={(value) => handleStatusChange('status', value)} value={formData.status}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select account status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="suspended">Suspended</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select onValueChange={(value) => handleStatusChange('role', value)} value={formData.role}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select user role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
             <div className="flex justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
                 <Button type="submit">Save Changes</Button>
