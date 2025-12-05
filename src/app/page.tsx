@@ -170,7 +170,8 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
                 </Button>
             </div>
         </div>
-    )
+    </div>
+    );
 };
 
 const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete }) => {
