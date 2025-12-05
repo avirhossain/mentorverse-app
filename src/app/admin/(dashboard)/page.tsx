@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown, Eye, Phone, PlayCircle, UserCog } from 'lucide-react';
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { collection, getDocs, doc, runTransaction, deleteDoc, setDoc, updateDoc, addDoc, writeBatch, query } from 'firebase/firestore';
+import { collection, getDocs, doc, runTransaction, deleteDoc, setDoc, updateDoc, addDoc, writeBatch, query, where } from 'firebase/firestore';
 import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import type { Mentor, Mentee, Session, Tip, Coupon, PendingPayment, MentorApplication, SupportRequest, AdminUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -1468,3 +1469,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
