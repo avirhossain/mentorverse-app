@@ -1,108 +1,118 @@
 
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore, useAuth } from '@/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { GoogleAuthProvider, PhoneAuthProvider, EmailAuthProvider } from 'firebase/auth';
-import { Header } from '@/components/common/Header';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 
-// Dynamically import firebaseui to ensure it's only run on the client
-import('firebaseui/dist/firebaseui.css');
+import { useUser, useAuth, useFirestore } from '@/firebase';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { Header } from '@/components/common/Header';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
+import { Mail } from 'lucide-react';
+
+const signupSchema = z.object({
+  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Invalid email address.' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+});
 
 export default function SignUpPage() {
     const router = useRouter();
-    const firestore = useFirestore();
     const { user, isUserLoading } = useUser();
     const auth = useAuth();
-    const [firebaseui, setFirebaseui] = useState(null);
-    const elementRef = useRef(null);
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [isLoading, setIsLoading] = useState(false);
+
+    const form = useForm<z.infer<typeof signupSchema>>({
+        resolver: zodResolver(signupSchema),
+        defaultValues: {
+            name: '',
+            email: '',
+            password: '',
+        },
+    });
     
-
-    useEffect(() => {
-        import('firebaseui').then(ui => setFirebaseui(ui));
-    }, []);
-
     useEffect(() => {
         if (!isUserLoading && user) {
-            router.push('/account'); // Redirect logged-in users to their account
+            router.push('/account');
         }
     }, [user, isUserLoading, router]);
-
-    useEffect(() => {
-        if (!auth || !firebaseui || !elementRef.current) {
-            return;
+    
+    const createUserProfile = async (user) => {
+        if (!firestore) return;
+        const userDocRef = doc(firestore, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (!userDocSnap.exists()) {
+            await setDoc(userDocRef, {
+                id: user.uid,
+                email: user.email,
+                name: user.displayName,
+                balance: 0,
+                interests: [],
+                mentorshipGoal: '',
+                status: 'active',
+                role: 'user',
+            });
         }
+    };
 
-        let ui = firebaseui.auth.AuthUI.getInstance();
-        if (!ui) {
-            ui = new firebaseui.auth.AuthUI(auth);
+    const handleEmailSignUp = async (values: z.infer<typeof signupSchema>) => {
+        if (!auth) return;
+        setIsLoading(true);
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+            await updateProfile(userCredential.user, { displayName: values.name });
+            await createUserProfile(userCredential.user);
+            toast({ title: 'Success', description: 'Account created successfully!' });
+            router.push('/account');
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Sign Up Failed',
+                description: error.message || 'An unexpected error occurred.',
+            });
+        } finally {
+            setIsLoading(false);
         }
+    };
+    
+    const handleGoogleSignIn = async () => {
+        if (!auth) return;
+        setIsLoading(true);
+        const provider = new GoogleAuthProvider();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            await createUserProfile(result.user);
+            toast({ title: 'Success', description: 'Account created successfully!' });
+            router.push('/account');
+        } catch (error: any) {
+             toast({
+                variant: 'destructive',
+                title: 'Sign Up Failed',
+                description: error.message || 'An unexpected error occurred.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-        const uiConfig = {
-            signInFlow: 'redirect',
-            signInSuccessUrl: '/account',
-            signInOptions: [
-                // Reordered as requested
-                GoogleAuthProvider.PROVIDER_ID,
-                {
-                    provider: PhoneAuthProvider.PROVIDER_ID,
-                    recaptchaParameters: {
-                        type: 'image',
-                        size: 'invisible',
-                        badge: 'bottomleft'
-                    },
-                    defaultCountry: 'BD'
-                },
-                {
-                    provider: EmailAuthProvider.PROVIDER_ID,
-                    requireDisplayName: true, // Ask for name on sign-up
-                }
-            ],
-            callbacks: {
-                signInSuccessWithAuthResult: (authResult, redirectUrl) => {
-                    const user = authResult.user;
-                    // Check if it's a new user and create their profile document
-                    if (authResult.additionalUserInfo.isNewUser && firestore) {
-                        const userDocRef = doc(firestore, "users", user.uid);
-                        getDoc(userDocRef).then(userDocSnap => {
-                            if (!userDocSnap.exists()) {
-                                setDoc(userDocRef, {
-                                    id: user.uid,
-                                    email: user.email,
-                                    name: user.displayName,
-                                    phone: user.phoneNumber,
-                                    balance: 0,
-                                    interests: [],
-                                    mentorshipGoal: '',
-                                    status: 'active',
-                                    role: 'user', // Default role
-                                });
-                            }
-                        });
-                    }
-                    // Let FirebaseUI handle the redirect on success.
-                    return true;
-                },
-            },
-        };
-
-        ui.start(elementRef.current, uiConfig);
-        
-        return () => {
-             if (ui) {
-                try {
-                    ui.reset();
-                } catch (e) {
-                    console.error('Error resetting FirebaseUI:', e);
-                }
-            }
-        };
-
-    }, [auth, firebaseui, firestore, router]);
-
+    if (isUserLoading || user) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <p>Loading...</p>
+            </div>
+        );
+    }
+    
     return (
         <div className="min-h-screen bg-background">
             <Header currentView="signup"/>
@@ -117,8 +127,68 @@ export default function SignUpPage() {
                         </p>
                     </div>
 
-                    <div ref={elementRef} id="firebaseui-auth-container" />
+                     <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleEmailSignUp)} className="space-y-4">
+                             <FormField
+                                control={form.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Full Name</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="John Doe" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email Address</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="name@example.com" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Password</FormLabel>
+                                        <FormControl>
+                                            <Input type="password" placeholder="••••••••" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit" className="w-full" disabled={isLoading}>
+                                {isLoading ? 'Creating Account...' : 'Create Account'}
+                            </Button>
+                        </form>
+                    </Form>
+
+                     <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-white px-2 text-muted-foreground">
+                                Or continue with
+                            </span>
+                        </div>
+                    </div>
                     
+                    <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
+                        <Mail className="mr-2 h-4 w-4" /> Google
+                    </Button>
+
                     <div className="text-center">
                         <p className="text-sm text-gray-600">
                             Already have an account?{' '}
@@ -132,3 +202,4 @@ export default function SignUpPage() {
         </div>
     );
 }
+
