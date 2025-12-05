@@ -4,8 +4,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore } from '@/firebase';
-import { initializeFirebase } from '@/firebase';
+import { useUser, useFirestore, useAuth } from '@/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { GoogleAuthProvider, PhoneAuthProvider, EmailAuthProvider } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
@@ -17,18 +16,13 @@ export default function SignUpPage() {
     const router = useRouter();
     const firestore = useFirestore();
     const { user, isUserLoading } = useUser();
+    const auth = useAuth();
     const [firebaseui, setFirebaseui] = useState(null);
     const elementRef = useRef(null);
-    const [authCompat, setAuthCompat] = useState(null);
+    
 
     useEffect(() => {
-        import('firebaseui').then(firebaseui => {
-            setFirebaseui(firebaseui);
-        });
-        
-        const { authCompat: compatInstance } = initializeFirebase();
-        setAuthCompat(compatInstance);
-
+        import('firebaseui').then(ui => setFirebaseui(ui));
     }, []);
 
     useEffect(() => {
@@ -38,19 +32,20 @@ export default function SignUpPage() {
     }, [user, isUserLoading, router]);
 
     useEffect(() => {
-        if (!authCompat || !firebaseui || !elementRef.current) {
+        if (!auth || !firebaseui || !elementRef.current) {
             return;
         }
 
         let ui = firebaseui.auth.AuthUI.getInstance();
         if (!ui) {
-            ui = new firebaseui.auth.AuthUI(authCompat);
+            ui = new firebaseui.auth.AuthUI(auth);
         }
 
         const uiConfig = {
             signInFlow: 'redirect',
             signInSuccessUrl: '/account',
             signInOptions: [
+                // Reordered as requested
                 GoogleAuthProvider.PROVIDER_ID,
                 {
                     provider: PhoneAuthProvider.PROVIDER_ID,
@@ -83,6 +78,7 @@ export default function SignUpPage() {
                                     interests: [],
                                     mentorshipGoal: '',
                                     status: 'active',
+                                    role: 'user', // Default role
                                 });
                             }
                         });
@@ -105,11 +101,11 @@ export default function SignUpPage() {
             }
         };
 
-    }, [authCompat, firebaseui, firestore, router]);
+    }, [auth, firebaseui, firestore, router]);
 
     return (
         <div className="min-h-screen bg-background">
-            <Header />
+            <Header currentView="signup"/>
             <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
                 <div className="w-full max-w-sm p-8 space-y-6 bg-white rounded-xl shadow-2xl border-t-4 border-primary">
                     <div className="text-center">

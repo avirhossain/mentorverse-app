@@ -1,36 +1,38 @@
+
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Import compat libraries
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
-import 'firebase/compat/firestore';
-
+// Store initialized instances to avoid re-initialization
+let app: FirebaseApp;
+let auth: Auth;
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
-  if (!firebase.apps.length) {
-    // We use the compat `initializeApp` here to make sure both APIs are available.
-    firebase.initializeApp(firebaseConfig);
+  if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+  } else {
+    app = getApp();
+  }
+  
+  // Get Auth instance, creating it if it doesn't exist
+  // This is compatible with FirebaseUI which expects a single Auth instance
+  if (!auth) {
+    auth = getAuth(app);
   }
 
-  // We are returning the modular SDKs for use throughout the app,
-  // but the compat initialization above makes the v8 APIs available for libraries like FirebaseUI.
-  const app = getApp();
+  // We are returning the modular SDKs for use throughout the app
   return getSdks(app);
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
   return {
     firebaseApp,
-    auth: getAuth(firebaseApp),
+    auth: getAuth(firebaseApp), // Use the modular getAuth
     firestore: getFirestore(firebaseApp),
-    // Export the compat auth specifically for FirebaseUI
-    authCompat: firebase.auth(),
   };
 }
 
