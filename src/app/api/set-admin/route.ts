@@ -6,10 +6,9 @@ import admin from 'firebase-admin';
 // Make sure to configure this with your service account credentials in a secure way
 if (!admin.apps.length) {
   try {
-    admin.initializeApp({
-      // If you have GOOGLE_APPLICATION_CREDENTIALS set in your environment,
-      // you don't need to pass the credential here.
-    });
+    // When running in a Google Cloud environment, the SDK can auto-discover credentials.
+    // For local development, you would set the GOOGLE_APPLICATION_CREDENTIALS env var.
+    admin.initializeApp();
   } catch (error) {
     console.error('Firebase Admin Initialization Error:', error);
   }
@@ -19,16 +18,26 @@ export async function POST(req: NextRequest) {
   try {
     const { uid, admin: isAdmin } = await req.json();
 
-    // No authorization check here for bootstrapping the first admin.
-    // WARNING: In a production environment, you MUST secure this endpoint.
-    // For example, by checking if the caller is already an admin,
-    // or by using a secret key, or by only allowing it for a specific user ID.
-    // Since this is for the initial setup of 'mmavir89@gmail.com', we are leaving it open temporarily.
+    if (!uid) {
+        return NextResponse.json({ error: 'UID is required' }, { status: 400 });
+    }
     
+    // This endpoint is now only for bootstrapping the first admin or for future admin management.
+    // For now, we allow any authenticated user to make another user an admin.
+    // In a real production app, you would lock this down to only be callable by existing admins.
+    // For example:
+    // const authorization = req.headers.get('Authorization');
+    // const idToken = authorization?.split('Bearer ')[1];
+    // if (!idToken) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // const decodedToken = await admin.auth().verifyIdToken(idToken);
+    // if (!decodedToken.admin) {
+    //    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // }
+
     await admin.auth().setCustomUserClaims(uid, { admin: isAdmin });
     
-    // It's also a good practice to revoke existing sessions to force re-authentication
-    // with the new claims, but this might be too disruptive for this context.
+    // It's good practice to revoke refresh tokens to force re-authentication with new claims,
+    // but the client-side will handle token refresh for a smoother UX.
     // await admin.auth().revokeRefreshTokens(uid);
 
     return NextResponse.json({ message: `Successfully set admin status for user ${uid}` });

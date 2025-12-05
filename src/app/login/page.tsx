@@ -42,14 +42,17 @@ export default function LoginPage() {
 
     const setAdminClaim = async (uid: string) => {
         try {
-            await fetch('/api/set-admin', {
+            const response = await fetch('/api/set-admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ uid, admin: true }),
             });
-            // No need to check response, just fire and forget for bootstrapping
+            if (!response.ok) {
+                 toast({ variant: 'destructive', title: 'Error', description: 'Could not grant admin privileges.' });
+            }
         } catch (error) {
             console.error("Failed to set admin claim during login:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to set admin claim.' });
         }
     };
     
@@ -92,8 +95,6 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (!isUserLoading && user) {
-            // Since we don't know if the user is new here, we default to the homepage.
-            // The main redirect logic is handled after explicit login/signup actions.
             handleRedirect(user, false);
         }
     }, [user, isUserLoading]);

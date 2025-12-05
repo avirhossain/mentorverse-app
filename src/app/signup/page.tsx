@@ -45,13 +45,17 @@ export default function SignUpPage() {
 
     const setAdminClaim = async (uid: string) => {
         try {
-            await fetch('/api/set-admin', {
+            const response = await fetch('/api/set-admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ uid, admin: true }),
             });
+             if (!response.ok) {
+                 toast({ variant: 'destructive', title: 'Error', description: 'Could not grant admin privileges.' });
+            }
         } catch (error) {
             console.error("Failed to set admin claim:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to set admin claim.' });
         }
     };
     
