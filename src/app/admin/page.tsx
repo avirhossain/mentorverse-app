@@ -167,24 +167,19 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
         if (mentor) {
             return {
                 ...mentor,
-                skills: mentor.skills?.join(', ') || '',
+                expertise: mentor.expertise?.join(', ') || '',
             };
         }
         return {
             id: undefined,
             name: '',
-            title: '',
-            company: '',
-            intro: '',
-            skills: '',
-            avatar: 'https://placehold.co/150x150/4F46E5/FFFFFF?text=New',
+            email: '',
+            bio: '',
+            expertise: '',
             status: 'active',
-            rating: 0,
-            ratingsCount: 0,
-            professionalExperience: [],
-            education: [],
-            sessions: [],
             reviews: [],
+            availableTimeslots: [],
+            sessionCost: 0,
         };
     };
 
@@ -250,22 +245,12 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
         try {
             const processedData = {
                 ...formData,
-                skills: formData.skills.split(',').map(s => s.trim()),
-                sessions: formData.sessions.map(s => ({
-                    ...s, 
-                    price: Number(s.price), 
-                    duration: Number(s.duration),
-                    availability: (s.availability || []).map(a => ({...a, id: a.id || uuidv4() }))
-                })),
+                expertise: formData.expertise.split(',').map(s => s.trim()),
+                sessionCost: Number(formData.sessionCost),
                 reviews: (formData.reviews || []).map(r => ({...r, rating: Number(r.rating)})),
             };
-
-            const rating = processedData.reviews.length > 0 ? processedData.reviews.reduce((acc, r) => acc + Number(r.rating), 0) / processedData.reviews.length : 0;
-            const ratingsCount = processedData.reviews.length;
             
-            let finalData = { ...processedData, rating, ratingsCount };
-            
-            await onSave(finalData, isEditing);
+            await onSave(processedData, isEditing);
 
             if (isEditing) {
                 toast({ title: 'Success!', description: 'Mentor profile updated.' });
@@ -325,15 +310,12 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required />
-                <Input name="title" placeholder="Job Title (e.g., Staff Software Engineer)" value={formData.title} onChange={handleChange} required />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input name="company" placeholder="Company (e.g., Google)" value={formData.company} onChange={handleChange} required />
-                <Input name="avatar" placeholder="Profile Picture URL" value={formData.avatar} onChange={handleChange} />
+                <Input name="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
             </div>
             
-            <Input name="skills" placeholder="Skills (comma-separated, e.g., React, System Design)" value={formData.skills} onChange={handleChange} required />
-            <Textarea name="intro" placeholder="Mentor Introduction" value={formData.intro} onChange={handleChange} required />
+            <Input name="expertise" placeholder="Expertise (comma-separated, e.g., React, System Design)" value={formData.expertise} onChange={handleChange} required />
+            <Textarea name="bio" placeholder="Mentor Bio" value={formData.bio} onChange={handleChange} required />
+            <Input name="sessionCost" type="number" placeholder="Cost per session" value={formData.sessionCost} onChange={handleChange} required />
             
             <Select onValueChange={handleStatusChange} value={formData.status}>
                 <SelectTrigger>
@@ -345,35 +327,11 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                 </SelectContent>
             </Select>
 
-            {renderDynamicSection('Professional Experiences', 'professionalExperience',
+            {renderDynamicSection('Available Timeslots', 'availableTimeslots',
                 [
-                    { name: 'title', placeholder: 'Job Title' },
-                    { name: 'company', placeholder: 'Company' },
-                    { name: 'duration', placeholder: 'Duration (e.g., 2020 - Present)' },
-                    { name: 'description', placeholder: 'Description' }
+                    { name: 'timeslot', placeholder: 'e.g., Monday 10-11 AM' },
                 ],
-                { title: '', company: '', duration: '', description: '' }
-            )}
-
-            {renderDynamicSection('Education', 'education',
-                [
-                    { name: 'degree', placeholder: 'Degree' },
-                    { name: 'institution', placeholder: 'Institution' },
-                    { name: 'duration', placeholder: 'Duration (e.g., 2014 - 2016)' },
-                ],
-                { degree: '', institution: '', duration: '' }
-            )}
-
-            {renderDynamicSection('Offered Sessions', 'sessions',
-                [
-                    { name: 'id', placeholder: 'Session ID (e.g., interview-prep)' },
-                    { name: 'name', placeholder: 'Session Name (e.g., 60 min Interview Prep)' },
-                    { name: 'price', placeholder: 'Price', type: 'number' },
-                    { name: 'currency', placeholder: 'Currency (e.g., ৳)' },
-                    { name: 'duration', placeholder: 'Duration (in minutes)', type: 'number' },
-                    { name: 'description', placeholder: 'Session Description' }
-                ],
-                { id: '', name: '', price: 0, currency: '৳', duration: 60, description: '', availability: [] }
+                { timeslot: '' }
             )}
 
             {renderDynamicSection('Mentees Reviews', 'reviews',
@@ -777,6 +735,41 @@ export default function AdminPage() {
 
 
   useEffect(() => {
+    const deleteAllMentees = async () => {
+      if (!firestore) return;
+
+      try {
+        console.log("Starting deletion of all mentee users...");
+        const usersCollection = collection(firestore, 'users');
+        const usersSnapshot = await getDocs(usersCollection);
+        
+        if (usersSnapshot.empty) {
+          toast({ title: 'Info', description: 'No mentee users to delete.' });
+          console.log("No mentee users found to delete.");
+          return;
+        }
+
+        const batch = writeBatch(firestore);
+        usersSnapshot.docs.forEach(doc => {
+          batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+        
+        toast({ title: 'Success!', description: `${usersSnapshot.size} mentee users have been deleted.` });
+        console.log(`Successfully deleted ${usersSnapshot.size} mentee users.`);
+        fetchData(); // Re-fetch data to update the UI
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message });
+        console.error("Error deleting all mentees:", error);
+      }
+    };
+
+    deleteAllMentees();
+  }, [firestore, toast]);
+  
+
+  useEffect(() => {
     if (firestore) {
       fetchData();
     }
@@ -792,9 +785,8 @@ export default function AdminPage() {
         const mentorRef = doc(firestore, 'mentors', finalId);
         await setDoc(mentorRef, mentorData, { merge: true });
     } else {
-        finalId = uuidv4();
-        const newMentorData = { ...mentorData, id: finalId };
-        const mentorRef = doc(firestore, 'mentors', finalId);
+        const newMentorData = { ...mentorData, id: uuidv4() };
+        const mentorRef = doc(firestore, 'mentors', newMentorData.id);
         await setDoc(mentorRef, newMentorData);
     }
     fetchData(); // Refresh data
