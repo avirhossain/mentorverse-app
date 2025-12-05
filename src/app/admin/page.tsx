@@ -1,5 +1,6 @@
 
 'use client';
+import React, 'use client';
 import React, { useState, useEffect } from 'react';
 import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
@@ -171,7 +172,6 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
             };
         }
         return {
-            id: '',
             name: '',
             title: '',
             company: '',
@@ -183,8 +183,6 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
             education: [],
             sessions: [],
             reviews: [],
-            rating: 0,
-            ratingsCount: 0,
         };
     };
 
@@ -760,21 +758,22 @@ export default function AdminPage() {
     }
   }, [firestore]);
 
-  const handleSaveMentor = async (mentorData, isEditing) => {
+  const handleSaveMentor = async (mentorData: Omit<Mentor, 'id'> & { id?: string }, isEditing: boolean) => {
     if (!firestore) return;
-    
-    let finalData = { ...mentorData };
 
-    if (isEditing) {
+    let finalData: Mentor;
+    if (isEditing && mentorData.id) {
+        // Update existing mentor
+        finalData = mentorData as Mentor;
         const mentorRef = doc(firestore, 'mentors', finalData.id);
         await setDoc(mentorRef, finalData, { merge: true });
     } else {
-        const newId = finalData.id || uuidv4();
-        finalData.id = newId;
+        // Create new mentor
+        const newId = uuidv4();
+        finalData = { ...mentorData, id: newId } as Mentor;
         const mentorRef = doc(firestore, 'mentors', newId);
         await setDoc(mentorRef, finalData);
     }
-
     fetchData(); // Refresh data
   };
   
