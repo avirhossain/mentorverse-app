@@ -1,7 +1,7 @@
 
 'use client';
 import React, { useState, useEffect } from 'react';
-import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare } from 'lucide-react';
+import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -170,6 +170,7 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                 expertise: mentor.expertise?.join(', ') || '',
             };
         }
+        // Return a clean, empty state for new mentors
         return {
             id: undefined,
             name: '',
@@ -622,7 +623,6 @@ const DataListView = ({ title, data, isLoading, icon: Icon, columns, emptyMessag
                 <Icon className="w-6 h-6 mr-3 text-primary" />
                 {title}
             </h2>
-            <Button variant="link">See All</Button>
         </div>
         
         {isLoading ? (
@@ -646,7 +646,7 @@ const DataListView = ({ title, data, isLoading, icon: Icon, columns, emptyMessag
                                 <div className="col-span-12 md:col-span-1 font-semibold">{index + 1}</div>
                                 <div className="col-span-6 md:col-span-2 text-sm text-gray-500">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}</div>
                                 <div className="col-span-6 md:col-span-2 font-mono text-primary">{idPrefix}{index + 1}</div>
-                                <div className="col-span-12 md:col-span-5 font-semibold text-gray-800 dark:text-white">{item.name || item.title}</div>
+                                <div className="col-span-12 md:col-span-5 font-semibold text-gray-800 dark:text-white">{item.name || item.title || item.phone}</div>
                                 <div className="col-span-12 md:col-span-2 flex justify-end items-center gap-2">
                                     {renderActions(item)}
                                 </div>
@@ -733,64 +733,36 @@ export default function AdminPage() {
     }
   };
 
-
-  useEffect(() => {
-    const deleteAllMentees = async () => {
-      if (!firestore) return;
-
-      try {
-        console.log("Starting deletion of all mentee users...");
-        const usersCollection = collection(firestore, 'users');
-        const usersSnapshot = await getDocs(usersCollection);
-        
-        if (usersSnapshot.empty) {
-          toast({ title: 'Info', description: 'No mentee users to delete.' });
-          console.log("No mentee users found to delete.");
-          return;
-        }
-
-        const batch = writeBatch(firestore);
-        usersSnapshot.docs.forEach(doc => {
-          batch.delete(doc.ref);
-        });
-
-        await batch.commit();
-        
-        toast({ title: 'Success!', description: `${usersSnapshot.size} mentee users have been deleted.` });
-        console.log(`Successfully deleted ${usersSnapshot.size} mentee users.`);
-        fetchData(); // Re-fetch data to update the UI
-      } catch (error) {
-        toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message });
-        console.error("Error deleting all mentees:", error);
-      }
-    };
-
-    deleteAllMentees();
-  }, [firestore, toast]);
-  
-
   useEffect(() => {
     if (firestore) {
       fetchData();
     }
   }, [firestore]);
 
-  const handleSaveMentor = async (mentorData: Omit<Mentor, 'id'> & { id?: string }, isEditing: boolean) => {
-    if (!firestore) return;
-    
-    let finalId = mentorData.id;
+    const handleSaveMentor = async (mentorData: Omit<Mentor, 'id'> & { id?: string }, isEditing: boolean) => {
+        if (!firestore) return;
 
-    if (isEditing) {
-        if (!finalId) throw new Error("Cannot update mentor without an ID.");
-        const mentorRef = doc(firestore, 'mentors', finalId);
-        await setDoc(mentorRef, mentorData, { merge: true });
-    } else {
-        const newMentorData = { ...mentorData, id: uuidv4() };
-        const mentorRef = doc(firestore, 'mentors', newMentorData.id);
-        await setDoc(mentorRef, newMentorData);
-    }
-    fetchData(); // Refresh data
-  };
+        try {
+            if (isEditing) {
+                if (!mentorData.id) throw new Error("Cannot update mentor without an ID.");
+                const mentorRef = doc(firestore, 'mentors', mentorData.id);
+                await setDoc(mentorRef, mentorData, { merge: true });
+            } else {
+                const newId = uuidv4();
+                const newMentorData = { ...mentorData, id: newId, createdAt: new Date().toISOString() };
+                const mentorRef = doc(firestore, 'mentors', newId);
+                await setDoc(mentorRef, newMentorData);
+            }
+            fetchData();
+        } catch (error) {
+            console.error("Error saving mentor:", error);
+            toast({
+                variant: "destructive",
+                title: "Save Failed",
+                description: error.message,
+            });
+        }
+    };
   
   const handleSaveMentee = async (menteeData) => {
     if (!firestore) return;
@@ -824,7 +796,7 @@ export default function AdminPage() {
     } else { // Creating new session
       const newDocRef = doc(collection(firestore, 'sessions'));
       finalId = newDocRef.id;
-      await setDoc(newDocRef, {...sessionData, id: finalId});
+      await setDoc(newDocRef, {...sessionData, id: finalId, createdAt: new Date().toISOString()});
     }
     fetchData(); // Refresh data
   };
@@ -839,7 +811,7 @@ export default function AdminPage() {
     } else {
         const newDocRef = doc(collection(firestore, 'tips'));
         finalId = newDocRef.id;
-        await setDoc(newDocRef, {...tipData, id: finalId});
+        await setDoc(newDocRef, {...tipData, id: finalId, createdAt: new Date().toISOString()});
     }
     fetchData();
   };
@@ -886,7 +858,53 @@ export default function AdminPage() {
     } catch (error) {
         toast({ variant: 'destructive', title: 'Transaction Failed', description: error.message });
     }
-};
+  };
+
+    const handleApproveMentorApplication = async (application: MentorApplication) => {
+        if (!firestore) return;
+        const newMentorId = uuidv4();
+        const newMentor: Partial<Mentor> = {
+            id: newMentorId,
+            name: application.name,
+            bio: application.summary,
+            status: 'active',
+            createdAt: new Date().toISOString(),
+            // Default empty values
+            email: '',
+            expertise: [],
+            sessionCost: 0,
+            reviews: [],
+            availableTimeslots: [],
+            title: 'New Mentor',
+            company: 'Guidelab',
+            skills: [],
+            rating: 0,
+            ratingsCount: 0,
+            avatar: `https://placehold.co/150x150/7c3aed/ffffff?text=${application.name.substring(0,2)}`,
+            professionalExperience: [],
+            education: [],
+            sessions: []
+        };
+
+        const mentorRef = doc(firestore, 'mentors', newMentorId);
+        const appRef = doc(firestore, 'mentor_applications', application.id);
+
+        try {
+            await writeBatch(firestore).set(mentorRef, newMentor).delete(appRef).commit();
+            toast({
+                title: 'Application Approved!',
+                description: `${application.name} is now a mentor. Please edit their profile to add more details.`,
+            });
+            fetchData();
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Approval Failed',
+                description: error.message,
+            });
+        }
+    };
+
 
   const openModal = (type, data = null) => setModalState({ type, data });
   const closeModal = () => setModalState({ type: null, data: null });
@@ -972,23 +990,28 @@ export default function AdminPage() {
                     { header: 'Name', span: 5 },
                 ]}
                 renderActions={(app) => (
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This will delete the application from {app.name}. This action cannot be undone.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete('mentor_applications', app.id, `application from ${app.name}`)}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                    <>
+                        <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" onClick={() => handleApproveMentorApplication(app)}>
+                            <Check className="w-4 h-4" />
+                        </Button>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><ThumbsDown className="w-4 h-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure you want to reject this application?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete the application from {app.name}. This action cannot be undone.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete('mentor_applications', app.id, `application from ${app.name}`)}>Reject</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </>
                 )}
                  emptyMessage="No new mentor applications."
             />
