@@ -121,12 +121,11 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
     const { user } = useUser();
     const [bookingUpdate, setBookingUpdate] = useState(0);
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-    const { id } = params;
-
+    
     const sessionRef = useMemoFirebase(() => {
-        if (!firestore || !id) return null;
-        return doc(firestore, 'sessions', id);
-    }, [firestore, id, bookingUpdate]);
+        if (!firestore || !params.id) return null;
+        return doc(firestore, 'sessions', params.id);
+    }, [firestore, params.id, bookingUpdate]);
 
     const { data: session, isLoading } = useDoc<Session>(sessionRef);
     
