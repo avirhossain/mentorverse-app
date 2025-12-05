@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label';
 
 
 const Modal = ({ title, children, onClose }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl transform transition-all">
       <div className="p-4 flex justify-between items-center border-b dark:border-gray-700">
         <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{title}</h3>
