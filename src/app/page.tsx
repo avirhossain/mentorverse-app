@@ -14,17 +14,14 @@ import { useRouter } from 'next/navigation';
 
 
 const MentorCardSkeleton = () => (
-    <div className="bg-white rounded-xl shadow-lg p-5 sm:p-6 flex flex-col items-start border border-gray-100 h-full">
-        <div className="flex items-start space-x-3 sm:space-x-4 mb-4 w-full">
-            <Skeleton className="w-14 h-14 sm:w-16 sm:h-16 rounded-full" />
-            <div className="flex-grow space-y-2">
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-3 w-full" />
-            </div>
+    <div className="bg-white rounded-xl shadow-lg p-5 sm:p-6 flex flex-col items-center border border-gray-100 h-full">
+        <Skeleton className="w-24 h-24 rounded-full mb-4" />
+        <div className="text-center space-y-2">
+            <Skeleton className="h-6 w-32 mx-auto" />
+            <Skeleton className="h-4 w-40 mx-auto" />
+            <Skeleton className="h-4 w-24 mx-auto" />
         </div>
-        <Skeleton className="h-4 w-1/3 mb-3" />
-        <div className="flex flex-wrap gap-2 mt-auto w-full">
+        <div className="flex flex-wrap gap-2 mt-4 justify-center w-full">
             <Skeleton className="h-6 w-20 rounded-full" />
             <Skeleton className="h-6 w-24 rounded-full" />
             <Skeleton className="h-6 w-28 rounded-full" />
@@ -35,24 +32,26 @@ const MentorCardSkeleton = () => (
 
 const MentorCard = ({ mentor }: { mentor: Mentor }) => (
     <Link href={`/mentors/${mentor.id}`} className="group block h-full">
-        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition duration-300 p-5 sm:p-6 flex flex-col items-start border border-gray-100 h-full">
-            <div className="flex items-start space-x-3 sm:space-x-4 mb-4">
-                <img className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-4 border-violet-100" src={mentor.avatar || 'https://placehold.co/150x150/7c3aed/ffffff?text=AR'} alt={mentor.name} />
-                <div>
-                    <div className="flex items-center">
-                        <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mr-2">{mentor.name}</h3>
-                        <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 fill-green-100" />
-                    </div>
-                    <p className="text-xs sm:text-sm text-gray-500 mb-1">{mentor.title} at {mentor.company}</p>
-                    <p className="text-xs text-gray-600 italic line-clamp-2">"{mentor.intro}"</p>
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition duration-300 p-5 sm:p-6 flex flex-col items-center border border-gray-100 h-full text-center">
+            <img 
+                className="w-24 h-24 rounded-full object-cover border-4 border-primary/20 mb-4" 
+                src={mentor.avatar || 'https://placehold.co/150x150/7c3aed/ffffff?text=AR'} 
+                alt={mentor.name} 
+            />
+            <div className="flex-grow">
+                <div className="flex items-center justify-center">
+                    <h3 className="text-xl font-bold text-gray-800 mr-2">{mentor.name}</h3>
+                    <CheckCircle className="w-5 h-5 text-green-500 fill-green-100" />
                 </div>
+                <p className="text-sm text-primary font-medium mb-1">{mentor.title} at {mentor.company}</p>
+                <div className="flex items-center justify-center text-sm font-medium text-yellow-500 mb-3">
+                    <Star className="w-4 h-4 mr-1 fill-current" />
+                    <span className="text-gray-800 font-bold mr-1">{mentor.rating.toFixed(1)}</span>
+                    <span className="text-gray-500">({mentor.ratingsCount} ratings)</span>
+                </div>
+                <p className="text-xs text-gray-600 italic line-clamp-2 mb-4">"{mentor.intro}"</p>
             </div>
-            <div className="flex items-center text-sm font-medium text-yellow-500 mb-3">
-                <Star className="w-4 h-4 mr-1 fill-current" />
-                <span className="text-gray-800 font-bold mr-1">{mentor.rating.toFixed(1)}</span>
-                <span className="text-gray-500">({mentor.ratingsCount} ratings)</span>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-auto">
+            <div className="flex flex-wrap gap-2 justify-center mt-auto">
                 {mentor.skills.slice(0, 3).map(skill => (
                     <span key={skill} className="px-3 py-1 text-xs font-medium text-primary bg-primary/10 rounded-full">
                         {skill}
@@ -62,6 +61,7 @@ const MentorCard = ({ mentor }: { mentor: Mentor }) => (
         </div>
     </Link>
 );
+
 
 const SessionCardSkeleton = () => (
     <div className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-gray-200 flex flex-col justify-between">
@@ -137,8 +137,9 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
             </div>
         </div>
         <div className="mt-6">
-             <div className="flex items-start gap-2">
+             <div className="flex items-center gap-2">
                 {isBooked ? (
+                    <>
                     <div className="flex-grow text-center">
                         <Button asChild variant={canJoin ? 'default' : 'outline'} disabled={!canJoin}>
                             <a href={canJoin ? session.jitsiLink : undefined} target="_blank" rel="noopener noreferrer" className="w-full font-bold">
@@ -147,7 +148,14 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
                         </Button>
                         <p className="text-xs text-gray-500 mt-2">Link will be active 10m before the session starts.</p>
                     </div>
+                    <Button asChild variant="outline">
+                        <Link href={`/sessions/${session.id}`}>
+                            See More
+                        </Link>
+                    </Button>
+                    </>
                 ) : (
+                    <>
                     <Button 
                         onClick={() => onBook(session)} 
                         disabled={isFull} 
@@ -155,12 +163,13 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
                     >
                          {isFull ? 'Session Full' : 'Book Session'}
                     </Button>
+                    <Button asChild variant="outline">
+                        <Link href={`/sessions/${session.id}`}>
+                            See More
+                        </Link>
+                    </Button>
+                    </>
                 )}
-                 <Button asChild variant="outline">
-                    <Link href={`/sessions/${session.id}`}>
-                        See More
-                    </Link>
-                </Button>
             </div>
         </div>
     </div>
