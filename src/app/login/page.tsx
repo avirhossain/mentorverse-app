@@ -51,9 +51,9 @@ export default function LoginPage() {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to set admin claim.');
             }
+             toast({ title: 'Success', description: 'Admin claim set successfully.' });
         } catch (error) {
             console.error("Failed to set admin claim:", error);
-            // We show a toast here but don't re-throw, so the login can proceed for non-admins
             toast({ variant: 'destructive', title: 'Admin Grant Failed', description: error.message });
         }
     };
@@ -87,7 +87,6 @@ export default function LoginPage() {
             await setAdminClaim(user.uid);
         }
 
-        // Force a refresh of the token to get the latest custom claims.
         const idTokenResult = await user.getIdTokenResult(true); 
         
         if (idTokenResult.claims.admin) {
@@ -100,13 +99,12 @@ export default function LoginPage() {
     }
 
     useEffect(() => {
-        // This effect will run if the user is already logged in when visiting the page.
         if (!isUserLoading && user) {
             handleRedirect(user);
         }
     }, [user, isUserLoading]);
 
-    const handleLogin = async (values: z.infer<typeof loginSchema>) => {
+    const handleLogin = async (values: z.infer<typeof loginSchema>>({
         if (!auth) return;
         setIsLoading(true);
 
@@ -235,3 +233,5 @@ export default function LoginPage() {
         </div>
     );
 }
+
+    
