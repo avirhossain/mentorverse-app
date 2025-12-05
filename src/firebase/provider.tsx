@@ -100,14 +100,7 @@ export const FirebaseProvider: React.FC<{
   const refreshToken = useCallback(async () => {
     if (auth?.currentUser) {
       try {
-        const idTokenResult = await auth.currentUser.getIdTokenResult(true);
-        const newIsAdmin = !!idTokenResult.claims.admin;
-        setUserAuthState(prevState => {
-          if (prevState.isAdmin !== newIsAdmin) {
-            return { ...prevState, isAdmin: newIsAdmin };
-          }
-          return prevState;
-        });
+        await auth.currentUser.getIdToken(true); // Force refresh
       } catch (error) {
         console.error("Error refreshing token:", error);
         setUserAuthState(prevState => ({...prevState, userError: error as Error}));
