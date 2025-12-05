@@ -164,6 +164,7 @@ const PaymentApprovalList = ({ payments, onApprove, isLoading }) => (
 
 const MentorForm = ({ mentor, onSave, onClose }) => {
     const [formData, setFormData] = useState({
+        id: mentor?.id || uuidv4(),
         name: '',
         title: '',
         company: '',
@@ -263,22 +264,13 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
             const rating = processedData.reviews.length > 0 ? processedData.reviews.reduce((acc, r) => acc + Number(r.rating), 0) / processedData.reviews.length : 0;
             const ratingsCount = processedData.reviews.length;
             
-            let finalData;
+            const finalData = { ...processedData, rating, ratingsCount };
+            
+            await onSave(finalData);
 
             if (isEditing) {
-                finalData = { ...processedData, rating, ratingsCount };
-                await onSave(finalData);
                 toast({ title: 'Success!', description: 'Mentor profile updated.' });
             } else {
-                const mentorsCol = collection(firestore, 'mentors');
-                const newMentorRef = doc(mentorsCol); 
-                finalData = {
-                    ...processedData,
-                    id: newMentorRef.id,
-                    rating,
-                    ratingsCount,
-                };
-                await onSave(finalData);
                 toast({ title: 'Success!', description: 'New mentor profile created.' });
             }
             onClose();
