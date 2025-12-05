@@ -60,7 +60,8 @@ export const setupSuperAdminFlow = ai.defineFlow(
             password,
             displayName: 'Admin User',
           });
-          console.log(`Admin setup: Successfully created new user with UID: ${userRecord.uid}`);
+          console.log(`✅ Admin setup: Successfully created new user with UID: ${userRecord.uid}`);
+          console.log(`✅ TEMPORARY PASSWORD for ${email}: ${password}`);
         } else {
           // Re-throw other errors
           throw error;
