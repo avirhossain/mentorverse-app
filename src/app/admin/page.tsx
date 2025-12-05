@@ -654,7 +654,9 @@ const TipForm = ({ onSave, onClose }) => {
         e.preventDefault();
 
         try {
+            const tipRef = doc(collection(useFirestore(), 'tips'));
             const newTip = {
+                id: tipRef.id,
                 type: formData.type,
                 title: formData.title,
                 summary: formData.summary,
@@ -735,6 +737,7 @@ export default function AdminPage() {
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [mentees, setMentees] = useState<Mentee[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [tips, setTips] = useState<Tip[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [mentorApps, setMentorApps] = useState<MentorApplication[]>([]);
@@ -743,6 +746,7 @@ export default function AdminPage() {
   const [isLoadingMentors, setIsLoadingMentors] = useState(true);
   const [isLoadingMentees, setIsLoadingMentees] = useState(true);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
+  const [isLoadingTips, setIsLoadingTips] = useState(true);
   const [isLoadingPayments, setIsLoadingPayments] = useState(true);
   const [isLoadingCoupons, setIsLoadingCoupons] = useState(true);
   const [isLoadingMentorApps, setIsLoadingMentorApps] = useState(true);
@@ -758,41 +762,31 @@ export default function AdminPage() {
   useEffect(() => {
     if (user) {
         user.getIdTokenResult().then((idTokenResult) => {
-            if (idTokenResult.claims.admin) {
-                setIsAdmin(true);
-            } else {
-                setIsAdmin(false);
-            }
+            const isAdminClaim = !!idTokenResult.claims.admin;
+            setIsAdmin(isAdminClaim);
         });
     } else {
         setIsAdmin(false);
     }
   }, [user]);
 
-  const fetchUsersWithAdminStatus = async (users: Mentee[]): Promise<Mentee[]> => {
-    // This function is now more complex as it needs to fetch claims for each user.
-    // This should ideally be done on a backend, but for client-side we'll do it here.
-    // This is inefficient and not recommended for large user bases.
-    // For this app, we will assume the mentee object passed to the form will have the claim status.
-    const adminEmail = 'mmavir89@gmail.com';
-    return users.map(u => ({ ...u, isAdmin: u.email === adminEmail }));
-  };
-
   const fetchData = async () => {
     if (!firestore) return;
     setIsLoadingMentors(true);
     setIsLoadingMentees(true);
     setIsLoadingSessions(true);
+    setIsLoadingTips(true);
     setIsLoadingPayments(true);
     setIsLoadingCoupons(true);
     setIsLoadingMentorApps(true);
     setIsLoadingSupport(true);
 
     try {
-        const [mentorsSnap, menteesSnap, sessionsSnap, paymentsSnap, couponsSnap, mentorAppsSnap, supportRequestsSnap] = await Promise.all([
+        const [mentorsSnap, menteesSnap, sessionsSnap, tipsSnap, paymentsSnap, couponsSnap, mentorAppsSnap, supportRequestsSnap] = await Promise.all([
             getDocs(collection(firestore, 'mentors')),
             getDocs(collection(firestore, 'users')),
             getDocs(collection(firestore, 'sessions')),
+            getDocs(collection(firestore, 'tips')),
             getDocs(collection(firestore, 'pending_payments')),
             getDocs(collection(firestore, 'coupons')),
             getDocs(collection(firestore, 'mentor_applications')),
@@ -800,11 +794,9 @@ export default function AdminPage() {
         ]);
 
         setMentors(mentorsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentor)));
-        
-        const rawMentees = menteesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentee));
-        setMentees(rawMentees);
-
+        setMentees(menteesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentee)));
         setSessions(sessionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Session)));
+        setTips(tipsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Tip)));
         setPendingPayments(paymentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PendingPayment)));
         setCoupons(couponsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon)));
         setMentorApps(mentorAppsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as MentorApplication)));
@@ -817,6 +809,7 @@ export default function AdminPage() {
         setIsLoadingMentors(false);
         setIsLoadingMentees(false);
         setIsLoadingSessions(false);
+        setIsLoadingTips(false);
         setIsLoadingPayments(false);
         setIsLoadingCoupons(false);
         setIsLoadingMentorApps(false);
@@ -840,7 +833,7 @@ export default function AdminPage() {
   
   const handleSaveMentee = async (menteeData) => {
     if (!firestore) return;
-    const { role, ...restOfMenteeData } = menteeData; // Exclude role from Firestore write
+    const { isAdmin, ...restOfMenteeData } = menteeData; // Exclude role from Firestore write
     const menteeRef = doc(firestore, 'users', restOfMenteeData.id);
     await updateDoc(menteeRef, restOfMenteeData);
     fetchData(); // Refresh data
@@ -875,8 +868,8 @@ export default function AdminPage() {
   
   const handleSaveTip = async (tipData) => {
     if (!firestore) return;
-    const tipsCol = collection(firestore, 'tips');
-    await addDoc(tipsCol, tipData);
+    const tipRef = doc(firestore, 'tips', tipData.id);
+    await setDoc(tipRef, tipData);
     fetchData();
   };
 
@@ -1129,7 +1122,6 @@ export default function AdminPage() {
                 <div key={mentor.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
                     <div className="flex-grow">
                         <span className={`inline-block w-2 h-2 rounded-full mr-2 ${mentor.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`} title={mentor.status}></span>
-                        <span className="font-bold text-primary">{mentor.id}</span>
                         <span className="ml-4 font-semibold text-gray-800 dark:text-white">{mentor.name}</span>
                         <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">({mentor.title})</span>
                     </div>
@@ -1200,6 +1192,41 @@ export default function AdminPage() {
                         </div>
                     </div>
                 )}
+            />
+
+            <DataListView
+              title="All Tips"
+              data={tips}
+              isLoading={isLoadingTips}
+              icon={Lightbulb}
+              renderItem={(tip) => (
+                <div key={tip.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
+                  <div>
+                    <span className="font-bold text-primary">{tip.type}</span>
+                    <span className="ml-4 font-semibold text-gray-800 dark:text-white">{tip.title}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => openModal('tip', tip)}><Edit className="w-4 h-4" /></Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the tip: {tip.title}.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete('tips', tip.id, tip.title)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              )}
             />
             
             <DataListView
@@ -1290,7 +1317,7 @@ export default function AdminPage() {
         )}
 
         {modalState.type === 'tip' && (
-            <Modal title="Create New Tip" onClose={closeModal}>
+            <Modal title={modalState.data ? "Edit Tip" : "Create New Tip"} onClose={closeModal}>
                 <TipForm onSave={handleSaveTip} onClose={closeModal} />
             </Modal>
         )}
@@ -1303,5 +1330,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    
