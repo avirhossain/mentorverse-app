@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation';
 
 const MentorCardSkeleton = () => (
     <div className="bg-white rounded-xl shadow-lg p-5 sm:p-6 flex flex-col items-center border border-gray-100 h-full">
-        <Skeleton className="w-24 h-24 rounded-full mb-4" />
+        <Skeleton className="w-32 h-32 rounded-full mb-4" />
         <div className="text-center space-y-2">
             <Skeleton className="h-6 w-32 mx-auto" />
             <Skeleton className="h-4 w-40 mx-auto" />
@@ -34,7 +34,7 @@ const MentorCard = ({ mentor }: { mentor: Mentor }) => (
     <Link href={`/mentors/${mentor.id}`} className="group block h-full">
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition duration-300 p-5 sm:p-6 flex flex-col items-center border border-gray-100 h-full text-center">
             <img 
-                className="w-24 h-24 rounded-full object-cover border-4 border-primary/20 mb-4" 
+                className="w-32 h-32 rounded-full object-cover border-4 border-primary/20 mb-4" 
                 src={mentor.avatar || 'https://placehold.co/150x150/7c3aed/ffffff?text=AR'} 
                 alt={mentor.name} 
             />
@@ -55,7 +55,7 @@ const MentorCard = ({ mentor }: { mentor: Mentor }) => (
                     </div>
                 )}
                 
-                <div className="flex flex-wrap gap-2 justify-center">
+                <div className="flex flex-wrap gap-2 justify-center mb-4">
                     {mentor.skills.slice(0, 3).map(skill => (
                         <span key={skill} className="px-3 py-1 text-xs font-medium text-primary bg-primary/10 rounded-full">
                             {skill}
