@@ -836,19 +836,25 @@ export default function AdminPage() {
     const handleSaveMentor = async (mentorData: Omit<Mentor, 'id'> & { id?: string }, isEditing: boolean) => {
         if (!firestore) return;
         
+        let finalId = mentorData.id;
+        if (!isEditing) {
+            finalId = uuidv4();
+        }
+
+        if (!finalId) {
+             toast({
+                variant: "destructive",
+                title: "Save Failed",
+                description: "Mentor ID is missing for an update operation.",
+            });
+            return;
+        }
+
+        const mentorRef = doc(firestore, 'mentors', finalId);
+        const dataToSave = { ...mentorData, id: finalId };
+        
         try {
-            let finalId = mentorData.id;
-            // This is the definitive fix: Ensure new mentors always get a new ID.
-            if (!isEditing || !finalId) {
-                finalId = uuidv4();
-            }
-
-            const mentorRef = doc(firestore, 'mentors', finalId);
-            const dataToSave = { ...mentorData, id: finalId };
-
-            // Use setDoc with merge to both create and update safely.
             await setDoc(mentorRef, dataToSave, { merge: true });
-
             fetchData();
         } catch (error) {
             console.error("Error saving mentor:", error);
@@ -956,46 +962,20 @@ export default function AdminPage() {
     }
   };
 
-    const handleApproveMentorApplication = async (application: MentorApplication) => {
+    const handleUpdateApplicationStatus = async (application: MentorApplication, status: 'approved' | 'rejected') => {
         if (!firestore) return;
-        const newMentorId = uuidv4();
-        const newMentor: Partial<Mentor> = {
-            id: newMentorId,
-            name: application.name,
-            bio: application.summary,
-            status: 'active',
-            createdAt: new Date().toISOString(),
-            // Default empty values
-            email: '',
-            expertise: [],
-            sessionCost: 0,
-            reviews: [],
-            availableTimeslots: [],
-            title: 'New Mentor',
-            company: 'Guidelab',
-            skills: [],
-            rating: 0,
-            ratingsCount: 0,
-            avatar: `https://placehold.co/150x150/7c3aed/ffffff?text=${application.name.substring(0,2)}`,
-            professionalExperience: [],
-            education: [],
-            sessions: []
-        };
-
-        const mentorRef = doc(firestore, 'mentors', newMentorId);
         const appRef = doc(firestore, 'mentor_applications', application.id);
-
         try {
-            await writeBatch(firestore).set(mentorRef, newMentor).delete(appRef).commit();
+            await updateDoc(appRef, { status: status });
             toast({
-                title: 'Application Approved!',
-                description: `${application.name} is now a mentor. Please edit their profile to add more details.`,
+                title: 'Application Updated!',
+                description: `Application from ${application.name} has been ${status}.`,
             });
             fetchData();
         } catch (error) {
             toast({
                 variant: 'destructive',
-                title: 'Approval Failed',
+                title: 'Update Failed',
                 description: error.message,
             });
         }
@@ -1090,31 +1070,28 @@ export default function AdminPage() {
                     { header: 'ID', span: 2 },
                     { header: 'Name', span: 5 },
                 ]}
-                renderActions={(app) => (
-                    <>
-                         <Button variant="ghost" size="sm" onClick={() => openModal('mentor_app_details', app)}><Eye className="w-4 h-4"/></Button>
-                        <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" onClick={() => handleApproveMentorApplication(app)}>
-                            <Check className="w-4 h-4" />
-                        </Button>
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><ThumbsDown className="w-4 h-4" /></Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure you want to reject this application?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will permanently delete the application from {app.name}. This action cannot be undone.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete('mentor_applications', app.id, `application from ${app.name}`)}>Reject</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </>
-                )}
+                renderActions={(app) => {
+                    switch (app.status) {
+                        case 'pending':
+                            return (
+                                <>
+                                    <Button variant="ghost" size="sm" onClick={() => openModal('mentor_app_details', app)}><Eye className="w-4 h-4"/></Button>
+                                    <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" onClick={() => handleUpdateApplicationStatus(app, 'approved')}>
+                                        <Check className="w-4 h-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => handleUpdateApplicationStatus(app, 'rejected')}>
+                                        <ThumbsDown className="w-4 h-4" />
+                                    </Button>
+                                </>
+                            );
+                        case 'approved':
+                            return <span className="text-sm font-semibold text-green-600">Approved</span>;
+                        case 'rejected':
+                            return <span className="text-sm font-semibold text-red-600">Rejected</span>;
+                        default:
+                            return null;
+                    }
+                }}
                  emptyMessage="No new mentor applications."
             />
             
