@@ -1,7 +1,7 @@
 
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Star, CheckCircle, Zap, User, Calendar, Clock, Users, X, Info, Wallet } from 'lucide-react';
+import { Star, CheckCircle, Zap, User, Calendar, Clock, Users, X, Info, Wallet, Video } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -114,27 +114,30 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
                 </p>
             </div>
         </div>
-        <div className="flex items-center gap-2 mt-6">
-            <Button 
-                onClick={() => onBook(session)} 
-                disabled={isBooked || isFull} 
-                className="w-full font-bold"
-            >
-                 {isBooked ? (
-                    <>
-                        <CheckCircle className="mr-2" /> Session Booked
-                    </>
-                ) : isFull ? (
-                    'Session Full'
-                ) : (
-                    'Book Session'
-                )}
-            </Button>
-            <Button asChild variant="outline">
-                <Link href={`/sessions/${session.id}`}>
-                    See More
-                </Link>
-            </Button>
+        <div className="mt-6">
+            {isBooked ? (
+                 <div className="text-center">
+                    <Button variant="outline" disabled className="w-full font-bold">
+                        <Video className="mr-2" /> Join Session
+                    </Button>
+                    <p className="text-xs text-gray-500 mt-2">Link will be active 10m before the session.</p>
+                </div>
+            ) : (
+                <div className="flex items-center gap-2">
+                    <Button 
+                        onClick={() => onBook(session)} 
+                        disabled={isFull} 
+                        className="w-full font-bold"
+                    >
+                         {isFull ? 'Session Full' : 'Book Session'}
+                    </Button>
+                    <Button asChild variant="outline">
+                        <Link href={`/sessions/${session.id}`}>
+                            See More
+                        </Link>
+                    </Button>
+                </div>
+            )}
         </div>
     </div>
     )

@@ -195,13 +195,22 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
                                 <p className="flex items-center"><Users className="w-5 h-5 mr-2 text-primary/70" /> <strong>Seats Left:</strong> <span className="ml-auto">{availableSeats}/{session.maxParticipants}</span></p>
                                 <p className="flex items-center"><Video className="w-5 h-5 mr-2 text-primary/70" /> <strong>Platform:</strong> <span className="ml-auto">Jitsi Meet</span></p>
                             </div>
-                            <Button 
-                                onClick={() => setIsBookingModalOpen(true)}
-                                disabled={isBooked || isFull}
-                                className="w-full font-bold text-lg mt-6"
-                            >
-                                {isBooked ? 'Already Booked' : isFull ? 'Session Full' : 'Book This Session'}
-                            </Button>
+                            {isBooked ? (
+                                <div className="text-center mt-6">
+                                    <Button variant="outline" disabled className="w-full font-bold">
+                                        <Video className="mr-2" /> Join Session
+                                    </Button>
+                                    <p className="text-xs text-gray-500 mt-2">Link will be active 10m before the session.</p>
+                                </div>
+                            ) : (
+                                 <Button 
+                                    onClick={() => setIsBookingModalOpen(true)}
+                                    disabled={isFull}
+                                    className="w-full font-bold text-lg mt-6"
+                                >
+                                    {isFull ? 'Session Full' : 'Book This Session'}
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>
