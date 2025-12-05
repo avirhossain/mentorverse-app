@@ -780,16 +780,19 @@ export default function AdminPage() {
     fetchData(); // Refresh data
   };
   
-  const handleDelete = (collectionName, docId, name) => {
-    if (!firestore) return;
-    deleteDoc(doc(firestore, collectionName, docId))
-      .then(() => {
-        toast({ title: 'Success!', description: `${name} has been deleted.` });
-        fetchData();
-      })
-      .catch((error) => {
-        toast({ variant: 'destructive', title: 'Error', description: `Failed to delete: ${error.message}` });
-      });
+  const handleDelete = async (collectionName: string, docId: string, name: string) => {
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Firestore not available.' });
+      return;
+    }
+    try {
+      await deleteDoc(doc(firestore, collectionName, docId));
+      toast({ title: 'Success!', description: `${name} has been deleted.` });
+      fetchData(); // Refresh data after deletion
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: `Failed to delete ${name}: ${error.message}` });
+      console.error(`Failed to delete ${name}:`, error);
+    }
   };
 
   const handleSaveSession = async (sessionData) => {
