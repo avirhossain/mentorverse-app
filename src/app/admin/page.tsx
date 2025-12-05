@@ -753,7 +753,38 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (firestore) {
-      fetchData();
+      const runDelete = async () => {
+        if (!firestore) return;
+
+        try {
+            console.log("Starting deletion process...");
+            const batch = writeBatch(firestore);
+
+            // Delete all mentors
+            const mentorsCollection = collection(firestore, 'mentors');
+            const mentorsSnapshot = await getDocs(mentorsCollection);
+            mentorsSnapshot.forEach(doc => batch.delete(doc.ref));
+            console.log(`Found ${mentorsSnapshot.size} mentors to delete.`);
+
+            // Delete all sessions
+            const sessionsCollection = collection(firestore, 'sessions');
+            const sessionsSnapshot = await getDocs(sessionsCollection);
+            sessionsSnapshot.forEach(doc => batch.delete(doc.ref));
+            console.log(`Found ${sessionsSnapshot.size} sessions to delete.`);
+
+            await batch.commit();
+            console.log("Deletion batch committed successfully.");
+            toast({ title: "Success!", description: "All mentors and sessions have been deleted." });
+            
+            // Refresh data after deletion
+            fetchData();
+        } catch (error) {
+            console.error("Error deleting data:", error);
+            toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message });
+        }
+      };
+
+      runDelete();
     }
   }, [firestore]);
 
@@ -766,9 +797,8 @@ export default function AdminPage() {
         await setDoc(mentorRef, mentorData, { merge: true });
     } else {
         // Create new mentor with a unique ID
-        const newId = mentorData.id || uuidv4();
-        const finalData = { ...mentorData, id: newId };
-        const mentorRef = doc(firestore, 'mentors', newId);
+        const finalData = { ...mentorData, id: uuidv4() };
+        const mentorRef = doc(firestore, 'mentors', finalData.id);
         await setDoc(mentorRef, finalData);
     }
     fetchData(); // Refresh data
@@ -1226,5 +1256,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    
