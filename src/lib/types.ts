@@ -10,6 +10,7 @@ export interface Mentor {
   avatar: string;
   intro: string;
   status: 'active' | 'suspended';
+  createdAt?: string; // Added for sorting
   professionalExperience: {
     title: string;
     company: string;
@@ -50,6 +51,7 @@ export interface Mentee {
   mentorshipGoal: string;
   balance: number;
   status: 'active' | 'suspended';
+  createdAt?: string; // Added for sorting
   isAdmin?: boolean;
 }
 
@@ -69,6 +71,7 @@ export interface Session {
     jitsiLink: string;
     bookedBy: string[]; // Array of user IDs who have booked
     status: 'scheduled' | 'active' | 'completed';
+    createdAt?: string; // Added for sorting
 }
 
 export interface Tip {
@@ -78,6 +81,7 @@ export interface Tip {
   summary: string;
   content?: string;
   link?: string;
+  createdAt?: string; // Added for sorting
 }
 
 export interface Coupon {
@@ -87,6 +91,7 @@ export interface Coupon {
     isUsed: boolean;
     usedBy?: string; // ID of the user who redeemed it
     usedAt?: string; // ISO Date string of when it was redeemed
+    createdAt?: string; // Added for sorting
 }
 
 export interface PendingPayment {

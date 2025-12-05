@@ -171,6 +171,7 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
             };
         }
         return {
+            id: undefined,
             name: '',
             title: '',
             company: '',
@@ -178,6 +179,8 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
             skills: '',
             avatar: 'https://placehold.co/150x150/4F46E5/FFFFFF?text=New',
             status: 'active',
+            rating: 0,
+            ratingsCount: 0,
             professionalExperience: [],
             education: [],
             sessions: [],
@@ -654,12 +657,16 @@ const TipForm = ({ tip, onSave, onClose }) => {
 };
 
 
-const DataListView = ({ title, data, isLoading, icon: Icon, renderItem, emptyMessage = "No data available." }) => (
+const DataListView = ({ title, data, isLoading, icon: Icon, columns, emptyMessage = "No data available.", renderActions, idPrefix }) => (
     <div className="mt-8">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
-            <Icon className="w-6 h-6 mr-3 text-primary" />
-            {title}
-        </h2>
+        <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
+                <Icon className="w-6 h-6 mr-3 text-primary" />
+                {title}
+            </h2>
+            <Button variant="link">See All</Button>
+        </div>
+        
         {isLoading ? (
              <div className="space-y-3">
                 <Skeleton className="h-10 w-full" />
@@ -667,12 +674,30 @@ const DataListView = ({ title, data, isLoading, icon: Icon, renderItem, emptyMes
                 <Skeleton className="h-10 w-full" />
             </div>
         ) : (
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border-t-4 border-primary/50 space-y-3">
-                {data && data.length > 0 ? (
-                    data.map((item) => renderItem(item))
-                ) : (
-                    <p className="text-gray-500 dark:text-gray-400 text-center py-4">{emptyMessage}</p>
-                )}
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border-t-4 border-primary/50">
+                <div className="hidden md:grid grid-cols-12 gap-4 p-2 text-sm font-bold text-gray-500 uppercase">
+                    {columns.map((col, index) => (
+                        <div key={index} className={`col-span-${col.span}`}>{col.header}</div>
+                    ))}
+                    <div className="col-span-2 text-right">Actions</div>
+                </div>
+                <div className="space-y-2">
+                    {data && data.length > 0 ? (
+                        data.map((item, index) => (
+                            <div key={item.id} className="grid grid-cols-12 gap-4 items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <div className="col-span-12 md:col-span-1 font-semibold">{index + 1}</div>
+                                <div className="col-span-6 md:col-span-2 text-sm text-gray-500">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}</div>
+                                <div className="col-span-6 md:col-span-2 font-mono text-primary">{idPrefix}{index + 1}</div>
+                                <div className="col-span-12 md:col-span-5 font-semibold text-gray-800 dark:text-white">{item.name || item.title}</div>
+                                <div className="col-span-12 md:col-span-2 flex justify-end items-center gap-2">
+                                    {renderActions(item)}
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-gray-500 dark:text-gray-400 text-center py-4">{emptyMessage}</p>
+                    )}
+                </div>
             </div>
         )}
     </div>
@@ -753,53 +778,24 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (firestore) {
-      const runDelete = async () => {
-        if (!firestore) return;
-
-        try {
-            console.log("Starting deletion process...");
-            const batch = writeBatch(firestore);
-
-            // Delete all mentors
-            const mentorsCollection = collection(firestore, 'mentors');
-            const mentorsSnapshot = await getDocs(mentorsCollection);
-            mentorsSnapshot.forEach(doc => batch.delete(doc.ref));
-            console.log(`Found ${mentorsSnapshot.size} mentors to delete.`);
-
-            // Delete all sessions
-            const sessionsCollection = collection(firestore, 'sessions');
-            const sessionsSnapshot = await getDocs(sessionsCollection);
-            sessionsSnapshot.forEach(doc => batch.delete(doc.ref));
-            console.log(`Found ${sessionsSnapshot.size} sessions to delete.`);
-
-            await batch.commit();
-            console.log("Deletion batch committed successfully.");
-            toast({ title: "Success!", description: "All mentors and sessions have been deleted." });
-            
-            // Refresh data after deletion
-            fetchData();
-        } catch (error) {
-            console.error("Error deleting data:", error);
-            toast({ variant: 'destructive', title: 'Deletion Failed', description: error.message });
-        }
-      };
-
-      runDelete();
+      fetchData();
     }
   }, [firestore]);
 
   const handleSaveMentor = async (mentorData: Omit<Mentor, 'id'> & { id?: string }, isEditing: boolean) => {
     if (!firestore) return;
+    
+    let finalId = mentorData.id;
 
     if (isEditing) {
-        // Update existing mentor
-        const mentorRef = doc(firestore, 'mentors', mentorData.id);
+        if (!finalId) throw new Error("Cannot update mentor without an ID.");
+        const mentorRef = doc(firestore, 'mentors', finalId);
         await setDoc(mentorRef, mentorData, { merge: true });
     } else {
-        // Create new mentor with a unique ID
-        const finalData = { ...mentorData, id: uuidv4() };
-        const mentorRef = doc(firestore, 'mentors', finalData.id);
-        await setDoc(mentorRef, finalData);
+        finalId = uuidv4();
+        const newMentorData = { ...mentorData, id: finalId };
+        const mentorRef = doc(firestore, 'mentors', finalId);
+        await setDoc(mentorRef, newMentorData);
     }
     fetchData(); // Refresh data
   };
@@ -907,7 +903,7 @@ export default function AdminPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <Header currentView="admin" />
       <main className="flex-1 p-4 md:p-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="space-y-2 mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
             <p className="text-gray-500 dark:text-gray-400">Manage Guidelab content and users.</p>
@@ -976,32 +972,31 @@ export default function AdminPage() {
                 data={mentorApps}
                 isLoading={isLoadingMentorApps}
                 icon={Inbox}
-                renderItem={(app) => (
-                    <div key={app.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="font-bold text-gray-800 dark:text-white">{app.name} <span className="font-normal text-gray-500">- {app.phone}</span></p>
-                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{app.summary}</p>
-                            </div>
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This will delete the application from {app.name}. This action cannot be undone.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete('mentor_applications', app.id, `application from ${app.name}`)}>Delete</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </div>
+                idPrefix="MA"
+                columns={[
+                    { header: 'SL', span: 1 },
+                    { header: 'Date', span: 2 },
+                    { header: 'ID', span: 2 },
+                    { header: 'Name', span: 5 },
+                ]}
+                renderActions={(app) => (
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will delete the application from {app.name}. This action cannot be undone.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete('mentor_applications', app.id, `application from ${app.name}`)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 )}
                  emptyMessage="No new mentor applications."
             />
@@ -1011,32 +1006,31 @@ export default function AdminPage() {
                 data={supportRequests}
                 isLoading={isLoadingSupport}
                 icon={MessageSquare}
-                renderItem={(req) => (
-                    <div key={req.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div className="flex justify-between items-start">
-                             <div>
-                                <p className="font-bold text-gray-800 dark:text-white">{req.name} <span className="font-normal text-gray-500">- {req.phone}</span></p>
-                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{req.details}</p>
-                            </div>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This will delete the support request from {req.name}. This action cannot be undone.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete('support_requests', req.id, `request from ${req.name}`)}>Delete</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </div>
+                idPrefix="SR"
+                columns={[
+                    { header: 'SL', span: 1 },
+                    { header: 'Date', span: 2 },
+                    { header: 'ID', span: 2 },
+                    { header: 'Name', span: 5 },
+                ]}
+                renderActions={(req) => (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will delete the support request from {req.name}. This action cannot be undone.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete('support_requests', req.id, `request from ${req.name}`)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 )}
                 emptyMessage="No new support requests."
             />
@@ -1046,35 +1040,35 @@ export default function AdminPage() {
             data={mentors}
             isLoading={isLoadingMentors}
             icon={Briefcase}
-            renderItem={(mentor) => (
-                <div key={mentor.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
-                    <div className="flex-grow">
-                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${mentor.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`} title={mentor.status}></span>
-                        <span className="ml-4 font-semibold text-gray-800 dark:text-white">{mentor.name}</span>
-                        <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">({mentor.title})</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Link href={`/mentors/${mentor.id}`} className="text-sm text-primary hover:underline">View</Link>
-                        <Button variant="ghost" size="sm" onClick={() => openModal('mentor', mentor)}><Edit className="w-4 h-4" /></Button>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the mentor profile for {mentor.name}.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete('mentors', mentor.id, mentor.name)}>Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
-                </div>
+            idPrefix="M"
+            columns={[
+                { header: 'SL', span: 1 },
+                { header: 'Date', span: 2 },
+                { header: 'ID', span: 2 },
+                { header: 'Name', span: 5 },
+            ]}
+            renderActions={(mentor) => (
+                <>
+                    <Link href={`/mentors/${mentor.id}`} className="text-sm text-primary hover:underline">View</Link>
+                    <Button variant="ghost" size="sm" onClick={() => openModal('mentor', mentor)}><Edit className="w-4 h-4" /></Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the mentor profile for {mentor.name}.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete('mentors', mentor.id, mentor.name)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </>
             )}
            />
 
@@ -1083,42 +1077,34 @@ export default function AdminPage() {
                 data={sessions}
                 isLoading={isLoadingSessions}
                 icon={Calendar}
-                renderItem={(session) => (
-                    <div key={session.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                        <div className="flex-grow mb-2 sm:mb-0">
-                            <p className="font-bold text-primary">{session.title}</p>
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
-                                <span>by {session.mentorName}</span>
-                                <span>{session.date} at {session.time}</span>
-                                <span className={`font-semibold ${session.isFree ? 'text-accent' : 'text-blue-600'}`}>
-                                    {session.isFree ? 'Free' : `৳${session.price}`}
-                                </span>
-                                <span className="font-semibold text-gray-700 dark:text-gray-300">
-                                    {session.bookedBy?.length || 0}/{session.maxParticipants} booked
-                                </span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                            <Button variant="ghost" size="sm" onClick={() => openModal('session', session)}><Edit className="w-4 h-4" /></Button>
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete the session: {session.title}.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete('sessions', session.id, session.title)}>Delete</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </div>
+                idPrefix="S"
+                columns={[
+                    { header: 'SL', span: 1 },
+                    { header: 'Date', span: 2 },
+                    { header: 'ID', span: 2 },
+                    { header: 'Title', span: 5 },
+                ]}
+                renderActions={(session) => (
+                     <>
+                        <Button variant="ghost" size="sm" onClick={() => openModal('session', session)}><Edit className="w-4 h-4" /></Button>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the session: {session.title}.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete('sessions', session.id, session.title)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </>
                 )}
             />
 
@@ -1127,13 +1113,15 @@ export default function AdminPage() {
               data={tips}
               isLoading={isLoadingTips}
               icon={Lightbulb}
-              renderItem={(tip) => (
-                <div key={tip.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
-                  <div>
-                    <span className="font-bold text-primary">{tip.type}</span>
-                    <span className="ml-4 font-semibold text-gray-800 dark:text-white">{tip.title}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
+              idPrefix="T"
+              columns={[
+                { header: 'SL', span: 1 },
+                { header: 'Date', span: 2 },
+                { header: 'ID', span: 2 },
+                { header: 'Title', span: 5 },
+              ]}
+              renderActions={(tip) => (
+                <>
                     <Button variant="ghost" size="sm" onClick={() => openModal('tip', tip)}><Edit className="w-4 h-4" /></Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -1152,8 +1140,7 @@ export default function AdminPage() {
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
-                  </div>
-                </div>
+                </>
               )}
             />
             
@@ -1162,21 +1149,17 @@ export default function AdminPage() {
                 data={coupons}
                 isLoading={isLoadingCoupons}
                 icon={Ticket}
-                renderItem={(coupon) => (
-                    <div key={coupon.id} className={`p-3 rounded-lg flex justify-between items-center ${coupon.isUsed ? 'bg-gray-200 dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}`}>
-                        <div>
-                            <p className="font-bold text-primary">{coupon.id}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Amount: ৳{coupon.amount}</p>
-                        </div>
-                        {coupon.isUsed ? (
-                            <div className="text-right text-sm">
-                                <p className="font-semibold text-red-500">Redeemed</p>
-                                <p className="text-gray-500 dark:text-gray-400">by {coupon.usedBy}</p>
-                            </div>
-                        ) : (
-                            <p className="text-sm font-semibold text-green-600">Available</p>
-                        )}
-                    </div>
+                idPrefix="C"
+                columns={[
+                    { header: 'SL', span: 1 },
+                    { header: 'Date', span: 2 },
+                    { header: 'ID', span: 2 },
+                    { header: 'Code', span: 5 },
+                ]}
+                renderActions={(coupon) => (
+                    <p className={`text-sm font-semibold ${coupon.isUsed ? 'text-red-500' : 'text-green-600'}`}>
+                        {coupon.isUsed ? 'Redeemed' : 'Available'}
+                    </p>
                 )}
             />
 
@@ -1185,35 +1168,35 @@ export default function AdminPage() {
                 data={mentees}
                 isLoading={isLoadingMentees}
                 icon={User}
-                renderItem={(mentee) => (
-                    <div key={mentee.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
-                       <div className="flex-grow">
-                            <span className={`inline-block w-2 h-2 rounded-full mr-2 ${mentee.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`} title={mentee.status}></span>
-                            <span className="ml-4 font-semibold text-gray-800 dark:text-white">{mentee.name || 'Anonymous User'}</span>
-                            <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">({mentee.email || mentee.id})</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Link href={`/account?userId=${mentee.id}`} className="text-sm text-primary hover:underline">View</Link>
-                            <Button variant="ghost" size="sm" onClick={() => openModal('mentee', mentee)}><Edit className="w-4 h-4" /></Button>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete the account for {mentee.name || mentee.id}.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete('users', mentee.id, mentee.name || mentee.id)}>Delete</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </div>
+                idPrefix="U"
+                 columns={[
+                    { header: 'SL', span: 1 },
+                    { header: 'Date', span: 2 },
+                    { header: 'ID', span: 2 },
+                    { header: 'Name', span: 5 },
+                ]}
+                renderActions={(mentee) => (
+                    <>
+                        <Link href={`/account?userId=${mentee.id}`} className="text-sm text-primary hover:underline">View</Link>
+                        <Button variant="ghost" size="sm" onClick={() => openModal('mentee', mentee)}><Edit className="w-4 h-4" /></Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the account for {mentee.name || mentee.id}.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete('users', mentee.id, mentee.name || mentee.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </>
                 )}
             />
 
