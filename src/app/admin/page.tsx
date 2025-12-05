@@ -206,6 +206,7 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
             return {
                 ...mentor,
                 expertise: mentor.expertise?.join(', ') || '',
+                skills: mentor.skills?.join(', ') || '',
             };
         }
         // Return a clean, empty state for new mentors
@@ -219,6 +220,16 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
             reviews: [],
             availableTimeslots: [],
             sessionCost: 0,
+            title: '',
+            company: '',
+            skills: '',
+            rating: 0,
+            ratingsCount: 0,
+            avatar: '',
+            intro: '',
+            professionalExperience: [],
+            education: [],
+            sessions: []
         };
     };
 
@@ -229,6 +240,10 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+    
+    const handleAvatarChange = (e) => {
+        setFormData(prev => ({ ...prev, avatar: e.target.value }));
     };
 
     const handleStatusChange = (value) => {
@@ -285,7 +300,10 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
             const processedData = {
                 ...formData,
                 expertise: formData.expertise.split(',').map(s => s.trim()),
+                skills: formData.skills.split(',').map(s => s.trim()),
                 sessionCost: Number(formData.sessionCost),
+                rating: Number(formData.rating),
+                ratingsCount: Number(formData.ratingsCount),
                 reviews: (formData.reviews || []).map(r => ({...r, rating: Number(r.rating)})),
             };
             
@@ -351,10 +369,24 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                 <Input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required />
                 <Input name="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input name="title" placeholder="Job Title (e.g., Software Engineer)" value={formData.title} onChange={handleChange} />
+                <Input name="company" placeholder="Company (e.g., Google)" value={formData.company} onChange={handleChange} />
+            </div>
+
+            <Textarea name="avatar" placeholder="Paste Image Data URI (Base64)" value={formData.avatar} onChange={handleAvatarChange} rows={3} />
+            <Textarea name="intro" placeholder="Short Introduction (for cards)" value={formData.intro} onChange={handleChange} />
+            <Textarea name="bio" placeholder="Detailed Mentor Bio" value={formData.bio} onChange={handleChange} required />
             
-            <Input name="expertise" placeholder="Expertise (comma-separated, e.g., React, System Design)" value={formData.expertise} onChange={handleChange} required />
-            <Textarea name="bio" placeholder="Mentor Bio" value={formData.bio} onChange={handleChange} required />
-            <Input name="sessionCost" type="number" placeholder="Cost per session" value={formData.sessionCost} onChange={handleChange} required />
+            <Input name="skills" placeholder="Skills (comma-separated, e.g., React, Node.js)" value={formData.skills} onChange={handleChange} required />
+            <Input name="expertise" placeholder="Expertise (comma-separated, e.g., System Design, AI)" value={formData.expertise} onChange={handleChange} required />
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input name="sessionCost" type="number" placeholder="Cost per session" value={formData.sessionCost} onChange={handleChange} required />
+                <Input name="rating" type="number" step="0.1" placeholder="Rating (e.g., 4.9)" value={formData.rating} onChange={handleChange} />
+                <Input name="ratingsCount" type="number" placeholder="Number of Ratings" value={formData.ratingsCount} onChange={handleChange} />
+            </div>
             
             <Select onValueChange={handleStatusChange} value={formData.status}>
                 <SelectTrigger>
@@ -366,11 +398,34 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                 </SelectContent>
             </Select>
 
-            {renderDynamicSection('Available Timeslots', 'availableTimeslots',
+             {renderDynamicSection('Professional Experience', 'professionalExperience',
                 [
-                    { name: 'timeslot', placeholder: 'e.g., Monday 10-11 AM' },
+                    { name: 'title', placeholder: 'Job Title' },
+                    { name: 'company', placeholder: 'Company' },
+                    { name: 'duration', placeholder: 'Duration (e.g., 2020 - Present)' },
+                    { name: 'description', placeholder: 'Description' }
                 ],
-                { timeslot: '' }
+                { title: '', company: '', duration: '', description: '' }
+            )}
+
+            {renderDynamicSection('Education', 'education',
+                [
+                    { name: 'degree', placeholder: 'Degree' },
+                    { name: 'institution', placeholder: 'Institution' },
+                    { name: 'duration', placeholder: 'Duration (e.g., 2016 - 2020)' }
+                ],
+                { degree: '', institution: '', duration: '' }
+            )}
+
+             {renderDynamicSection('Sessions', 'sessions',
+                [
+                    { name: 'name', placeholder: 'Session Name' },
+                    { name: 'price', placeholder: 'Price', type: 'number' },
+                    { name: 'currency', placeholder: 'Currency (e.g., BDT)' },
+                    { name: 'duration', placeholder: 'Duration (minutes)', type: 'number' },
+                    { name: 'description', placeholder: 'Session Description' }
+                ],
+                { id: uuidv4(), name: '', price: 0, currency: 'BDT', duration: 60, description: '', availability: [] }
             )}
 
             {renderDynamicSection('Mentees Reviews', 'reviews',
@@ -783,16 +838,17 @@ export default function AdminPage() {
         
         try {
             let finalId = mentorData.id;
-            if (isEditing) {
-                if (!finalId) throw new Error("Cannot update mentor without an ID.");
-                const mentorRef = doc(firestore, 'mentors', finalId);
-                await setDoc(mentorRef, mentorData, { merge: true });
-            } else {
+            // This is the definitive fix: Ensure new mentors always get a new ID.
+            if (!isEditing || !finalId) {
                 finalId = uuidv4();
-                const newMentorData = { ...mentorData, id: finalId, createdAt: new Date().toISOString() };
-                const mentorRef = doc(firestore, 'mentors', finalId);
-                await setDoc(mentorRef, newMentorData);
             }
+
+            const mentorRef = doc(firestore, 'mentors', finalId);
+            const dataToSave = { ...mentorData, id: finalId };
+
+            // Use setDoc with merge to both create and update safely.
+            await setDoc(mentorRef, dataToSave, { merge: true });
+
             fetchData();
         } catch (error) {
             console.error("Error saving mentor:", error);
