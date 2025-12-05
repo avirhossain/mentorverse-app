@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown, Eye, Phone, PlayCircle, UserCog } from 'lucide-react';
@@ -752,84 +751,6 @@ const DataListView = ({ title, data, isLoading, icon: Icon, columns, emptyMessag
     </div>
 );
 
-const AdminManagement = ({ toast }) => {
-    const [newAdminEmail, setNewAdminEmail] = useState('');
-    const [newAdminPassword, setNewAdminPassword] = useState('');
-    const [isAdding, setIsAdding] = useState(false);
-
-    const handleAddAdmin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newAdminEmail || !newAdminPassword) {
-            toast({
-                variant: 'destructive',
-                title: 'Missing Fields',
-                description: 'Please enter both an email and a password.',
-            });
-            return;
-        }
-        setIsAdding(true);
-
-        try {
-            const response = await fetch('/api/set-admin', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email: newAdminEmail, password: newAdminPassword }),
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.error || 'Failed to create admin user.');
-            }
-
-            toast({
-                title: 'Admin Created',
-                description: `${newAdminEmail} has been successfully made an administrator.`,
-            });
-            setNewAdminEmail('');
-            setNewAdminPassword('');
-        } catch (error: any) {
-            toast({
-                variant: 'destructive',
-                title: 'Error Creating Admin',
-                description: error.message,
-            });
-        } finally {
-            setIsAdding(false);
-        }
-    };
-
-    return (
-        <div className="mt-8">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
-                <UserCog className="w-6 h-6 mr-3 text-primary" />
-                Administrator Management
-            </h2>
-            <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg border-t-4 border-primary/50">
-                <form onSubmit={handleAddAdmin} className="space-y-4 mb-6 pb-6 border-b">
-                     <Input 
-                        type="email"
-                        placeholder="new.admin@example.com"
-                        value={newAdminEmail}
-                        onChange={(e) => setNewAdminEmail(e.target.value)}
-                        required
-                    />
-                    <Input 
-                        type="password"
-                        placeholder="Password (min. 6 characters)"
-                        value={newAdminPassword}
-                        onChange={(e) => setNewAdminPassword(e.target.value)}
-                        required
-                    />
-                    <Button type="submit" disabled={isAdding}>{isAdding ? 'Adding...' : 'Add Admin'}</Button>
-                </form>
-            </div>
-        </div>
-    );
-};
-
 
 export default function AdminPage() {
   const { user, isUserLoading, isAdmin } = useUser();
@@ -1151,8 +1072,6 @@ export default function AdminPage() {
             </div>
           </div>
           
-          {isAdmin && <AdminManagement toast={toast} />}
-
           <PaymentApprovalList 
             payments={pendingPayments.filter(p => p.status === 'pending')} 
             onApprove={handleApprovePayment} 
@@ -1460,4 +1379,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
