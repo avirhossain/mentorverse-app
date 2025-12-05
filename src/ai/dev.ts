@@ -10,7 +10,7 @@ import { onFlow } from 'genkit';
 // It will run when the Genkit development server starts.
 setupSuperAdmin({ email: 'mmavir89@gmail.com' })
     .then(() => {
-        console.log('Super admin setup check complete.');
+        console.log('Super admin setup check complete for mmavir89@gmail.com.');
     })
     .catch(error => {
         console.error('Error during super admin setup:', error.message);
