@@ -112,12 +112,12 @@ export default function BalancesPage() {
                                 isLoading={isLoadingMentees}
                                 icon={Users}
                                 renderItem={(mentee) => (
-                                    <div key={mentee.id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
+                                    <div key={mentee.id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                                         <div>
                                             <p className="font-semibold text-gray-800 dark:text-white">{mentee.name}</p>
                                             <p className="text-sm text-gray-500 dark:text-gray-400">{mentee.email}</p>
                                         </div>
-                                        <p className="text-lg font-bold text-primary">৳{(mentee.balance || 0).toLocaleString()}</p>
+                                        <p className="text-lg font-bold text-primary text-left sm:text-right">৳{(mentee.balance || 0).toLocaleString()}</p>
                                     </div>
                                 )}
                                 emptyMessage="No mentees found."
@@ -133,7 +133,7 @@ export default function BalancesPage() {
                                 renderItem={(tx) => {
                                     const { Icon, color } = getSourceIcon(tx.source);
                                     return (
-                                        <div key={tx.id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
+                                        <div key={tx.id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                                             <div className="flex items-center gap-4">
                                                 <Icon className={`w-6 h-6 ${color}`} />
                                                 <div>
@@ -141,7 +141,7 @@ export default function BalancesPage() {
                                                     <p className="text-sm text-gray-500 dark:text-gray-400">{tx.description}</p>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
+                                            <div className="text-left sm:text-right">
                                                  <p className={`text-lg font-bold ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                     {tx.amount > 0 ? '+' : ''}৳{tx.amount.toLocaleString()}
                                                 </p>
@@ -159,3 +159,5 @@ export default function BalancesPage() {
         </div>
     );
 }
+
+    

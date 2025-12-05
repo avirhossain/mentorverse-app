@@ -14,8 +14,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 
 const DetailSection = ({ icon: Icon, title, children }) => (
-    <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-primary/20">
-        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-t-4 border-primary/20">
+        <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
             <Icon className="w-6 h-6 mr-3 text-primary" />
             {title}
         </h3>
@@ -100,14 +100,14 @@ const BookingModal = ({ session, user, onClose, onBookingComplete }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all">
-                <div className="p-4 flex justify-between items-center border-b">
-                    <h3 className="text-2xl font-bold text-gray-800">Confirm Booking</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md transform transition-all">
+                <div className="p-4 flex justify-between items-center border-b dark:border-gray-700">
+                    <h3 className="text-2xl font-bold text-gray-800 dark:text-white">Confirm Booking</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
                 </div>
                 <div className="p-6">
                     <p className="text-lg font-semibold text-primary mb-2">{session.title}</p>
-                    <p className="mb-4 text-gray-600">You are about to book this session. Please confirm your action.</p>
+                    <p className="mb-4 text-gray-600 dark:text-gray-300">You are about to book this session. Please confirm your action.</p>
                     <Button onClick={handleBooking} disabled={isSubmitting} className="w-full font-bold text-lg">
                         {isSubmitting ? 'Processing...' : session.isFree ? 'Book for Free' : `Pay ৳${session.price} & Book`}
                     </Button>
@@ -151,16 +151,16 @@ const SpecialRequestModal = ({ session, user, onClose, onComplete }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center p-4">
-            <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all">
-                <div className="p-4 flex justify-between items-center border-b">
-                    <h3 className="text-2xl font-bold text-gray-800 flex items-center">
+            <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md transform transition-all">
+                <div className="p-4 flex justify-between items-center border-b dark:border-gray-700">
+                    <h3 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
                         <MessageSquare className="w-6 h-6 mr-2 text-primary" />
                         Special Request
                     </h3>
                     <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
                 </div>
                 <div className="p-6 space-y-4">
-                    <p className="text-gray-600">
+                    <p className="text-gray-600 dark:text-gray-300">
                         Have a specific question or topic you'd like the mentor to cover? Let them know!
                     </p>
                     <Textarea 
@@ -238,7 +238,7 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
         return (
             <div className="min-h-screen bg-background">
                 <Header />
-                <div className="text-center py-20">
+                <div className="text-center py-20 px-4">
                     <h1 className="text-2xl font-bold">Session not found</h1>
                     <p className="text-gray-500">The session you are looking for does not exist or may have been moved.</p>
                 </div>
@@ -256,8 +256,8 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 <header className="mb-8">
                     <p className="text-primary font-semibold">{session.date} at {session.time}</p>
-                    <h1 className="text-4xl font-extrabold text-gray-900">{session.title}</h1>
-                    <p className="mt-2 text-lg text-gray-600">
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">{session.title}</h1>
+                    <p className="mt-2 text-lg text-gray-600 dark:text-gray-300">
                         With <Link href={`/mentors/${session.mentorId}`} className="font-bold text-primary hover:underline">{session.mentorName}</Link>
                     </p>
                 </header>
@@ -265,25 +265,25 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
                 <div className="grid md:grid-cols-3 gap-8">
                     <div className="md:col-span-2 space-y-6">
                         <DetailSection icon={CheckCircle} title="What You Will Learn">
-                            <ul className="list-disc list-inside space-y-2 text-gray-700">
+                            <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
                                 {session.learningObjectives?.map((item, index) => <li key={index}>{item}</li>)}
                             </ul>
                         </DetailSection>
 
                         <DetailSection icon={Users} title="Who is This For?">
-                            <p className="text-gray-700">{session.whoIsItFor}</p>
+                            <p className="text-gray-700 dark:text-gray-300">{session.whoIsItFor}</p>
                         </DetailSection>
 
                         <DetailSection icon={Computer} title="Setup Requirements">
-                            <p className="text-gray-700 whitespace-pre-line">{session.setupRequirements}</p>
+                            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">{session.setupRequirements}</p>
                         </DetailSection>
                     </div>
                     <div className="md:col-span-1">
-                        <div className="bg-white p-6 rounded-xl shadow-lg sticky top-24 border-t-4 border-accent">
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg sticky top-24 border-t-4 border-accent">
                             <div className={`mb-4 px-4 py-2 text-center text-xl font-bold text-white rounded-md ${session.isFree ? 'bg-accent' : 'bg-primary'}`}>
                                 {session.isFree ? 'Free Session' : `Price: ৳${session.price}`}
                             </div>
-                            <div className="space-y-3 text-gray-700">
+                            <div className="space-y-3 text-gray-700 dark:text-gray-300">
                                 <p className="flex items-center"><Clock className="w-5 h-5 mr-2 text-primary/70" /> <strong>Duration:</strong> <span className="ml-auto">{session.durationMinutes} mins</span></p>
                                 <p className="flex items-center"><Users className="w-5 h-5 mr-2 text-primary/70" /> <strong>Seats Left:</strong> <span className="ml-auto">{availableSeats}/{session.maxParticipants}</span></p>
                                 <p className="flex items-center"><Video className="w-5 h-5 mr-2 text-primary/70" /> <strong>Platform:</strong> <span className="ml-auto">Jitsi Meet</span></p>
@@ -295,7 +295,7 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
                                             <Video className="mr-2" /> Join Session
                                         </a>
                                     </Button>
-                                    <p className="text-xs text-gray-500 mt-2">Link will be active 10m before the session starts.</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Link will be active 10m before the session starts.</p>
                                     <Button variant="secondary" onClick={() => setIsRequestModalOpen(true)} className="w-full">
                                         <MessageSquare className="w-4 h-4 mr-2"/>
                                         Make a Special Request
@@ -334,3 +334,5 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
         </div>
     );
 }
+
+    

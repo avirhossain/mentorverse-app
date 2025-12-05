@@ -247,7 +247,7 @@ const ProfileDetails = ({ user, onUpdate }) => {
                 </h2>
                 <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
                     <Edit className="w-4 h-4 mr-2" />
-                    {isEditing ? 'Cancel' : 'Edit Profile'}
+                    {isEditing ? 'Cancel' : 'Edit'}
                 </Button>
             </div>
             
@@ -497,22 +497,22 @@ const UpcomingSessions = ({ sessions, isLoading }) => (
             ) : (
                 sessions.map(session => (
                     <div key={session.id} className="p-5 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col sm:flex-row items-start justify-between transition duration-200 hover:shadow-xl hover:border-l-4 border-primary/80 border-l-4 border-transparent">
-                        <div className="flex items-start flex-grow">
+                        <div className="flex items-start flex-grow mb-4 sm:mb-0">
                             <div className="p-3 bg-primary/10 dark:bg-primary/20 rounded-lg mr-4 flex-shrink-0">
                                 <Zap className="w-6 h-6 text-primary dark:text-primary/90" />
                             </div>
                             <div>
                                 <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-1">{session.title}</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center space-x-4">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 flex flex-col sm:flex-row sm:items-center sm:space-x-4">
                                     <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> {new Date(session.createdAt).toLocaleDateString()} at {new Date(session.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                    <span className="flex items-center"><Clock className="w-3 h-3 mr-1" /> {session.durationMinutes} min</span>
+                                    <span className="flex items-center mt-1 sm:mt-0"><Clock className="w-3 h-3 mr-1" /> {session.durationMinutes} min</span>
                                 </p>
                                 <p className="text-sm font-semibold text-primary dark:text-primary/90 mt-1">
                                     Mentor: {session.mentorName}
                                 </p>
                             </div>
                         </div>
-                         <div className="mt-4 sm:mt-0 sm:text-right flex flex-col items-start sm:items-end flex-shrink-0 ml-0 sm:ml-4">
+                         <div className="mt-4 sm:mt-0 w-full sm:w-auto sm:text-right flex flex-col items-start sm:items-end flex-shrink-0 ml-0 sm:ml-4">
                                <JoinButton session={session} />
                          </div>
                     </div>
@@ -539,26 +539,27 @@ const ActivitySection = ({ sessions, isLoading, onReview }) => (
                     const Icon = Briefcase; // Simplified
                     return (
                         <div key={session.id} className="p-5 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col sm:flex-row items-start justify-between transition duration-200 hover:shadow-xl hover:border-l-4 border-primary/80 border-l-4 border-transparent">
-                            <div className="flex items-start flex-grow">
+                            <div className="flex items-start flex-grow mb-4 sm:mb-0">
                                 <div className="p-3 bg-primary/10 dark:bg-primary/20 rounded-lg mr-4 flex-shrink-0">
                                     <Icon className="w-6 h-6 text-primary dark:text-primary/90" />
                                 </div>
                                 <div>
                                     <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-1">{session.title}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center space-x-4">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 flex flex-col sm:flex-row sm:items-center sm:space-x-4">
                                         <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> {new Date(session.createdAt).toLocaleDateString()}</span>
-                                        <span className="flex items-center"><Clock className="w-3 h-3 mr-1" /> {session.durationMinutes} min</span>
+                                        <span className="flex items-center mt-1 sm:mt-0"><Clock className="w-3 h-3 mr-1" /> {session.durationMinutes} min</span>
                                     </p>
                                     <p className="text-sm font-semibold text-primary dark:text-primary/90 mt-1">
                                         Mentor: {session.mentorName}
                                     </p>
                                 </div>
                             </div>
-                            <div className="mt-4 sm:mt-0 sm:text-right flex flex-col items-start sm:items-end flex-shrink-0 ml-0 sm:ml-4">
+                            <div className="mt-4 sm:mt-0 sm:text-right flex flex-col items-start sm:items-end flex-shrink-0 ml-0 sm:ml-4 w-full sm:w-auto">
                                 <Button
                                     onClick={() => onReview(session)}
                                     variant="outline"
                                     size="sm"
+                                    className="w-full sm:w-auto"
                                 >
                                     <Star className="w-4 h-4 mr-2" />
                                     Rate & Review
@@ -727,3 +728,5 @@ export default function AccountPage() {
         </div>
     );
 };
+
+    

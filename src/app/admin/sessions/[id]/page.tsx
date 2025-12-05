@@ -29,30 +29,30 @@ const SessionDetailsSkeleton = () => (
 );
 
 const DetailCard = ({ icon: Icon, title, value }) => (
-    <div className="bg-white p-4 rounded-lg shadow-sm border flex items-start">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border flex items-start">
         <div className="p-2 bg-primary/10 rounded-md mr-4">
             <Icon className="w-6 h-6 text-primary" />
         </div>
         <div>
-            <p className="text-sm font-semibold text-gray-500">{title}</p>
-            <p className="text-lg font-bold text-gray-800">{value}</p>
+            <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">{title}</p>
+            <p className="text-lg font-bold text-gray-800 dark:text-white">{value}</p>
         </div>
     </div>
 );
 
 const BookedUserCard = ({ user }) => (
-    <div className="bg-gray-50 p-3 rounded-lg flex items-center justify-between">
+    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg flex items-center justify-between">
         <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-full mr-3">
                  <User className="w-5 h-5 text-green-700" />
             </div>
             <div>
-                <p className="font-semibold text-gray-800">{user.name}</p>
-                <p className="text-sm text-gray-500">{user.email}</p>
+                <p className="font-semibold text-gray-800 dark:text-white">{user.name}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
             </div>
         </div>
         <Link href={`/admin/users/${user.id}`} passHref>
-             <Button variant="ghost" size="sm"><Info className="w-4 h-4"/> View</Button>
+             <Button variant="ghost" size="sm"><Info className="w-4 h-4 mr-1"/> View</Button>
         </Link>
     </div>
 );
@@ -133,7 +133,7 @@ export default function AdminSessionDetailsPage({ params }: { params: { id: stri
         return (
             <div className="min-h-screen bg-background">
                 <Header currentView="admin"/>
-                <div className="text-center py-20">
+                <div className="text-center py-20 px-4">
                     <h1 className="text-2xl font-bold">Session not found</h1>
                     <p className="text-gray-500">The session you are looking for does not exist.</p>
                 </div>
@@ -149,8 +149,8 @@ export default function AdminSessionDetailsPage({ params }: { params: { id: stri
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 <header className="mb-8">
                      <Link href="/admin" className="text-sm text-primary hover:underline mb-2 inline-block">&larr; Back to Dashboard</Link>
-                    <h1 className="text-4xl font-extrabold text-gray-900">{session.title}</h1>
-                    <p className="mt-1 text-lg text-gray-600">
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white">{session.title}</h1>
+                    <p className="mt-1 text-lg text-gray-600 dark:text-gray-300">
                         With <Link href={`/mentors/${session.mentorId}`} className="font-bold text-primary hover:underline">{session.mentorName}</Link>
                     </p>
                 </header>
@@ -162,16 +162,16 @@ export default function AdminSessionDetailsPage({ params }: { params: { id: stri
                         <DetailCard icon={Users} title="Booked / Max" value={`${session.bookedBy?.length || 0} / ${session.maxParticipants}`} />
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-primary/20">
-                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-2xl font-bold text-gray-800">Session Control</h2>
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-t-4 border-primary/20">
+                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
+                            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Session Control</h2>
                              {session.status === 'scheduled' && (
-                                <Button onClick={() => handleUpdateStatus('active')}>
+                                <Button onClick={() => handleUpdateStatus('active')} className="w-full sm:w-auto">
                                     <PlayCircle className="mr-2"/> Start Session
                                 </Button>
                             )}
                              {session.status === 'active' && (
-                                <Button variant="destructive" onClick={() => handleUpdateStatus('completed')}>
+                                <Button variant="destructive" onClick={() => handleUpdateStatus('completed')} className="w-full sm:w-auto">
                                     <Check className="mr-2"/> Mark as Completed
                                 </Button>
                             )}
@@ -179,13 +179,13 @@ export default function AdminSessionDetailsPage({ params }: { params: { id: stri
                                 <span className="flex items-center font-bold text-green-600"><Check className="mr-2"/> Session Completed</span>
                             )}
                          </div>
-                         <p className="text-sm text-gray-500">
+                         <p className="text-sm text-gray-500 dark:text-gray-400">
                             Starting the session will change its status to 'active' and enable the join button for users.
                          </p>
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-primary/20">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Booked Mentees</h2>
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-t-4 border-primary/20">
+                        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Booked Mentees</h2>
                         {isLoadingUsers ? (
                             <div className="space-y-2">
                                 <Skeleton className="h-12 w-full"/>
@@ -196,7 +196,7 @@ export default function AdminSessionDetailsPage({ params }: { params: { id: stri
                                 {bookedUsers.map(user => <BookedUserCard key={user.id} user={user} />)}
                             </div>
                         ) : (
-                            <p className="text-gray-500 text-center py-4">No one has booked this session yet.</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No one has booked this session yet.</p>
                         )}
                     </div>
                 </div>
@@ -204,3 +204,5 @@ export default function AdminSessionDetailsPage({ params }: { params: { id: stri
         </div>
     );
 }
+
+    

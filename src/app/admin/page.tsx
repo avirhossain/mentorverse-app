@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label';
 
 
 const Modal = ({ title, children, onClose }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl transform transition-all">
       <div className="p-4 flex justify-between items-center border-b dark:border-gray-700">
         <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{title}</h3>
@@ -156,7 +156,7 @@ const CouponForm = ({ onSave, onClose, firestore }) => {
                         onChange={(e) => setBulkCodes(e.target.value)}
                         rows={6}
                     />
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input name="amount" type="number" placeholder="Amount for all coupons" value={formData.amount} onChange={handleChange} required />
                         <Input name="expiresAt" type="date" placeholder="Expiry Date for all" value={formData.expiresAt} onChange={handleChange} />
                     </div>
@@ -184,14 +184,14 @@ const PaymentApprovalList = ({ payments, onApprove, isLoading, onDetails, canWri
                 </div>
             ) : payments && payments.length > 0 ? (
                 payments.map((payment) => (
-                    <div key={payment.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
-                        <div>
+                    <div key={payment.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                        <div className="flex-grow">
                             <p className="font-semibold text-gray-800 dark:text-white">TrxID: <span className="font-bold text-primary">{payment.transactionId}</span></p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Amount: ৳{payment.amount}</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => onDetails(payment)}><Eye className="w-4 h-4"/></Button>
-                            {canWrite && <Button onClick={() => onApprove(payment)}>Approve</Button>}
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <Button variant="ghost" size="sm" onClick={() => onDetails(payment)} className="flex-1 sm:flex-none"><Eye className="w-4 h-4 mr-2 sm:mr-0"/></Button>
+                            {canWrite && <Button onClick={() => onApprove(payment)} className="flex-1 sm:flex-none">Approve</Button>}
                         </div>
                     </div>
                 ))
@@ -717,30 +717,38 @@ const DataListView = ({ title, data, isLoading, icon: Icon, columns, emptyMessag
                 <Skeleton className="h-10 w-full" />
             </div>
         ) : (
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border-t-4 border-primary/50">
-                <div className="hidden md:grid grid-cols-12 gap-4 p-2 text-sm font-bold text-gray-500 uppercase">
-                    {columns.map((col, index) => (
-                        <div key={index} className={`col-span-${col.span}`}>{col.header}</div>
-                    ))}
-                    <div className="col-span-2 text-right">Actions</div>
-                </div>
-                <div className="space-y-2">
-                    {data && data.length > 0 ? (
-                        data.map((item, index) => (
-                            <div key={item.id} className="grid grid-cols-12 gap-4 items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                                <div className="col-span-12 md:col-span-1 font-semibold">{index + 1}</div>
-                                <div className="col-span-6 md:col-span-2 text-sm text-gray-500">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}</div>
-                                <div className="col-span-6 md:col-span-2 font-mono text-primary">{idPrefix}{index + 1}</div>
-                                <div className="col-span-12 md:col-span-5 font-semibold text-gray-800 dark:text-white">{item.name || item.title || item.phone || item.transactionId || item.id}</div>
-                                <div className="col-span-12 md:col-span-2 flex justify-end items-center gap-2">
-                                    {renderActions(item)}
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <p className="text-gray-500 dark:text-gray-400 text-center py-4">{emptyMessage}</p>
-                    )}
-                </div>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border-t-4 border-primary/50 overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead className="hidden md:table-header-group">
+                        <tr className="border-b">
+                            {columns.map((col, index) => (
+                                <th key={index} className={`p-2 text-left font-bold text-gray-500 uppercase ${col.className}`}>{col.header}</th>
+                            ))}
+                            <th className="p-2 text-right font-bold text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {data && data.length > 0 ? (
+                            data.map((item, index) => (
+                                <tr key={item.id} className="block md:table-row hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                    <td className="p-2 block md:table-cell"><span className="md:hidden font-bold">SL: </span>{index + 1}</td>
+                                    <td className="p-2 block md:table-cell"><span className="md:hidden font-bold">Date: </span>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}</td>
+                                    <td className="p-2 block md:table-cell font-mono text-primary"><span className="md:hidden font-bold">ID: </span>{idPrefix}{index + 1}</td>
+                                    <td className="p-2 block md:table-cell font-semibold text-gray-800 dark:text-white"><span className="md:hidden font-bold">Name: </span>{item.name || item.title || item.phone || item.transactionId || item.id}</td>
+                                    <td className="p-2 block md:table-cell text-left md:text-right">
+                                        <div className="flex justify-start md:justify-end items-center gap-2">
+                                            {renderActions(item)}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={columns.length + 1} className="text-gray-500 dark:text-gray-400 text-center py-4">{emptyMessage}</td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
             </div>
         )}
     </div>
@@ -813,7 +821,7 @@ const AdminManagement = ({ firestore, toast, openModal, fetchAdmins, currentAdmi
                 <UserCog className="w-6 h-6 mr-3 text-primary" />
                 Administrator Management
             </h2>
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-t-4 border-primary/50">
+            <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg border-t-4 border-primary/50">
                 <form onSubmit={handleAddAdmin} className="space-y-4 mb-6 pb-6 border-b">
                      <Input 
                         type="email"
@@ -822,7 +830,7 @@ const AdminManagement = ({ firestore, toast, openModal, fetchAdmins, currentAdmi
                         onChange={(e) => setNewAdminEmail(e.target.value)}
                         required
                     />
-                    <div className="flex items-center space-x-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
                         <Label>Permissions:</Label>
                          <div className="flex items-center space-x-2">
                             <Checkbox id="canRead" checked={permissions.canRead} onCheckedChange={(checked) => setPermissions(p => ({...p, canRead: !!checked}))} />
@@ -845,14 +853,14 @@ const AdminManagement = ({ firestore, toast, openModal, fetchAdmins, currentAdmi
                         <Skeleton className="h-8 w-full" />
                     ) : (
                         admins?.map(admin => (
-                            <div key={admin.id} className="grid grid-cols-12 gap-2 items-center bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                                <span className="col-span-4 font-mono text-gray-800 dark:text-gray-200">{admin.email}</span>
-                                <div className="col-span-5 flex items-center gap-4 text-xs">
+                            <div key={admin.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
+                                <span className="md:col-span-4 font-mono text-gray-800 dark:text-gray-200 truncate">{admin.email}</span>
+                                <div className="md:col-span-5 flex items-center gap-4 text-xs">
                                      <span className="flex items-center gap-1"><PermissionIcon granted={admin.canRead} /> Read</span>
                                      <span className="flex items-center gap-1"><PermissionIcon granted={admin.canWrite} /> Write</span>
                                      <span className="flex items-center gap-1"><PermissionIcon granted={admin.canDelete} /> Delete</span>
                                 </div>
-                                <div className="col-span-3 flex justify-end items-center gap-2">
+                                <div className="md:col-span-3 flex justify-start md:justify-end items-center gap-2">
                                      <Button 
                                         variant="ghost" 
                                         size="sm"
@@ -900,7 +908,7 @@ const EditAdminPermsForm = ({ admin, onSave, onClose }) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            <p className="font-semibold text-lg">Editing permissions for: <span className="font-mono text-primary">{admin.email}</span></p>
+            <p className="font-semibold text-lg">Editing permissions for: <span className="font-mono text-primary break-all">{admin.email}</span></p>
             <div className="flex flex-col space-y-4">
                  <div className="flex items-center space-x-3 p-3 border rounded-md">
                     <Checkbox id="editCanRead" checked={permissions.canRead} onCheckedChange={(checked) => setPermissions(p => ({...p, canRead: !!checked}))} />
@@ -1184,7 +1192,7 @@ export default function AdminPage() {
             <p className="text-gray-500 dark:text-gray-400">Manage Mentees content and users.</p>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-t-4 border-primary">
+          <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg border-t-4 border-primary">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Content Management</h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {canWrite && <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
@@ -1340,7 +1348,9 @@ export default function AdminPage() {
             ]}
             renderActions={(mentor) => (
                 <>
-                    <Link href={`/mentors/${mentor.id}`} className="text-sm text-primary hover:underline">View</Link>
+                    <Link href={`/mentors/${mentor.id}`} passHref>
+                        <Button asChild variant="ghost" size="sm"><a><Eye className="w-4 h-4" /></a></Button>
+                    </Link>
                     {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('mentor', mentor)}><Edit className="w-4 h-4" /></Button>}
                     {canDelete && <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -1377,16 +1387,18 @@ export default function AdminPage() {
                 ]}
                 renderActions={(session) => (
                      <>
-                        <Link href={`/admin/sessions/${session.id}`} className="text-sm text-primary hover:underline">View</Link>
+                        <Link href={`/admin/sessions/${session.id}`} passHref>
+                            <Button asChild variant="ghost" size="sm"><a><Eye className="w-4 h-4" /></a></Button>
+                        </Link>
                         {session.status === 'scheduled' && canWrite && (
                             <Button size="sm" onClick={() => handleUpdateSessionStatus(session, 'active')}>
                                 <PlayCircle className="w-4 h-4 mr-2" />
-                                Start Session
+                                Start
                             </Button>
                         )}
                         {session.status === 'active' && canWrite && (
                              <Button size="sm" variant="destructive" onClick={() => handleUpdateSessionStatus(session, 'completed')}>
-                                End Session
+                                End
                             </Button>
                         )}
                         {session.status === 'completed' && (
@@ -1465,7 +1477,9 @@ export default function AdminPage() {
                 ]}
                 renderActions={(mentee) => (
                     <>
-                        <Link href={`/account?userId=${mentee.id}`} className="text-sm text-primary hover:underline">View</Link>
+                        <Link href={`/account?userId=${mentee.id}`} passHref>
+                           <Button asChild variant="ghost" size="sm"><a><Eye className="w-4 h-4" /></a></Button>
+                        </Link>
                         {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('mentee', mentee)}><Edit className="w-4 h-4" /></Button>}
                         {canDelete && <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -1549,3 +1563,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    

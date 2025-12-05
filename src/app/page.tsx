@@ -144,7 +144,7 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
             </div>
         </div>
         <div className="mt-6">
-             <div className="flex items-center gap-2">
+             <div className="flex flex-col sm:flex-row items-center gap-2">
                 {isBooked ? (
                     <div className="w-full">
                         <Button asChild variant={canJoin ? 'default' : 'outline'} disabled={!canJoin} className="w-full">
@@ -163,14 +163,13 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
                          {isFull ? 'Session Full' : 'Book Session'}
                     </Button>
                 )}
-                 <Button asChild variant="outline" className="shrink-0">
+                 <Button asChild variant="outline" className="w-full sm:w-auto shrink-0">
                     <Link href={`/sessions/${session.id}`}>
                         See More
                     </Link>
                 </Button>
             </div>
         </div>
-    </div>
     )
 };
 
@@ -427,14 +426,14 @@ export default function HomePage() {
                     <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
                         Connect with top-tier mentors, join exclusive sessions, and unlock your full potential with Mentees.
                     </p>
-                    <div className="mt-8 flex justify-center gap-4">
+                    <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
                         <Link href="#sessions">
-                            <Button size="lg" className="font-bold">
+                            <Button size="lg" className="font-bold w-full sm:w-auto">
                                 <Zap className="mr-2" /> Explore Sessions
                             </Button>
                         </Link>
                         <Link href="#mentors">
-                            <Button size="lg" variant="outline" className="font-bold bg-white">
+                            <Button size="lg" variant="outline" className="font-bold bg-white w-full sm:w-auto">
                                 Find a Mentor
                             </Button>
                         </Link>
