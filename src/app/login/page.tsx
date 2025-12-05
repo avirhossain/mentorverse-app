@@ -22,7 +22,7 @@ const loginSchema = z.object({
   password: z.string().min(1, { message: 'Password is required.' }),
 });
 
-const FIRST_ADMIN_EMAIL = 'mmavir89@gmail.com';
+const ADMIN_EMAIL = 'mmavir89@gmail.com';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -83,7 +83,7 @@ export default function LoginPage() {
     const handleRedirect = async (user: User) => {
         const { isNewUser } = await createUserProfile(user);
 
-        if (user.email === FIRST_ADMIN_EMAIL) {
+        if (user.email === ADMIN_EMAIL) {
             await setAdminClaim(user.uid);
         }
 

@@ -24,8 +24,6 @@ const signupSchema = z.object({
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
 });
 
-const FIRST_ADMIN_EMAIL = 'mmavir89@gmail.com';
-
 export default function SignUpPage() {
     const router = useRouter();
     const { user, isUserLoading } = useUser();
@@ -42,23 +40,6 @@ export default function SignUpPage() {
             password: '',
         },
     });
-
-    const setAdminClaim = async (uid: string) => {
-        try {
-            const response = await fetch('/api/set-admin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid }),
-            });
-             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to set admin claim.');
-            }
-        } catch (error) {
-            console.error("Failed to set admin claim:", error);
-            toast({ variant: 'destructive', title: 'Admin Grant Failed', description: error.message });
-        }
-    };
     
     const createUserProfile = async (user: User) => {
         if (!firestore) return;
@@ -79,22 +60,9 @@ export default function SignUpPage() {
     };
 
     const handleRedirect = async (user: User) => {
-        // Always create a profile for a new user from the sign-up page.
         await createUserProfile(user);
-        
-        if (user.email === FIRST_ADMIN_EMAIL) {
-            await setAdminClaim(user.uid);
-        }
-
-        // Force a refresh of the token to get the latest custom claims.
-        const idTokenResult = await user.getIdTokenResult(true);
-        
-        if (idTokenResult.claims.admin) {
-            router.push('/admin');
-        } else {
-            // All users from sign-up are new, so redirect to account page
-            router.push('/account');
-        }
+        // All users from sign-up are new, so redirect to account page
+        router.push('/account');
     }
     
     useEffect(() => {
