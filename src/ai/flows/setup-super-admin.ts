@@ -12,13 +12,13 @@ import * as admin from 'firebase-admin';
 // Initialize Firebase Admin SDK if not already done
 if (!admin.apps.length) {
   try {
-     const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
-      ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-      : undefined;
+     const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT;
 
-    if (!serviceAccount) {
+    if (!serviceAccountString) {
       throw new Error("FIREBASE_SERVICE_ACCOUNT environment variable is not set or is invalid.");
     }
+    
+    const serviceAccount = JSON.parse(serviceAccountString);
     
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
