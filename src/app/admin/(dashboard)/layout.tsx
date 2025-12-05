@@ -17,19 +17,19 @@ export default function AdminLayout({
   useEffect(() => {
     // Wait until the initial authentication check is complete.
     if (!isAuthCheckComplete) {
-      // While checking, show a loading skeleton.
+      // While checking, show a loading skeleton to prevent content flash.
       return;
     }
 
     // If the check is complete and the user is not an admin,
-    // force them to the admin login page.
+    // force them to the admin login page without logging them out.
     if (!isAdmin) {
       router.push('/admin/login');
     }
   }, [isAdmin, isAuthCheckComplete, router]);
   
-  // If authentication is still loading OR if the user is not yet confirmed as an admin,
-  // show a skeleton screen to prevent flashing the admin content to non-admin users.
+  // While the auth check is running OR if the user has been found to not be an admin
+  // (and is being redirected), show a loading skeleton.
   if (!isAuthCheckComplete || !isAdmin) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -45,6 +45,6 @@ export default function AdminLayout({
     );
   }
   
-  // If the user is a confirmed admin, render the admin dashboard content.
+  // If the auth check is complete and the user is a confirmed admin, render the dashboard content.
   return <>{children}</>;
 }
