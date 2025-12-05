@@ -36,30 +36,32 @@ export default function AdminLoginPage() {
         },
     });
 
-    // If the user is already logged in and is an admin, redirect them.
+    // If an admin is already logged in, redirect them to the dashboard.
     useEffect(() => {
-        if (isAuthCheckComplete && user && isAdmin) {
+        if (isAuthCheckComplete && isAdmin) {
             router.push('/admin');
         }
-    }, [user, isAdmin, isAuthCheckComplete, router]);
+    }, [isAdmin, isAuthCheckComplete, router]);
 
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
-        if (!auth) return;
+        if (!auth) {
+            toast({
+                variant: 'destructive',
+                title: 'Authentication service not available.',
+            });
+            return;
+        }
         
         setIsLoading(true);
 
         try {
-            // Only attempt to sign in. Do not create a user.
             await signInWithEmailAndPassword(auth, values.email, values.password);
-            
-            // After successful sign-in, the useEffect will handle redirection.
-            // We add a toast for immediate feedback.
+            // On successful sign-in, the useUser hook will update, and the useEffect above
+            // will catch the isAdmin status and redirect. We can also push directly for faster UX.
             toast({
                 title: 'Login Successful',
-                description: 'Redirecting to the dashboard...',
+                description: 'Redirecting to the admin dashboard...',
             });
-            // The redirection is now primarily handled by the useEffect hook,
-            // but we can push here as a fallback.
             router.push('/admin');
 
         } catch (error: any) {
@@ -72,6 +74,15 @@ export default function AdminLoginPage() {
             setIsLoading(false);
         }
     };
+    
+    // While checking auth or if user is an admin already (and redirecting), show a loading state.
+    if (!isAuthCheckComplete || isAdmin) {
+        return (
+             <div className="flex items-center justify-center min-h-screen">
+                <p>Loading...</p>
+            </div>
+        );
+    }
     
     return (
         <div className="min-h-screen bg-background">
