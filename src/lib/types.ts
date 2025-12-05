@@ -1,5 +1,14 @@
 
 
+export interface AdminUser {
+  id: string;
+  email: string;
+  createdAt: string;
+  canRead: boolean;
+  canWrite: boolean;
+  canDelete: boolean;
+}
+
 export interface Mentor {
   id: string; // Changed from number to string to align with Firestore document IDs
   name: string;

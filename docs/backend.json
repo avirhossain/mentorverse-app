@@ -16,9 +16,21 @@
           "type": "string",
           "format": "date-time",
           "description": "Timestamp when the admin was added."
+        },
+        "canRead": {
+            "type": "boolean",
+            "description": "Grants read access to admin panel data."
+        },
+        "canWrite": {
+            "type": "boolean",
+            "description": "Grants write access to create/edit content."
+        },
+        "canDelete": {
+            "type": "boolean",
+            "description": "Grants delete access to remove content."
         }
       },
-      "required": ["email", "createdAt"]
+      "required": ["email", "createdAt", "canRead", "canWrite", "canDelete"]
     },
     "Mentor": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -462,7 +474,7 @@
           "schema": {
             "$ref": "#/backend/entities/AdminUser"
           },
-          "description": "Collection to store the emails of admin users. The document ID is the admin's email.",
+          "description": "Collection to store admin users and their permissions. The document ID is the admin's email.",
           "params": [
             {
               "name": "adminEmail",

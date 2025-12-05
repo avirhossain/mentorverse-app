@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -8,6 +7,7 @@ import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/fireb
 import { signOut } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { doc } from 'firebase/firestore';
+import type { AdminUser } from '@/lib/types';
 
 export const Header = ({ currentView }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -21,9 +21,9 @@ export const Header = ({ currentView }) => {
         return doc(firestore, 'admins', user.email);
     }, [firestore, user]);
 
-    const { data: adminDoc, isLoading: isAdminLoading } = useDoc(adminDocRef);
+    const { data: adminData, isLoading: isAdminLoading } = useDoc<AdminUser>(adminDocRef);
 
-    const isAdmin = !!adminDoc;
+    const isAdmin = !!adminData;
     const isLoading = isUserLoading || (user && isAdminLoading);
 
     useEffect(() => {
