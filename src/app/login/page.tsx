@@ -22,8 +22,6 @@ const loginSchema = z.object({
   password: z.string().min(1, { message: 'Password is required.' }),
 });
 
-const ADMIN_EMAIL = 'mmavir89@gmail.com';
-
 export default function LoginPage() {
     const router = useRouter();
     const { user, isUserLoading } = useUser();
@@ -39,24 +37,6 @@ export default function LoginPage() {
             password: '',
         },
     });
-
-    const setAdminClaim = async (uid: string) => {
-        try {
-            const response = await fetch('/api/set-admin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid }),
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to set admin claim.');
-            }
-        } catch (error) {
-            console.error("Failed to set admin claim:", error);
-            // Non-blocking, but shows an error to the user
-            toast({ variant: 'destructive', title: 'Admin Grant Failed', description: error.message });
-        }
-    };
 
     const createUserProfile = async (user: User): Promise<{ isNewUser: boolean }> => {
         if (!firestore) return { isNewUser: false };
@@ -82,10 +62,6 @@ export default function LoginPage() {
 
     const handleRedirect = async (user: User) => {
         const { isNewUser } = await createUserProfile(user);
-
-        if (user.email === ADMIN_EMAIL) {
-            await setAdminClaim(user.uid);
-        }
 
         const idTokenResult = await user.getIdTokenResult(true); 
         
@@ -140,6 +116,10 @@ export default function LoginPage() {
             });
              setIsLoading(false);
         }
+    };
+
+    const handleAdminLogin = () => {
+        router.push('/admin');
     };
 
     if (isUserLoading || user) {
@@ -227,6 +207,12 @@ export default function LoginPage() {
                                 Sign Up
                             </Link>
                         </p>
+                    </div>
+
+                    <div className="mt-6 pt-6 border-t">
+                         <Button variant="secondary" className="w-full" onClick={handleAdminLogin}>
+                            Continue as Admin (Dev)
+                        </Button>
                     </div>
                 </div>
             </div>
