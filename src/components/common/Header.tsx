@@ -20,11 +20,17 @@ export const Header = ({ currentView }) => {
             user.getIdTokenResult(true).then(idTokenResult => {
                 const isAdminClaim = !!idTokenResult.claims.admin;
                 setIsAdmin(isAdminClaim);
+                if (currentView === 'admin' && !isAdminClaim && !isUserLoading) {
+                    router.push('/admin/login');
+                }
             });
         } else {
             setIsAdmin(false);
+             if (currentView === 'admin' && !isUserLoading) {
+                router.push('/admin/login');
+            }
         }
-    }, [user]);
+    }, [user, isUserLoading, currentView, router]);
 
     const isAdminView = currentView === 'admin';
 
@@ -50,10 +56,10 @@ export const Header = ({ currentView }) => {
     <>
         <header className="sticky top-0 z-50 bg-white shadow-lg border-b border-primary/10">
             <div className="max-w-7xl mx-auto p-4 flex justify-between items-center">
-                <Link href={isAdmin ? "/admin" : "/"} className="text-2xl font-extrabold text-primary">Guidelab</Link>
+                <Link href={isAdmin && user ? "/admin" : "/"} className="text-2xl font-extrabold text-primary">Guidelab</Link>
                 
                 <nav className="hidden lg:flex space-x-2 items-center text-gray-600 font-medium">
-                    {isAdminView ? (
+                    {isAdminView && user ? (
                          <Button onClick={handleLogout} variant="outline">
                             <LogOut className="w-5 h-5 mr-2" /> Logout
                         </Button>
@@ -95,7 +101,7 @@ export const Header = ({ currentView }) => {
             
             {isMenuOpen && (
                 <div className="lg:hidden absolute w-full bg-white shadow-lg border-t border-gray-100 py-4 px-4 space-y-3">
-                     {isAdminView ? (
+                     {isAdminView && user ? (
                          <Button onClick={handleLogout} className="w-full">
                             <LogOut className="w-5 h-5 mr-2" /> Logout
                         </Button>

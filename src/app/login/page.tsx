@@ -118,10 +118,6 @@ export default function LoginPage() {
         }
     };
 
-    const handleAdminLogin = () => {
-        router.push('/admin');
-    };
-
     if (isUserLoading || user) {
         return (
              <div className="flex items-center justify-center min-h-screen">
@@ -207,12 +203,6 @@ export default function LoginPage() {
                                 Sign Up
                             </Link>
                         </p>
-                    </div>
-
-                    <div className="mt-6 pt-6 border-t">
-                         <Button variant="secondary" className="w-full" onClick={handleAdminLogin}>
-                            Continue as Admin (Dev)
-                        </Button>
                     </div>
                 </div>
             </div>

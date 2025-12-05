@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { v4 as uuidv4 } from 'uuid';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useRouter } from 'next/navigation';
 
 
 const Modal = ({ title, children, onClose }) => (
@@ -735,6 +736,8 @@ const DataListView = ({ title, data, isLoading, icon: Icon, columns, emptyMessag
 
 
 export default function AdminPage() {
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
   const [modalState, setModalState] = useState({ type: null, data: null });
   
   const [mentors, setMentors] = useState<Mentor[]>([]);
@@ -806,10 +809,13 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
+    if (!isUserLoading && !user) {
+        router.push('/admin/login');
+    }
     if (firestore) {
       fetchData();
     }
-  }, [firestore]);
+  }, [firestore, isUserLoading, user, router]);
 
     const handleSaveMentor = async (mentorData: Omit<Mentor, 'id'> & { id?: string }, isEditing: boolean) => {
         if (!firestore) return;
@@ -978,6 +984,14 @@ export default function AdminPage() {
   const openModal = (type, data = null) => setModalState({ type, data });
   const closeModal = () => setModalState({ type: null, data: null });
   
+  if (isUserLoading || !user) {
+    return (
+        <div className="flex justify-center items-center h-screen">
+            <p>Loading admin dashboard...</p>
+        </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header currentView="admin" />
