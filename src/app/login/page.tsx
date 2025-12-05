@@ -70,7 +70,10 @@ export default function LoginPage() {
                     },
                     defaultCountry: 'BD'
                 },
-                EmailAuthProvider.PROVIDER_ID,
+                {
+                    provider: EmailAuthProvider.PROVIDER_ID,
+                    requireDisplayName: false
+                }
             ],
             callbacks: {
                 signInSuccessWithAuthResult: (authResult, redirectUrl) => {
@@ -88,6 +91,7 @@ export default function LoginPage() {
                                     interests: [],
                                     mentorshipGoal: '',
                                     status: 'active',
+                                    role: 'user'
                                 });
                             }
                         });
