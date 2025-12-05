@@ -51,10 +51,6 @@ export default function SignUpPage() {
             signInFlow: 'redirect',
             signInSuccessUrl: '/account',
             signInOptions: [
-                {
-                    provider: EmailAuthProvider.PROVIDER_ID,
-                    requireDisplayName: true, // Ask for name on sign-up
-                },
                 GoogleAuthProvider.PROVIDER_ID,
                 {
                     provider: PhoneAuthProvider.PROVIDER_ID,
@@ -64,6 +60,10 @@ export default function SignUpPage() {
                         badge: 'bottomleft'
                     },
                     defaultCountry: 'BD'
+                },
+                {
+                    provider: EmailAuthProvider.PROVIDER_ID,
+                    requireDisplayName: true, // Ask for name on sign-up
                 }
             ],
             callbacks: {
