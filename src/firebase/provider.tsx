@@ -6,8 +6,6 @@ import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
-import type { AdminUser } from '@/lib/types';
-
 
 // Internal state for user authentication
 interface UserAuthState {
@@ -74,7 +72,6 @@ export const FirebaseProvider: React.FC<{
       async (firebaseUser) => {
         if (firebaseUser) {
             try {
-                // Force refresh to get the latest claims
                 const idTokenResult = await firebaseUser.getIdTokenResult(true);
                 const isAdmin = !!idTokenResult.claims.admin;
                 
@@ -116,7 +113,7 @@ export const FirebaseProvider: React.FC<{
       firestore: servicesAvailable ? firestore : null,
       auth: servicesAvailable ? auth : null,
       ...userAuthState,
-      refreshToken, // Add to context
+      refreshToken,
     };
   }, [firebaseApp, firestore, auth, userAuthState, refreshToken]);
 

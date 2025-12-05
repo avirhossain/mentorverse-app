@@ -12,27 +12,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     async function checkAdmin() {
-      if (!isAuthCheckComplete) return;
-
-      // Ensure user object is available before trying to refresh
-      if (user) {
-        // Force token refresh to make sure admin claim is loaded
-        await refreshToken(); 
+      if (!isAuthCheckComplete) {
+        // If auth state is not yet resolved, do nothing and wait.
+        return;
       }
       
-      // Now that claims are refreshed, check isAdmin status
-      // We need to get the latest isAdmin state after refreshToken,
-      // but the hook might not have updated yet. Let's rely on the onAuthStateChanged logic.
-      // The logic inside onAuthStateChanged in the provider is the source of truth.
-      if (!isAdmin) {
-        router.push('/admin/login'); // Only redirect if confirmed NOT admin
+      if (!user) {
+        // If auth check is complete and there's no user, redirect to login.
+        router.push('/admin/login');
+        return;
+      }
+
+      // User is logged in, now we need to ensure their claims are fresh.
+      await refreshToken(); 
+      
+      // After refreshing, the `isAdmin` value from the useUser hook should be up-to-date.
+      // However, to be extra safe, we check it again. The `useUser` hook will re-render
+      // with the correct value, but this provides an immediate check post-refresh.
+      const freshToken = await user.getIdTokenResult(true);
+      if (!freshToken.claims.admin) {
+        console.log("Redirecting: User is not an admin.");
+        router.push('/admin/login');
       }
     }
 
     checkAdmin();
-  }, [isAdmin, isAuthCheckComplete, user, router, refreshToken]);
-
-  // Show loading skeleton while the auth check is running or if the user is not an admin
+  }, [isAuthCheckComplete, user, router, refreshToken]);
+  
+  // Show a loading skeleton while we verify the user's status.
+  // This state persists until `isAuthCheckComplete` is true AND `isAdmin` is confirmed to be true.
   if (!isAuthCheckComplete || !isAdmin) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -48,6 +56,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
   
-  // If the checks pass, render the dashboard content.
+  // If all checks pass, render the dashboard content.
   return <>{children}</>;
 }
