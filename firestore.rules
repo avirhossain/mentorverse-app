@@ -23,19 +23,10 @@ service cloud.firestore {
     }
 
     /**
-     * Grants admin access to the first admin user based on their email.
-     * This is a temporary bootstrap mechanism.
-     */
-    function isFirstAdmin() {
-        return request.auth.token.email == 'mmavir89@gmail.com';
-    }
-
-    /**
-     * Checks if the currently authenticated user has the 'admin' custom claim
-     * OR is the designated first admin.
+     * Checks if the currently authenticated user has the 'admin' custom claim.
      */
     function isAdmin() {
-      return isSignedIn() && (request.auth.token.admin == true || isFirstAdmin());
+      return isSignedIn() && request.auth.token.admin == true;
     }
 
     //----------------------------------------------------------------//
@@ -47,7 +38,7 @@ service cloud.firestore {
      */
     match /mentors/{mentorId} {
       allow get, list: if true;
-      allow write: if isAdmin();
+      allow write, delete: if isAdmin();
     }
     
     /**
@@ -64,7 +55,7 @@ service cloud.firestore {
      */
     match /unique_sessions/{uniqueSessionId} {
       allow get, list: if true;
-      allow write: if isAdmin();
+      allow write, delete: if isAdmin();
     }
 
     /**
@@ -72,7 +63,7 @@ service cloud.firestore {
      */
     match /tips/{tipId} {
       allow get, list: if true;
-      allow write: if isAdmin();
+      allow write, delete: if isAdmin();
     }
 
     /**
