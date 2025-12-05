@@ -286,7 +286,7 @@ const BookingSection = ({ mentor, onBook }) => {
                             <div className="flex justify-between items-center w-full">
                                 <span className="text-lg font-semibold text-gray-800">{session.name}</span>
                                 <span className="text-xl font-extrabold text-primary">
-                                    {session.price > 0 ? `${session.price} ${session.currency}` : 'Free'}
+                                    {session.price > 0 ? `৳${session.price}` : 'Free'}
                                 </span>
                             </div>
                         </AccordionTrigger>

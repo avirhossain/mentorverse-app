@@ -11,9 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useFirestore, useUser, useDoc, useMemoFirebase, useAuth, useCollection } from '@/firebase';
-import { collection, query, where, getDocs, updateDoc, arrayUnion, doc, setDoc, runTransaction } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, arrayUnion, doc, setDoc, runTransaction, getDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import type { Mentee, Session } from '@/lib/types';
+import type { Mentee, Session, Mentor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { signOut } from 'firebase/auth';
 
@@ -52,7 +52,7 @@ const RatingStarsInput = ({ rating, setRating }) => (
 );
 
 
-const ReviewModal = ({ session, user, onClose }) => {
+const ReviewModal = ({ session, user, onClose, onReviewSubmitted }) => {
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,35 +65,42 @@ const ReviewModal = ({ session, user, onClose }) => {
             toast({ variant: 'destructive', title: 'Error', description: 'Please provide a rating.' });
             return;
         }
-        setIsSubmitting(true);
+        if (!firestore || !user) return;
         
+        setIsSubmitting(true);
+        const mentorRef = doc(firestore, 'mentors', session.mentorId);
+
         try {
-            if (!firestore) throw new Error('Firestore not available');
-            if (!user) throw new Error('User not available');
+            await runTransaction(firestore, async (transaction) => {
+                const mentorDoc = await transaction.get(mentorRef);
+                if (!mentorDoc.exists()) {
+                    throw new Error("Mentor profile not found.");
+                }
 
-            const mentorsRef = collection(firestore, 'mentors');
-            const q = query(mentorsRef, where("name", "==", session.mentorName));
-            const querySnapshot = await getDocs(q);
+                const mentorData = mentorDoc.data() as Mentor;
+                const newReview = {
+                    mentee: user.displayName || 'Anonymous User',
+                    date: new Date().toISOString(),
+                    rating,
+                    text: comment,
+                };
 
-            if (querySnapshot.empty) {
-                throw new Error(`Mentor '${session.mentorName}' not found.`);
-            }
+                const existingReviews = mentorData.reviews || [];
+                const updatedReviews = [...existingReviews, newReview];
+                
+                const totalRating = updatedReviews.reduce((sum, review) => sum + review.rating, 0);
+                const newAverageRating = totalRating / updatedReviews.length;
+                const newRatingsCount = updatedReviews.length;
 
-            const mentorDoc = querySnapshot.docs[0];
-            const mentorRef = doc(firestore, 'mentors', mentorDoc.id);
-
-            const newReview = {
-                mentee: user.displayName || 'Anonymous User',
-                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                rating,
-                text: comment,
-            };
-            
-            await updateDoc(mentorRef, {
-                reviews: arrayUnion(newReview)
+                transaction.update(mentorRef, {
+                    reviews: updatedReviews,
+                    rating: newAverageRating,
+                    ratingsCount: newRatingsCount,
+                });
             });
 
             toast({ title: 'Success!', description: 'Your review has been submitted.' });
+            onReviewSubmitted(); // To refresh data if needed
             onClose();
 
         } catch (error) {
@@ -447,14 +454,11 @@ const JoinButton = ({ session }) => {
     const [canJoin, setCanJoin] = useState(false);
 
     useEffect(() => {
-        // This is a simplified check. A robust implementation would use a library like date-fns
-        // and a proper date/time string format (e.g., ISO 8601) in the Session object.
         const checkTime = () => {
             const sessionDateTime = new Date(`${session.date} ${session.time}`);
             const now = new Date();
             const tenMinutes = 10 * 60 * 1000;
             
-            // This comparison is naive and should be improved
             const isTimeCorrect = sessionDateTime.getTime() - now.getTime() < tenMinutes;
             const isSessionActive = session.status === 'active';
             
@@ -519,15 +523,15 @@ const UpcomingSessions = ({ sessions, isLoading }) => (
 );
 
 
-const ActivitySection = ({ sessions, onReview }) => (
+const ActivitySection = ({ sessions, isLoading, onReview }) => (
     <section>
         <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-6 flex items-center">
             <Clock className="w-8 h-8 mr-3 text-primary" />
             Previous Sessions
         </h2>
         <div className="space-y-4">
-             {!sessions ? (
-                <p className="text-gray-500 dark:text-gray-400">Loading sessions...</p>
+             {isLoading ? (
+                <p>Loading sessions...</p>
             ) : sessions.length === 0 ? (
                 <p className="text-gray-500 dark:text-gray-400">You have no previous sessions.</p>
             ) : (
@@ -542,7 +546,7 @@ const ActivitySection = ({ sessions, onReview }) => (
                                 <div>
                                     <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-1">{session.title}</h3>
                                     <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center space-x-4">
-                                        <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> {session.date}</span>
+                                        <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> {new Date(session.createdAt).toLocaleDateString()}</span>
                                         <span className="flex items-center"><Clock className="w-3 h-3 mr-1" /> {session.durationMinutes} min</span>
                                     </p>
                                     <p className="text-sm font-semibold text-primary dark:text-primary/90 mt-1">
@@ -614,6 +618,7 @@ export default function AccountPage() {
     const auth = useAuth();
     
     const [balanceUpdate, setBalanceUpdate] = useState(0);
+    const [reviewUpdate, setReviewUpdate] = useState(0);
 
     const userDocRef = useMemoFirebase(() => {
         if (!firestore || !authUser) return null;
@@ -622,15 +627,16 @@ export default function AccountPage() {
 
     const { data: menteeData, isLoading: isMenteeLoading } = useDoc<Mentee>(userDocRef);
 
-    const upcomingSessionsQuery = useMemoFirebase(() => {
+    const userSessionsQuery = useMemoFirebase(() => {
         if (!firestore || !authUser) return null;
-        return query(
-            collection(firestore, 'sessions'),
-            where('bookedBy', 'array-contains', authUser.uid)
-        );
-    }, [firestore, authUser]);
+        return query(collection(firestore, `users/${authUser.uid}/sessions`));
+    }, [firestore, authUser, reviewUpdate]);
 
-    const { data: upcomingSessions, isLoading: isLoadingUpcomingSessions } = useCollection<Session>(upcomingSessionsQuery);
+    const { data: allUserSessions, isLoading: isLoadingUserSessions } = useCollection<Session>(userSessionsQuery);
+    
+    const upcomingSessions = allUserSessions?.filter(s => s.status === 'scheduled' || s.status === 'active') || [];
+    const previousSessions = allUserSessions?.filter(s => s.status === 'completed') || [];
+
 
     const [showAddBalanceModal, setShowAddBalanceModal] = useState(false);
     const [sessionToReview, setSessionToReview] = useState(null);
@@ -648,7 +654,6 @@ export default function AccountPage() {
     const handleProfileUpdate = async (updatedData: Mentee) => {
         if (!userDocRef) throw new Error("User reference not available.");
         await updateDoc(userDocRef, updatedData);
-        // The useDoc hook will automatically fetch the latest data
     };
 
     const LogoutButton = () => (
@@ -690,8 +695,8 @@ export default function AccountPage() {
 
                             <div className="lg:col-span-2 space-y-8">
                                 <WalletSection balance={menteeData?.balance || 0} onAddBalanceClick={() => setShowAddBalanceModal(true)} />
-                                <UpcomingSessions sessions={upcomingSessions} isLoading={isLoadingUpcomingSessions} />
-                                <ActivitySection sessions={[]} onReview={setSessionToReview} />
+                                <UpcomingSessions sessions={upcomingSessions} isLoading={isLoadingUserSessions} />
+                                <ActivitySection sessions={previousSessions} isLoading={isLoadingUserSessions} onReview={setSessionToReview} />
                                 <SavedContentSection content={[]} />
                                 <LogoutButton />
                             </div>
@@ -702,7 +707,7 @@ export default function AccountPage() {
                 )}
             </main>
 
-            {showAddBalanceModal && (
+            {showAddBalanceModal && authUser && (
                 <AddBalanceModal 
                     onClose={() => setShowAddBalanceModal(false)}
                     onBalanceUpdate={handleBalanceUpdate}
@@ -716,6 +721,7 @@ export default function AccountPage() {
                     session={sessionToReview}
                     user={authUser}
                     onClose={() => setSessionToReview(null)}
+                    onReviewSubmitted={() => setReviewUpdate(p => p + 1)}
                 />
             )}
         </div>
