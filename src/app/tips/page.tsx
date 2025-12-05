@@ -1,8 +1,9 @@
+
 'use client';
 import React from 'react';
 import { Lightbulb, X, Link as LinkIcon, Video, FileText } from 'lucide-react';
 import { Header } from '@/components/common/Header';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import type { Tip } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -56,11 +57,12 @@ export default function TipsPage() {
     const [selectedArticle, setSelectedArticle] = React.useState(null);
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const firestore = useFirestore();
+    const { isAuthCheckComplete } = useUser();
 
     const tipsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !isAuthCheckComplete) return null;
         return query(collection(firestore, 'tips'), orderBy('title'));
-    }, [firestore]);
+    }, [firestore, isAuthCheckComplete]);
 
     const { data: tips, isLoading } = useCollection<Tip>(tipsQuery);
 
@@ -99,7 +101,7 @@ export default function TipsPage() {
                 </p>
 
                 <div className="space-y-6">
-                    {isLoading ? (
+                    {isLoading || !isAuthCheckComplete ? (
                         Array.from({length: 4}).map((_, i) => <TipCardSkeleton key={i} />)
                     ) : (
                         tips?.map((resource) => {
@@ -158,5 +160,3 @@ export default function TipsPage() {
         </div>
     );
 };
-
-    

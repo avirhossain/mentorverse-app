@@ -383,21 +383,21 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
 
 export default function HomePage() {
     const firestore = useFirestore();
-    const { user } = useUser();
+    const { user, isAuthCheckComplete } = useUser();
     const [sessionToBook, setSessionToBook] = useState<Session | null>(null);
     const [bookingUpdate, setBookingUpdate] = useState(0);
     const router = useRouter();
 
 
     const mentorsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !isAuthCheckComplete) return null;
         return query(collection(firestore, 'mentors'), orderBy('name'));
-    }, [firestore]);
+    }, [firestore, isAuthCheckComplete]);
 
     const sessionsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !isAuthCheckComplete) return null;
         return query(collection(firestore, 'sessions'), orderBy('createdAt', 'desc'));
-    }, [firestore, bookingUpdate]);
+    }, [firestore, isAuthCheckComplete, bookingUpdate]);
 
     const { data: mentors, isLoading: isLoadingMentors } = useCollection<Mentor>(mentorsQuery);
     const { data: sessions, isLoading: isLoadingSessions } = useCollection<Session>(sessionsQuery);
