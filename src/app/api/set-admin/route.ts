@@ -10,14 +10,15 @@ const ADMIN_EMAIL = 'mmavir89@gmail.com';
 // This pattern ensures that the SDK is initialized only once.
 if (!admin.apps.length) {
   try {
-    // In a deployed environment (like App Hosting), service account credentials
-    // are often discovered automatically if the service account has the right permissions.
-    // For local development, you might need to set GOOGLE_APPLICATION_CREDENTIALS.
-    admin.initializeApp();
+    // When deployed, GOOGLE_APPLICATION_CREDENTIALS should be set in the environment.
+    // Locally, this can be a path to a service account key file.
+    // If the env var is not set, it will try to use Application Default Credentials.
+    admin.initializeApp({
+      credential: admin.credential.applicationDefault(),
+    });
   } catch (error: any) {
     console.error('Firebase Admin Initialization Error:', error.message);
     // If initialization fails, the app can't function correctly.
-    // We'll return a server error response if any requests come in.
   }
 }
 
