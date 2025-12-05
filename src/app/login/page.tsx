@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, Mail } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 
@@ -70,22 +70,17 @@ export default function LoginPage() {
 
         const { identifier, password } = values;
         
-        // Basic check to see if it's a phone number (just checks for digits)
         const isPhoneNumber = /^\d+$/.test(identifier);
 
         if (isPhoneNumber) {
-            // For now, phone login is not fully implemented with SMS verification
             alert('Phone number login is coming soon! Please use your email for now.');
             setIsLoading(false);
-            // Example of how it would work:
-            // const fullPhoneNumber = `+88${identifier}`;
-            // Handle phone number login logic here (e.g. with reCAPTCHA and verification code)
             return;
         }
 
-        // Treat as email
         try {
-            await signInWithEmailAndPassword(auth, identifier, password);
+            const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
+            await createUserProfile(userCredential.user);
             toast({ title: 'Success', description: 'Logged in successfully!' });
             router.push('/account');
         } catch (error: any) {
