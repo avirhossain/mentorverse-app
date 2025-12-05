@@ -45,14 +45,11 @@ export default function SignUpPage() {
 
     const setAdminClaim = async (uid: string) => {
         try {
-            const response = await fetch('/api/set-admin', {
+            await fetch('/api/set-admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ uid, admin: true }),
             });
-             if (!response.ok) {
-                 toast({ variant: 'destructive', title: 'Error', description: 'Could not grant admin privileges.' });
-            }
         } catch (error) {
             console.error("Failed to set admin claim:", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to set admin claim.' });
@@ -75,14 +72,18 @@ export default function SignUpPage() {
                 status: 'active',
                 ...extraData,
             });
-             if (user.email === FIRST_ADMIN_EMAIL) {
-                await setAdminClaim(user.uid);
-            }
         }
     };
 
     const handleRedirect = async (user: User) => {
-        const idTokenResult = await user.getIdTokenResult(true); // Force refresh
+        await createUserProfile(user);
+        
+        if (user.email === FIRST_ADMIN_EMAIL) {
+            await setAdminClaim(user.uid);
+        }
+
+        const idTokenResult = await user.getIdTokenResult(true); // Force refresh claims
+        
         if (idTokenResult.claims.admin) {
             router.push('/admin');
         } else {
@@ -113,8 +114,7 @@ export default function SignUpPage() {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, identifier, password);
             await updateProfile(userCredential.user, { displayName: name });
-            await createUserProfile(userCredential.user, {name});
-             await handleRedirect(userCredential.user);
+            await handleRedirect(userCredential.user);
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -133,7 +133,6 @@ export default function SignUpPage() {
         const provider = new GoogleAuthProvider();
         try {
             const result = await signInWithPopup(auth, provider);
-            await createUserProfile(result.user);
             await handleRedirect(result.user);
         } catch (error: any) {
              toast({
@@ -242,3 +241,5 @@ export default function SignUpPage() {
         </div>
     );
 }
+
+    

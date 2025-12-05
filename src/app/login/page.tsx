@@ -42,20 +42,17 @@ export default function LoginPage() {
 
     const setAdminClaim = async (uid: string) => {
         try {
-            const response = await fetch('/api/set-admin', {
+            await fetch('/api/set-admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ uid, admin: true }),
             });
-            if (!response.ok) {
-                 toast({ variant: 'destructive', title: 'Error', description: 'Could not grant admin privileges.' });
-            }
         } catch (error) {
             console.error("Failed to set admin claim during login:", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to set admin claim.' });
         }
     };
-    
+
     const createUserProfile = async (user: User): Promise<{ isNewUser: boolean }> => {
         if (!firestore) return { isNewUser: false };
         const userDocRef = doc(firestore, "users", user.uid);
@@ -73,17 +70,20 @@ export default function LoginPage() {
                 mentorshipGoal: '',
                 status: 'active',
             });
-             if (user.email === FIRST_ADMIN_EMAIL) {
-                await setAdminClaim(user.uid);
-            }
         }
         
         return { isNewUser };
     };
 
+    const handleRedirect = async (user: User) => {
+        const { isNewUser } = await createUserProfile(user);
 
-    const handleRedirect = async (user: User, isNewUser: boolean) => {
+        if (user.email === FIRST_ADMIN_EMAIL) {
+            await setAdminClaim(user.uid);
+        }
+
         const idTokenResult = await user.getIdTokenResult(true); // Force refresh claims
+        
         if (idTokenResult.claims.admin) {
             router.push('/admin');
         } else if (isNewUser) {
@@ -95,7 +95,7 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (!isUserLoading && user) {
-            handleRedirect(user, false);
+            handleRedirect(user);
         }
     }, [user, isUserLoading]);
 
@@ -115,8 +115,7 @@ export default function LoginPage() {
 
         try {
             const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
-            const { isNewUser } = await createUserProfile(userCredential.user);
-            await handleRedirect(userCredential.user, isNewUser);
+            await handleRedirect(userCredential.user);
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -135,8 +134,7 @@ export default function LoginPage() {
         const provider = new GoogleAuthProvider();
         try {
             const result = await signInWithPopup(auth, provider);
-            const { isNewUser } = await createUserProfile(result.user);
-            await handleRedirect(result.user, isNewUser);
+            await handleRedirect(result.user);
         } catch (error: any) {
              toast({
                 variant: 'destructive',
@@ -238,3 +236,5 @@ export default function LoginPage() {
         </div>
     );
 }
+
+    
