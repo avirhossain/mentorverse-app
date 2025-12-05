@@ -1,14 +1,14 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { useAuth, useUser } from '@/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,7 @@ const adminLoginSchema = z.object({
 export default function AdminLoginPage() {
     const router = useRouter();
     const auth = useAuth();
+    const { user, isAdmin, isAuthCheckComplete } = useUser();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
 
@@ -35,60 +36,41 @@ export default function AdminLoginPage() {
         },
     });
 
+    // If the user is already logged in and is an admin, redirect them.
+    useEffect(() => {
+        if (isAuthCheckComplete && user && isAdmin) {
+            router.push('/admin');
+        }
+    }, [user, isAdmin, isAuthCheckComplete, router]);
+
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
         if (!auth) return;
         
-        // This email is hardcoded as the primary super admin.
-        const hardcodedAdminEmail = 'mmavir89@gmail.com';
-        if (values.email.toLowerCase() !== hardcodedAdminEmail) {
-            toast({
-                variant: 'destructive',
-                title: 'Access Denied',
-                description: 'This email is not authorized for admin access.',
-            });
-            return;
-        }
-
         setIsLoading(true);
 
         try {
-            // Attempt to sign in.
+            // Only attempt to sign in. Do not create a user.
             await signInWithEmailAndPassword(auth, values.email, values.password);
+            
+            // After successful sign-in, the useEffect will handle redirection.
+            // We add a toast for immediate feedback.
+            toast({
+                title: 'Login Successful',
+                description: 'Redirecting to the dashboard...',
+            });
+            // The redirection is now primarily handled by the useEffect hook,
+            // but we can push here as a fallback.
+            router.push('/admin');
+
         } catch (error: any) {
-            // If sign-in fails because the user doesn't exist, create the account.
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                try {
-                    await createUserWithEmailAndPassword(auth, values.email, values.password);
-                } catch (creationError: any) {
-                    toast({
-                        variant: 'destructive',
-                        title: 'Admin Creation Failed',
-                        description: creationError.message || 'Could not create the admin account.',
-                    });
-                    setIsLoading(false);
-                    return;
-                }
-            } else {
-                // Handle other sign-in errors
-                toast({
-                    variant: 'destructive',
-                    title: 'Admin Login Failed',
-                    description: error.message || 'Could not sign in. Please check credentials.',
-                });
-                setIsLoading(false);
-                return;
-            }
+             toast({
+                variant: 'destructive',
+                title: 'Admin Login Failed',
+                description: 'Invalid credentials or you do not have admin access.',
+            });
+        } finally {
+            setIsLoading(false);
         }
-        
-        // On success (either login or creation), redirect to the admin dashboard.
-        // The AdminLayout will handle the final authorization check.
-        toast({
-            title: 'Login Successful',
-            description: 'Redirecting to the dashboard...',
-        });
-        router.push('/admin');
-        
-        setIsLoading(false);
     };
     
     return (

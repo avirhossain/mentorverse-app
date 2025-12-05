@@ -762,16 +762,21 @@ const AdminManagement = ({ firestore, toast, openModal, fetchAdmins, currentAdmi
     const adminsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'admins') : null, [firestore, fetchAdmins]);
     const { data: admins, isLoading, error } = useCollection<AdminUser>(adminsQuery);
     
+    // This effect ensures the primary super admin exists.
     useEffect(() => {
         if (!isLoading && (!admins || admins.length === 0) && firestore) {
             const initialAdminEmail = 'mmavir89@gmail.com';
             const adminRef = doc(firestore, 'admins', initialAdminEmail);
-            setDoc(adminRef, { 
-                email: initialAdminEmail, 
-                createdAt: new Date().toISOString(),
-                canRead: true,
-                canWrite: true,
-                canDelete: true
+            getDocs(collection(firestore, 'admins')).then(snapshot => {
+                if (snapshot.empty) {
+                    setDoc(adminRef, { 
+                        email: initialAdminEmail, 
+                        createdAt: new Date().toISOString(),
+                        canRead: true,
+                        canWrite: true,
+                        canDelete: true
+                    });
+                }
             });
         }
     }, [admins, isLoading, firestore]);
@@ -1563,5 +1568,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    
