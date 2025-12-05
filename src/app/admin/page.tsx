@@ -175,6 +175,8 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
         education: [],
         sessions: [],
         reviews: [],
+        rating: 0,
+        ratingsCount: 0,
         ...mentor,
         skills: mentor?.skills?.join(', ') || '',
     });
@@ -254,11 +256,6 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
             const ratingsCount = processedData.reviews.length;
             
             let finalData = { ...processedData, rating, ratingsCount };
-
-            // Ensure a unique ID for new mentors
-            if (!isEditing) {
-                finalData.id = uuidv4();
-            }
             
             await onSave(finalData, isEditing);
 
@@ -700,8 +697,6 @@ export default function AdminPage() {
 
   const firestore = useFirestore();
   const { toast } = useToast();
-  
-  const [isAdmin, setIsAdmin] = useState(true); // Temporarily true for development
 
   const fetchData = async () => {
     if (!firestore) return;
@@ -752,7 +747,6 @@ export default function AdminPage() {
 
 
   useEffect(() => {
-    // For now, fetch data if firestore is available, bypassing the admin check
     if (firestore) {
       fetchData();
     }
@@ -760,13 +754,21 @@ export default function AdminPage() {
 
   const handleSaveMentor = async (mentorData, isEditing) => {
     if (!firestore) return;
-    const finalData = { ...mentorData };
-    if (!isEditing) {
-        // This ID will be used as the document ID
-        finalData.id = uuidv4();
+    
+    let finalData = { ...mentorData };
+
+    if (isEditing) {
+        // We are editing, so we use the existing ID
+        const mentorRef = doc(firestore, 'mentors', finalData.id);
+        await setDoc(mentorRef, finalData, { merge: true });
+    } else {
+        // We are creating, so we generate a new ID
+        const newId = uuidv4();
+        finalData.id = newId;
+        const mentorRef = doc(firestore, 'mentors', newId);
+        await setDoc(mentorRef, finalData);
     }
-    const mentorRef = doc(firestore, 'mentors', finalData.id);
-    await setDoc(mentorRef, finalData, { merge: isEditing }); // Use merge only for updates
+
     fetchData(); // Refresh data
   };
   
@@ -869,27 +871,6 @@ export default function AdminPage() {
   const openModal = (type, data = null) => setModalState({ type, data });
   const closeModal = () => setModalState({ type: null, data: null });
   
-  if (!isAdmin) {
-       return (
-        <div className="flex flex-col items-center justify-center min-h-screen text-center p-8 bg-background">
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl border-t-4 border-destructive">
-                <ShieldX className="w-16 h-16 text-destructive mx-auto mb-6" />
-                <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-3">Access Denied</h2>
-                <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-sm">
-                    You do not have permission to view this page.
-                </p>
-                <div className="flex justify-center gap-4">
-                    <Link href="/">
-                        <Button size="lg" className="font-bold">
-                           Go to Homepage
-                        </Button>
-                    </Link>
-                </div>
-            </div>
-        </div>
-    );
-  }
-
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header currentView="admin" />
@@ -1243,4 +1224,6 @@ export default function AdminPage() {
     </div>
   );
 }
+    
+
     
