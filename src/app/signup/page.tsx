@@ -59,14 +59,11 @@ export default function SignUpPage() {
         }
     };
 
+    // This effect handles redirection for standard users after they sign up.
+    // It specifically avoids interfering with the admin flow.
     useEffect(() => {
-        if (isAuthCheckComplete && user) {
-            // A user is logged in, redirect them based on their role.
-            if (isAdmin) {
-                router.push('/admin');
-            } else {
-                router.push('/account'); // Or '/' if you prefer
-            }
+        if (isAuthCheckComplete && user && !isAdmin) {
+            router.push('/account'); // Or '/' if you prefer
         }
     }, [user, isAdmin, isAuthCheckComplete, router]);
 

@@ -24,7 +24,7 @@ const loginSchema = z.object({
 
 export default function LoginPage() {
     const router = useRouter();
-    const { user, isAdmin, isAuthCheckComplete } = useUser();
+    const { user, isAuthCheckComplete, isAdmin } = useUser();
     const auth = useAuth();
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -60,15 +60,11 @@ export default function LoginPage() {
         return { isNewUser };
     };
 
-    // This effect handles redirection after a user logs in.
+    // This effect handles redirection for standard users after they log in.
+    // It specifically avoids interfering with the admin flow.
     useEffect(() => {
-        if (isAuthCheckComplete && user) {
-            if (isAdmin) {
-                router.push('/admin');
-            } else {
-                 // Non-admin users are redirected to the homepage or account page.
-                router.push('/');
-            }
+        if (isAuthCheckComplete && user && !isAdmin) {
+            router.push('/');
         }
     }, [user, isAdmin, isAuthCheckComplete, router]);
 
@@ -80,8 +76,8 @@ export default function LoginPage() {
         const { identifier, password } = values;
         
         try {
-            // After sign-in, the useEffect will handle the redirection.
-            await signInWithEmailAndPassword(auth, identifier, password);
+            const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
+             // After sign-in, the useEffect will handle the redirection.
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -100,8 +96,8 @@ export default function LoginPage() {
         const provider = new GoogleAuthProvider();
         try {
             const result = await signInWithPopup(auth, provider);
-            // After sign-in, the useEffect will handle redirection which also handles profile creation.
             await createUserProfile(result.user);
+             // After sign-in, the useEffect will handle redirection.
         } catch (error: any) {
              toast({
                 variant: 'destructive',
