@@ -1,6 +1,7 @@
 
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, 'use strict';
+import { useState, useEffect } from 'react';
 import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown, Eye, Phone, PlayCircle, UserCog } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
@@ -1460,3 +1461,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
