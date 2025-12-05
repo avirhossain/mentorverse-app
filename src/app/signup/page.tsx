@@ -129,7 +129,7 @@ export default function SignUpPage() {
                             Create an Account
                         </h1>
                         <p className="mt-2 text-gray-500">
-                            Join Guidelab to start your journey
+                            Join Mentees to start your journey
                         </p>
                     </div>
 

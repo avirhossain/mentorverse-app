@@ -24,7 +24,7 @@ export default function PrivacyPolicyPage() {
                 <div className="bg-white dark:bg-gray-800 p-6 sm:p-10 rounded-xl shadow-xl border-t-4 border-primary">
                     <LegalSection title="1. Introduction">
                         <p>
-                            Guidelab ("we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform. We adhere to principles outlined in international regulations like the GDPR and local laws like the Bangladesh Data Protection Act (where applicable).
+                            Mentees ("we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform. We adhere to principles outlined in international regulations like the GDPR and local laws like the Bangladesh Data Protection Act (where applicable).
                         </p>
                     </LegalSection>
 
@@ -34,7 +34,7 @@ export default function PrivacyPolicyPage() {
                             <li><strong>Account Information:</strong> Name, email address, password, phone number, and profile picture.</li>
                             <li><strong>Profile Information:</strong> For Mentees, this includes interests and mentorship goals. For Mentors, this includes biography, expertise, and professional experience.</li>
                             <li><strong>Transaction Information:</strong> Details related to balance top-ups, coupon redemptions, and session payments. We do not store full credit card details; they are processed by secure third-party payment gateways.</li>
-                            <li><strong>Communications:</strong> Any correspondence between you and Guidelab support.</li>
+                            <li><strong>Communications:</strong> Any correspondence between you and Mentees support.</li>
                         </ul>
                          <p>We also collect some information automatically:</p>
                         <ul>
@@ -106,7 +106,7 @@ export default function PrivacyPolicyPage() {
                     
                     <LegalSection title="10. Contact Us">
                         <p>
-                            If you have any questions or concerns about this Privacy Policy, please contact us at: <a href="mailto:privacy@guidelab.com" className="text-primary hover:underline">privacy@guidelab.com</a>.
+                            If you have any questions or concerns about this Privacy Policy, please contact us at: <a href="mailto:privacy@mentees.com" className="text-primary hover:underline">privacy@mentees.com</a>.
                         </p>
                     </LegalSection>
                 </div>

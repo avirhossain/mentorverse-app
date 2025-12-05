@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown, Eye, Phone, PlayCircle, UserCog } from 'lucide-react';
@@ -542,7 +543,7 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
             if (isEditing) {
                 sessionData = commonData;
             } else {
-                const jitsiRoomName = `GuidelabSession-${uuidv4()}`;
+                const jitsiRoomName = `MenteesSession-${uuidv4()}`;
                 const jitsiLink = `https://meet.jit.si/${jitsiRoomName}`;
                 sessionData = {
                     ...commonData,
@@ -1180,7 +1181,7 @@ export default function AdminPage() {
         <div className="max-w-7xl mx-auto">
           <div className="space-y-2 mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
-            <p className="text-gray-500 dark:text-gray-400">Manage Guidelab content and users.</p>
+            <p className="text-gray-500 dark:text-gray-400">Manage Mentees content and users.</p>
           </div>
 
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-t-4 border-primary">

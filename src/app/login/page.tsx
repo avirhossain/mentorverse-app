@@ -140,7 +140,7 @@ export default function LoginPage() {
                             Welcome Back
                         </h1>
                         <p className="mt-2 text-gray-500">
-                            Sign in to continue to Guidelab
+                            Sign in to continue to Mentees
                         </p>
                     </div>
 

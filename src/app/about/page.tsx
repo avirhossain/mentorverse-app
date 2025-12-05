@@ -21,7 +21,7 @@ export default function AboutUsPage() {
             <Header />
             <main className="max-w-4xl mx-auto p-4 sm:p-8">
                 <header className="mb-12 text-center">
-                    <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white">About Guidelab</h1>
+                    <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white">About Mentees</h1>
                     <p className="mt-2 text-lg text-gray-500 dark:text-gray-400">Empowering the Next Generation of Leaders and Innovators.</p>
                 </header>
 
@@ -49,14 +49,14 @@ export default function AboutUsPage() {
                             className="w-32 h-32 rounded-full mx-auto object-cover border-4 border-accent shadow-lg"
                         />
                         <h3 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">Md. Mazharul Hossain</h3>
-                        <p className="text-md text-gray-500 dark:text-gray-400">Founder & CEO, Guidelab</p>
+                        <p className="text-md text-gray-500 dark:text-gray-400">Founder & CEO, Mentees</p>
                     </div>
                     <div className="prose prose-lg dark:prose-invert max-w-full text-gray-700 dark:text-gray-300 space-y-4 text-justify">
                         <p>
                             "To the young minds of today, the architects of tomorrow: Your journey is filled with boundless potential. You stand at a unique intersection of unprecedented challenges and unparalleled opportunities. The path ahead may seem daunting, but it is your curiosity, your passion, and your resilience that will forge the future.
                         </p>
                         <p>
-                            We built Guidelab on a simple, powerful belief: that guidance is the spark that ignites greatness. No successful journey is walked alone. Behind every great innovator, leader, and artist is a network of mentors who offered a word of advice, a helping hand, or a new perspective. Our mission is to make that transformative power of mentorship accessible to you, right now.
+                            We built Mentees on a simple, powerful belief: that guidance is the spark that ignites greatness. No successful journey is walked alone. Behind every great innovator, leader, and artist is a network of mentors who offered a word of advice, a helping hand, or a new perspective. Our mission is to make that transformative power of mentorship accessible to you, right now.
                         </p>
                         <p>
                             Never underestimate the power of a question. Never hesitate to seek guidance. Embrace your ambitions, learn from those who have walked the path before you, and have the courage to build the future you envision. Your journey starts today, and we are here to walk it with you."

@@ -41,7 +41,7 @@ export const Header = ({ currentView }) => {
     <>
         <header className="sticky top-0 z-50 bg-white shadow-lg border-b border-primary/10">
             <div className="max-w-7xl mx-auto p-4 flex justify-between items-center">
-                <Link href={isAdminView ? "/admin" : "/"} className="text-2xl font-extrabold text-primary">Guidelab</Link>
+                <Link href={isAdminView ? "/admin" : "/"} className="text-2xl font-extrabold text-primary">Mentees</Link>
                 
                 <nav className="hidden lg:flex space-x-2 items-center text-gray-600 font-medium">
                     {isAdminView && user ? (

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -18,7 +19,7 @@ export const Footer = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8">
                     <div className="col-span-2 lg:col-span-2">
-                        <h2 className="text-2xl font-extrabold text-white">Guidelab</h2>
+                        <h2 className="text-2xl font-extrabold text-white">Mentees</h2>
                         <p className="mt-2 text-gray-300">Your journey to mastery starts here.</p>
                     </div>
 
@@ -50,7 +51,7 @@ export const Footer = () => {
                     </div>
                 </div>
                 <div className="mt-8 pt-8 border-t border-primary/50 text-center text-gray-300">
-                    <p>&copy; {new Date().getFullYear()} Guidelab. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} Mentees. All rights reserved.</p>
                 </div>
             </div>
         </footer>

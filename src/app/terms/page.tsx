@@ -24,10 +24,10 @@ export default function TermsAndConditionsPage() {
                 <div className="bg-white dark:bg-gray-800 p-6 sm:p-10 rounded-xl shadow-xl border-t-4 border-primary">
                     <LegalSection title="1. Introduction">
                         <p>
-                            Welcome to Guidelab. These Terms and Conditions govern your use of our website and services. By accessing or using our platform, you agree to be bound by these terms and our Privacy Policy. If you do not agree, you may not use our services.
+                            Welcome to Mentees. These Terms and Conditions govern your use of our website and services. By accessing or using our platform, you agree to be bound by these terms and our Privacy Policy. If you do not agree, you may not use our services.
                         </p>
                         <p>
-                            The platform is operated by Guidelab ("we", "us", or "our"). We connect individuals seeking mentorship ("Mentees") with experienced professionals ("Mentors").
+                            The platform is operated by Mentees ("we", "us", or "our"). We connect individuals seeking mentorship ("Mentees") with experienced professionals ("Mentors").
                         </p>
                     </LegalSection>
 
@@ -45,7 +45,7 @@ export default function TermsAndConditionsPage() {
                     
                     <LegalSection title="3. Services and Payments">
                         <p>
-                            <strong>Session Booking:</strong> Mentees can book sessions with Mentors based on their availability. Sessions can be free or paid, as determined by the Mentor and Guidelab.
+                            <strong>Session Booking:</strong> Mentees can book sessions with Mentors based on their availability. Sessions can be free or paid, as determined by the Mentor and Mentees.
                         </p>
                         <p>
                             <strong>Payments and Balance:</strong> Paid services require sufficient balance in your account. You can add balance through approved payment methods, such as bKash, or by redeeming valid coupons. All transactions are final except as required by law.
@@ -69,7 +69,7 @@ export default function TermsAndConditionsPage() {
                     
                     <LegalSection title="5. Intellectual Property">
                         <p>
-                            The Guidelab platform, including its logo, design, text, graphics, and other files, are the proprietary property of Guidelab. You may not use, copy, or distribute any of the content without our prior written permission.
+                            The Mentees platform, including its logo, design, text, graphics, and other files, are the proprietary property of Mentees. You may not use, copy, or distribute any of the content without our prior written permission.
                         </p>
                         <p>
                            Content shared by Mentors and Mentees during sessions remains the intellectual property of the respective individuals, unless otherwise agreed upon. Recording sessions is prohibited without the express consent of all participants.
@@ -78,10 +78,10 @@ export default function TermsAndConditionsPage() {
 
                     <LegalSection title="6. Disclaimers and Limitation of Liability">
                         <p>
-                            Guidelab is a platform provider. We are not a party to the mentoring relationship and do not guarantee the quality, accuracy, or outcome of any mentorship session. Mentors are independent contractors, not employees of Guidelab.
+                            Mentees is a platform provider. We are not a party to the mentoring relationship and do not guarantee the quality, accuracy, or outcome of any mentorship session. Mentors are independent contractors, not employees of Mentees.
                         </p>
                         <p>
-                            To the fullest extent permitted by law, Guidelab shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, goodwill, or other intangible losses.
+                            To the fullest extent permitted by law, Mentees shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits or revenues, whether incurred directly or indirectly, or any loss of data, use, goodwill, or other intangible losses.
                         </p>
                     </LegalSection>
 
@@ -105,7 +105,7 @@ export default function TermsAndConditionsPage() {
 
                     <LegalSection title="9. Contact Us">
                         <p>
-                            If you have any questions about these Terms, please contact us at <a href="mailto:support@guidelab.com" className="text-primary hover:underline">support@guidelab.com</a>.
+                            If you have any questions about these Terms, please contact us at <a href="mailto:support@mentees.com" className="text-primary hover:underline">support@mentees.com</a>.
                         </p>
                     </LegalSection>
                 </div>

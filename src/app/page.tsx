@@ -425,7 +425,7 @@ export default function HomePage() {
                         Your Dream and Journey Start Now
                     </h1>
                     <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-                        Connect with top-tier mentors, join exclusive sessions, and unlock your full potential with Guidelab.
+                        Connect with top-tier mentors, join exclusive sessions, and unlock your full potential with Mentees.
                     </p>
                     <div className="mt-8 flex justify-center gap-4">
                         <Link href="#sessions">
