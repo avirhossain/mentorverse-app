@@ -1,12 +1,12 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import { useAuth } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ export default function AdminLoginPage() {
     const auth = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-
+    
     const form = useForm<z.infer<typeof adminLoginSchema>>({
         resolver: zodResolver(adminLoginSchema),
         defaultValues: {
@@ -55,8 +55,6 @@ export default function AdminLoginPage() {
                 description: 'Redirecting to the admin dashboard...',
             });
             // The AdminLayout will handle the redirection.
-            // router.push('/admin'); // This is handled by the layout now.
-
         } catch (error: any) {
              toast({
                 variant: 'destructive',
@@ -97,4 +95,26 @@ export default function AdminLoginPage() {
                                     </FormItem>
                                 )}
                             />
-                             <FormField
+                            <FormField
+                                control={form.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Password</FormLabel>
+                                        <FormControl>
+                                            <Input type="password" placeholder="••••••••" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit" className="w-full" disabled={isLoading}>
+                                {isLoading ? 'Signing In...' : 'Sign In'}
+                            </Button>
+                        </form>
+                    </Form>
+                </div>
+            </div>
+        </div>
+    );
+}
