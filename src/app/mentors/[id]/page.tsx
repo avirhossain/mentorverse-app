@@ -382,10 +382,6 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
                         <p className="text-gray-700 leading-relaxed">{mentor.intro}</p>
                     </div>
 
-                    {mentor.sessions && mentor.sessions.length > 0 && (
-                        <BookingSection mentor={mentor} onBook={handleBookNow} />
-                    )}
-
                     {mentor.professionalExperience && mentor.professionalExperience.length > 0 && (
                         <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md">
                             <h3 className="text-2xl font-bold text-gray-800 mb-5 flex items-center"><Briefcase className="w-6 h-6 mr-2 text-primary" /> Professional Experience</h3>
@@ -402,6 +398,10 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
                                 <EducationItem key={index} item={item} />
                             ))}
                         </div>
+                    )}
+                    
+                    {mentor.sessions && mentor.sessions.length > 0 && (
+                        <BookingSection mentor={mentor} onBook={handleBookNow} />
                     )}
 
                     {mentor.reviews && mentor.reviews.length > 0 && (
