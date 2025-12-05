@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -29,9 +30,10 @@ export const Header = ({ currentView }) => {
 
     useEffect(() => {
         const isAdminView = pathname.startsWith('/admin');
-        if (isAuthCheckComplete && isAdminView && !isAdmin) {
-            // If the auth check is complete, we are on an admin page,
-            // and we have confirmed the user is NOT an admin, then redirect.
+        
+        // This condition is critical. It waits until we have a definitive answer.
+        // It will only redirect if the check is complete AND the user is not an admin.
+        if (isAdminView && isAuthCheckComplete && !isAdmin) {
             router.push('/');
         }
     }, [user, isAdmin, isAuthCheckComplete, pathname, router]);

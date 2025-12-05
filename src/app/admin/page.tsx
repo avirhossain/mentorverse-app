@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown, Eye, Phone, PlayCircle, UserCog } from 'lucide-react';
@@ -740,7 +741,7 @@ const AdminManagement = ({ firestore, toast, openModal, fetchAdmins }) => {
     const [permissions, setPermissions] = useState({ canRead: true, canWrite: false, canDelete: false });
     const [isAdding, setIsAdding] = useState(false);
 
-    const adminsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'admins') : null, [firestore]);
+    const adminsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'admins') : null, [firestore, fetchAdmins]);
     const { data: admins, isLoading, error } = useCollection<AdminUser>(adminsQuery);
     
     useEffect(() => {
@@ -774,7 +775,6 @@ const AdminManagement = ({ firestore, toast, openModal, fetchAdmins }) => {
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to add admin.' });
         } finally {
             setIsAdding(false);
-            fetchAdmins(); // This should be a function passed from parent to re-trigger useCollection
         }
     };
 
@@ -788,7 +788,6 @@ const AdminManagement = ({ firestore, toast, openModal, fetchAdmins }) => {
         try {
             await deleteDoc(adminRef);
             toast({ title: 'Success!', description: `${email} has been removed from admins.` });
-             fetchAdmins();
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to remove admin.' });
         }
@@ -1237,7 +1236,7 @@ export default function AdminPage() {
             </div>
           </div>
           
-          <AdminManagement firestore={firestore} toast={toast} openModal={openModal} fetchAdmins={() => setAdminFetchTrigger(t => t + 1)} />
+          <AdminManagement firestore={firestore} toast={toast} openModal={openModal} fetchAdmins={adminFetchTrigger} />
 
           <PaymentApprovalList 
             payments={pendingPayments.filter(p => p.status === 'pending')} 
