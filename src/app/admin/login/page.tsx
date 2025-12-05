@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword, User } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,28 +35,6 @@ export default function AdminLoginPage() {
         },
     });
 
-    const setAdminClaim = async (uid: string) => {
-        try {
-            const response = await fetch('/api/set-admin', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ uid }),
-            });
-            
-            const data = await response.json();
-            if (!response.ok) {
-                console.error("Server returned:", response.status, data);
-                throw new Error(data.error || 'Failed to set admin claim.');
-            }
-        } catch (error) {
-            console.error('Error setting admin claim:', error);
-            throw error; // Re-throw to be caught by the calling function
-        }
-    };
-
-
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
         if (!auth) return;
         
@@ -73,37 +51,45 @@ export default function AdminLoginPage() {
         setIsLoading(true);
 
         try {
-            // 1. Sign in the user
-            const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-            const user = userCredential.user;
-
-            if (!user) {
-                throw new Error("Could not sign in admin user.");
-            }
-
-            // 2. Set the custom admin claim
-            await setAdminClaim(user.uid);
-            
-            // 3. Force a token refresh to get the new claim immediately
-            await user.getIdToken(true);
-
-            toast({
-                title: 'Admin Access Granted',
-                description: 'Redirecting to the dashboard...',
-            });
-            
-            // 4. Redirect to the admin dashboard
-            router.push('/admin');
-
+            // 1. Attempt to sign in the user
+            await signInWithEmailAndPassword(auth, values.email, values.password);
         } catch (error: any) {
-            toast({
-                variant: 'destructive',
-                title: 'Admin Login Failed',
-                description: error.message || 'Could not grant admin access. Please check credentials.',
-            });
-        } finally {
-            setIsLoading(false);
+            // 2. If sign-in fails because the user doesn't exist, create them
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                try {
+                    await createUserWithEmailAndPassword(auth, values.email, values.password);
+                } catch (creationError: any) {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Admin Creation Failed',
+                        description: creationError.message || 'Could not create the admin account.',
+                    });
+                    setIsLoading(false);
+                    return;
+                }
+            } else {
+                // Handle other sign-in errors
+                toast({
+                    variant: 'destructive',
+                    title: 'Admin Login Failed',
+                    description: error.message || 'Could not sign in. Please check credentials.',
+                });
+                setIsLoading(false);
+                return;
+            }
         }
+        
+        // 3. On success (either login or creation), redirect to the admin dashboard.
+        // The AdminLayout will handle the final authorization check.
+        toast({
+            title: 'Login Successful',
+            description: 'Redirecting to the dashboard...',
+        });
+        router.push('/admin');
+
+        // No longer calling the faulty setAdminClaim API
+        
+        setIsLoading(false);
     };
     
     return (
