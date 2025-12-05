@@ -56,13 +56,12 @@ export default function AdminLoginPage() {
 
         try {
             await signInWithEmailAndPassword(auth, values.email, values.password);
-            // On successful sign-in, the useUser hook will update,
-            // and the useEffect above will handle the redirection.
+            // On successful sign-in, redirect immediately.
             toast({
                 title: 'Login Successful',
                 description: 'Redirecting to the admin dashboard...',
             });
-            // Intentionally not redirecting here to let the hook handle it.
+            router.push('/admin');
         } catch (error: any) {
              toast({
                 variant: 'destructive',
