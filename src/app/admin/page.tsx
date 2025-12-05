@@ -1,7 +1,7 @@
 
 'use client';
 import React, { useState, useEffect } from 'react';
-import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown } from 'lucide-react';
+import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown, Eye, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,42 @@ const Modal = ({ title, children, onClose }) => (
     </div>
   </div>
 );
+
+const DetailItem = ({ icon: Icon, label, value }) => (
+    <div className="flex items-start">
+        <Icon className="w-5 h-5 mr-3 text-primary flex-shrink-0 mt-1" />
+        <div>
+            <p className="font-semibold text-gray-500 dark:text-gray-400">{label}</p>
+            <p className="text-gray-800 dark:text-white">{value}</p>
+        </div>
+    </div>
+);
+
+
+const MentorApplicationDetails = ({ application }) => (
+    <div className="space-y-4">
+        <DetailItem icon={User} label="Applicant Name" value={application.name} />
+        <DetailItem icon={Phone} label="Phone Number" value={application.phone} />
+        <DetailItem icon={MessageSquare} label="Profile Summary" value={application.summary} />
+    </div>
+);
+
+const SupportRequestDetails = ({ request }) => (
+    <div className="space-y-4">
+        <DetailItem icon={User} label="User Name" value={request.name} />
+        <DetailItem icon={Phone} label="Phone Number" value={request.phone} />
+        <DetailItem icon={MessageSquare} label="Support Details" value={request.details} />
+    </div>
+);
+
+const PendingPaymentDetails = ({ payment }) => (
+     <div className="space-y-4">
+        <DetailItem icon={User} label="User ID" value={payment.userId} />
+        <DetailItem icon={Ticket} label="bKash Transaction ID" value={payment.transactionId} />
+        <DetailItem icon={Banknote} label="Amount" value={`৳${payment.amount.toLocaleString()}`} />
+    </div>
+);
+
 
 const CouponForm = ({ onSave, onClose, firestore }) => {
     const { toast } = useToast();
@@ -131,7 +167,7 @@ const CouponForm = ({ onSave, onClose, firestore }) => {
     );
 };
 
-const PaymentApprovalList = ({ payments, onApprove, isLoading }) => (
+const PaymentApprovalList = ({ payments, onApprove, isLoading, onDetails }) => (
     <div className="mt-8">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
             <Banknote className="w-6 h-6 mr-3 text-primary" />
@@ -148,10 +184,12 @@ const PaymentApprovalList = ({ payments, onApprove, isLoading }) => (
                     <div key={payment.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center">
                         <div>
                             <p className="font-semibold text-gray-800 dark:text-white">TrxID: <span className="font-bold text-primary">{payment.transactionId}</span></p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">User ID: {payment.userId}</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Amount: ৳{payment.amount}</p>
                         </div>
-                        <Button onClick={() => onApprove(payment)}>Approve</Button>
+                        <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => onDetails(payment)}><Eye className="w-4 h-4"/></Button>
+                            <Button onClick={() => onApprove(payment)}>Approve</Button>
+                        </div>
                     </div>
                 ))
             ) : (
@@ -616,13 +654,14 @@ const TipForm = ({ tip, onSave, onClose }) => {
 };
 
 
-const DataListView = ({ title, data, isLoading, icon: Icon, columns, emptyMessage = "No data available.", renderActions, idPrefix }) => (
+const DataListView = ({ title, data, isLoading, icon: Icon, columns, emptyMessage = "No data available.", renderActions, idPrefix, onSeeAll }) => (
     <div className="mt-8">
         <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
                 <Icon className="w-6 h-6 mr-3 text-primary" />
                 {title}
             </h2>
+             {onSeeAll && <Button variant="outline" onClick={onSeeAll}>See All</Button>}
         </div>
         
         {isLoading ? (
@@ -646,7 +685,7 @@ const DataListView = ({ title, data, isLoading, icon: Icon, columns, emptyMessag
                                 <div className="col-span-12 md:col-span-1 font-semibold">{index + 1}</div>
                                 <div className="col-span-6 md:col-span-2 text-sm text-gray-500">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}</div>
                                 <div className="col-span-6 md:col-span-2 font-mono text-primary">{idPrefix}{index + 1}</div>
-                                <div className="col-span-12 md:col-span-5 font-semibold text-gray-800 dark:text-white">{item.name || item.title || item.phone}</div>
+                                <div className="col-span-12 md:col-span-5 font-semibold text-gray-800 dark:text-white">{item.name || item.title || item.phone || item.transactionId}</div>
                                 <div className="col-span-12 md:col-span-2 flex justify-end items-center gap-2">
                                     {renderActions(item)}
                                 </div>
@@ -741,16 +780,17 @@ export default function AdminPage() {
 
     const handleSaveMentor = async (mentorData: Omit<Mentor, 'id'> & { id?: string }, isEditing: boolean) => {
         if (!firestore) return;
-
+        
         try {
+            let finalId = mentorData.id;
             if (isEditing) {
-                if (!mentorData.id) throw new Error("Cannot update mentor without an ID.");
-                const mentorRef = doc(firestore, 'mentors', mentorData.id);
+                if (!finalId) throw new Error("Cannot update mentor without an ID.");
+                const mentorRef = doc(firestore, 'mentors', finalId);
                 await setDoc(mentorRef, mentorData, { merge: true });
             } else {
-                const newId = uuidv4();
-                const newMentorData = { ...mentorData, id: newId, createdAt: new Date().toISOString() };
-                const mentorRef = doc(firestore, 'mentors', newId);
+                finalId = uuidv4();
+                const newMentorData = { ...mentorData, id: finalId, createdAt: new Date().toISOString() };
+                const mentorRef = doc(firestore, 'mentors', finalId);
                 await setDoc(mentorRef, newMentorData);
             }
             fetchData();
@@ -975,7 +1015,12 @@ export default function AdminPage() {
             </div>
           </div>
           
-          <PaymentApprovalList payments={pendingPayments.filter(p => p.status === 'pending')} onApprove={handleApprovePayment} isLoading={isLoadingPayments} />
+          <PaymentApprovalList 
+            payments={pendingPayments.filter(p => p.status === 'pending')} 
+            onApprove={handleApprovePayment} 
+            isLoading={isLoadingPayments}
+            onDetails={(payment) => openModal('payment_details', payment)}
+          />
 
           <DataListView
                 title="Mentor Applications"
@@ -991,6 +1036,7 @@ export default function AdminPage() {
                 ]}
                 renderActions={(app) => (
                     <>
+                         <Button variant="ghost" size="sm" onClick={() => openModal('mentor_app_details', app)}><Eye className="w-4 h-4"/></Button>
                         <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" onClick={() => handleApproveMentorApplication(app)}>
                             <Check className="w-4 h-4" />
                         </Button>
@@ -1029,23 +1075,26 @@ export default function AdminPage() {
                     { header: 'Name', span: 5 },
                 ]}
                 renderActions={(req) => (
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This will delete the support request from {req.name}. This action cannot be undone.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete('support_requests', req.id, `request from ${req.name}`)}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                     <>
+                        <Button variant="ghost" size="sm" onClick={() => openModal('support_details', req)}><Eye className="w-4 h-4"/></Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will delete the support request from {req.name}. This action cannot be undone.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete('support_requests', req.id, `request from ${req.name}`)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </>
                 )}
                 emptyMessage="No new support requests."
             />
@@ -1165,7 +1214,7 @@ export default function AdminPage() {
                 isLoading={isLoadingCoupons}
                 icon={Ticket}
                 idPrefix="C"
-                columns={[
+                 columns={[
                     { header: 'SL', span: 1 },
                     { header: 'Date', span: 2 },
                     { header: 'ID', span: 2 },
@@ -1249,6 +1298,22 @@ export default function AdminPage() {
         {modalState.type === 'coupon' && (
             <Modal title="Manage Coupons" onClose={closeModal}>
                 <CouponForm onSave={handleSaveCoupon} onClose={closeModal} firestore={firestore} />
+            </Modal>
+        )}
+
+        {modalState.type === 'mentor_app_details' && (
+             <Modal title="Mentor Application Details" onClose={closeModal}>
+                <MentorApplicationDetails application={modalState.data} />
+            </Modal>
+        )}
+        {modalState.type === 'support_details' && (
+             <Modal title="Support Request Details" onClose={closeModal}>
+                <SupportRequestDetails request={modalState.data} />
+            </Modal>
+        )}
+        {modalState.type === 'payment_details' && (
+             <Modal title="Payment Details" onClose={closeModal}>
+                <PendingPaymentDetails payment={modalState.data} />
             </Modal>
         )}
     </div>
