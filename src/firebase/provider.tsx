@@ -72,7 +72,7 @@ export const FirebaseProvider: React.FC<{
       async (firebaseUser) => {
         if (firebaseUser) {
             try {
-                const idTokenResult = await firebaseUser.getIdTokenResult(true);
+                const idTokenResult = await firebaseUser.getIdTokenResult(); // Don't force refresh here, do it on demand
                 const isAdmin = !!idTokenResult.claims.admin;
                 
                 setUserAuthState({ user: firebaseUser, isAdmin: isAdmin, isUserLoading: false, isAuthCheckComplete: true, userError: null });
@@ -95,9 +95,19 @@ export const FirebaseProvider: React.FC<{
   }, [auth]);
 
   const refreshToken = useCallback(async () => {
-    if (auth?.currentUser) {
+    const user = auth?.currentUser;
+    if (user) {
       try {
-        await auth.currentUser.getIdToken(true); // Force refresh
+        await user.getIdToken(true); // Force refresh the token
+        const freshTokenResult = await user.getIdTokenResult();
+        const newIsAdmin = !!freshTokenResult.claims.admin;
+
+        // Manually update the state after refreshing to ensure UI consistency
+        setUserAuthState(prevState => ({
+            ...prevState,
+            isAdmin: newIsAdmin,
+            user: prevState.user // user object itself doesn't change, just its token
+        }));
       } catch (error) {
         console.error("Error refreshing token:", error);
         setUserAuthState(prevState => ({...prevState, userError: error as Error}));
