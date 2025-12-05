@@ -455,7 +455,7 @@ const JoinButton = ({ session }) => {
 
     useEffect(() => {
         const checkTime = () => {
-            const sessionDateTime = new Date(`${session.date} ${session.time}`);
+            const sessionDateTime = new Date(session.createdAt);
             const now = new Date();
             const tenMinutes = 10 * 60 * 1000;
             
@@ -468,7 +468,7 @@ const JoinButton = ({ session }) => {
         checkTime();
         const interval = setInterval(checkTime, 60000); // Check every minute
         return () => clearInterval(interval);
-    }, [session.date, session.time, session.status]);
+    }, [session.createdAt, session.status]);
 
     return (
         <div className="text-center">
@@ -504,7 +504,7 @@ const UpcomingSessions = ({ sessions, isLoading }) => (
                             <div>
                                 <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-1">{session.title}</h3>
                                 <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center space-x-4">
-                                    <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> {session.date} at {session.time}</span>
+                                    <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> {new Date(session.createdAt).toLocaleDateString()} at {new Date(session.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     <span className="flex items-center"><Clock className="w-3 h-3 mr-1" /> {session.durationMinutes} min</span>
                                 </p>
                                 <p className="text-sm font-semibold text-primary dark:text-primary/90 mt-1">

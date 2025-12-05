@@ -520,6 +520,12 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
              toast({ variant: 'destructive', title: 'Error', description: 'Selected mentor not found.' });
             return;
         }
+        
+        const sessionDateTime = new Date(`${formData.date}T${formData.time}`);
+        if (isNaN(sessionDateTime.getTime())) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Invalid date or time.' });
+            return;
+        }
 
         try {
             const commonData = {
@@ -530,6 +536,7 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
                 maxParticipants: Number(formData.maxParticipants),
                 durationMinutes: Number(formData.durationMinutes),
                 learningObjectives: formData.learningObjectives.split('\n').map(s => s.trim()).filter(s => s),
+                createdAt: sessionDateTime.toISOString(), // Standardized timestamp
             };
 
             let sessionData;
@@ -578,8 +585,11 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
                 </SelectContent>
             </Select>
 
-            <Input name="date" type="text" placeholder="Date (e.g., 25th December)" value={formData.date} onChange={handleChange} required />
-            <Input name="time" type="text" placeholder="Time (e.g., 11:00 AM)" value={formData.time} onChange={handleChange} required />
+            <div className="grid grid-cols-2 gap-4">
+                <Input name="date" type="date" value={formData.date} onChange={handleChange} required />
+                <Input name="time" type="time" value={formData.time} onChange={handleChange} required />
+            </div>
+
             <Input name="durationMinutes" type="number" placeholder="Duration (in minutes)" value={formData.durationMinutes} onChange={handleChange} required />
             
             <Select onValueChange={(value) => handleSelectChange('type', value)} value={formData.type}>
@@ -1058,7 +1068,7 @@ export default function AdminPage() {
     } else { // Creating new session
       const newDocRef = doc(collection(firestore, 'sessions'));
       finalId = newDocRef.id;
-      await setDoc(newDocRef, {...sessionData, id: finalId, createdAt: new Date().toISOString()});
+      await setDoc(newDocRef, {...sessionData, id: finalId });
     }
     fetchData(); // Refresh data
   };

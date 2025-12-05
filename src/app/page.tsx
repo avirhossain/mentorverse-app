@@ -99,11 +99,10 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
         if (!isBooked) return;
 
         const checkTime = () => {
-            const sessionDateTime = new Date(`${session.date} ${session.time}`);
+            const sessionDateTime = new Date(session.createdAt);
             const now = new Date();
             const tenMinutes = 10 * 60 * 1000;
             
-            // This comparison is naive and should be improved with a proper date library in a real app
             const isTimeCorrect = sessionDateTime.getTime() - now.getTime() < tenMinutes;
             const isSessionActive = session.status === 'active';
             
@@ -113,7 +112,7 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
         checkTime();
         const interval = setInterval(checkTime, 60000); // Check every minute
         return () => clearInterval(interval);
-    }, [session.date, session.time, session.status, isBooked]);
+    }, [session.createdAt, session.status, isBooked]);
 
     return (
     <div className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-primary flex flex-col justify-between transition duration-300 hover:shadow-2xl hover:scale-[1.01] transform relative">
@@ -132,11 +131,11 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
             <div className="flex flex-col gap-y-2 text-sm text-gray-500">
                 <p className="flex items-center font-medium">
                     <Calendar className="w-4 h-4 mr-1 text-primary/80" />
-                    Date: <span className="text-gray-700 font-semibold ml-1">{session.date}</span>
+                    Date: <span className="text-gray-700 font-semibold ml-1">{new Date(session.createdAt).toLocaleDateString()}</span>
                 </p>
                 <p className="flex items-center font-medium">
                     <Clock className="w-4 h-4 mr-1 text-primary/80" />
-                    Time: <span className="text-gray-700 font-semibold ml-1">{session.time}</span>
+                    Time: <span className="text-gray-700 font-semibold ml-1">{new Date(session.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </p>
                 <p className="flex items-center font-medium">
                     <Users className="w-4 h-4 mr-1 text-primary/80" />

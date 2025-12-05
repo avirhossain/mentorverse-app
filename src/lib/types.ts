@@ -68,8 +68,8 @@ export interface Session {
     title: string;
     mentorName: string;
     mentorId: string;
-    date: string; // e.g., "25th November"
-    time: string; // e.g., "11:00 AM"
+    date: string; 
+    time: string; 
     isFree: boolean;
     durationMinutes: number;
     price: number; // Only for paid sessions
@@ -78,7 +78,7 @@ export interface Session {
     jitsiLink: string;
     bookedBy: string[]; // Array of user IDs who have booked
     status: 'scheduled' | 'active' | 'completed';
-    createdAt?: string; // Added for sorting
+    createdAt: string; // ISO string for the session start time
     learningObjectives?: string[];
     whoIsItFor?: string;
     setupRequirements?: string;
