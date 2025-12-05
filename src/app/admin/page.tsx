@@ -1,7 +1,7 @@
 
 'use client';
 import React, { useState, useEffect } from 'react';
-import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldX, Calendar, CreditCard, Inbox, MessageSquare } from 'lucide-react';
+import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -403,14 +403,13 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
     );
 };
 
-const MenteeForm = ({ mentee, onSave, onClose }) => {
+const MenteeForm = ({ mentee, onSave, onClose, onSetAdmin, isSettingAdmin }) => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         interests: '',
         balance: 0,
         status: 'active',
-        role: 'user',
         ...mentee,
         interests: mentee?.interests?.join(', ') || '',
     });
@@ -440,15 +439,15 @@ const MenteeForm = ({ mentee, onSave, onClose }) => {
             toast({ variant: 'destructive', title: 'Error', description: `Failed to update mentee: ${error.message}` });
         }
     };
-
+    
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <Input name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required />
-            <Input name="email" type="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required />
+            <Input name="email" type="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required readOnly />
             <Input name="interests" placeholder="Interests (comma-separated)" value={formData.interests} onChange={handleChange} />
             <Input name="balance" type="number" placeholder="Account Balance" value={formData.balance} onChange={handleChange} required />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
                 <Select onValueChange={(value) => handleStatusChange('status', value)} value={formData.status}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select account status" />
@@ -458,16 +457,32 @@ const MenteeForm = ({ mentee, onSave, onClose }) => {
                         <SelectItem value="suspended">Suspended</SelectItem>
                     </SelectContent>
                 </Select>
-                <Select onValueChange={(value) => handleStatusChange('role', value)} value={formData.role}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select user role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                </Select>
             </div>
+
+            <div className="pt-4 border-t">
+                <h4 className="font-semibold text-lg mb-2">Admin Controls</h4>
+                <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                    <p>Is user an administrator?</p>
+                    <div className="flex items-center gap-2">
+                        <Button 
+                            type="button"
+                            variant={mentee.isAdmin ? 'default' : 'outline'}
+                            disabled={isSettingAdmin || mentee.isAdmin}
+                            onClick={() => onSetAdmin(mentee.id, true)}>
+                                <ShieldCheck className="mr-2"/> Yes
+                        </Button>
+                        <Button 
+                            type="button" 
+                            variant={!mentee.isAdmin ? 'destructive' : 'outline'}
+                            disabled={isSettingAdmin || !mentee.isAdmin}
+                            onClick={() => onSetAdmin(mentee.id, false)}>
+                                <ShieldX className="mr-2"/> No
+                        </Button>
+                    </div>
+                </div>
+                {isSettingAdmin && <p className="text-sm text-center mt-2 text-primary">Updating admin status...</p>}
+            </div>
+
             <div className="flex justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
                 <Button type="submit">Save Changes</Button>
@@ -723,10 +738,18 @@ export default function AdminPage() {
   const [isLoadingCoupons, setIsLoadingCoupons] = useState(true);
   const [isLoadingMentorApps, setIsLoadingMentorApps] = useState(true);
   const [isLoadingSupport, setIsLoadingSupport] = useState(true);
+  const [isSettingAdmin, setIsSettingAdmin] = useState(false);
 
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
+
+  const fetchUsersWithAdminStatus = async (users: Mentee[]): Promise<Mentee[]> => {
+    // This is a placeholder. In a real app, you'd make an API call to a backend
+    // that uses the Admin SDK to check claims. For now, we simulate it based on email.
+    const adminEmail = 'mmavir89@gmail.com';
+    return users.map(u => ({ ...u, isAdmin: u.email === adminEmail }));
+  };
 
   const fetchData = async () => {
     if (!firestore) return;
@@ -750,7 +773,11 @@ export default function AdminPage() {
         ]);
 
         setMentors(mentorsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentor)));
-        setMentees(menteesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentee)));
+        
+        const rawMentees = menteesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentee));
+        // We will fetch admin status separately
+        setMentees(rawMentees);
+
         setSessions(sessionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Session)));
         setPendingPayments(paymentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as PendingPayment)));
         setCoupons(couponsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon)));
@@ -832,6 +859,29 @@ export default function AdminPage() {
     await setDoc(couponRef, couponData, { merge: true });
     fetchData();
   };
+
+    const handleSetAdmin = async (uid: string, isAdmin: boolean) => {
+        setIsSettingAdmin(true);
+        try {
+            const response = await fetch('/api/set-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid, admin: isAdmin }),
+            });
+
+            if (!response.ok) {
+                const { error } = await response.json();
+                throw new Error(error || 'Failed to set admin status.');
+            }
+
+            toast({ title: 'Success!', description: 'Admin status updated. The user must log in again to see the change.' });
+            closeModal();
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsSettingAdmin(false);
+        }
+    };
 
   const handleApprovePayment = async (payment) => {
     if (!firestore || !user) {
@@ -1164,7 +1214,13 @@ export default function AdminPage() {
 
         {modalState.type === 'mentee' && (
             <Modal title="Edit Mentee" onClose={closeModal}>
-                <MenteeForm mentee={modalState.data} onSave={handleSaveMentee} onClose={closeModal} />
+                <MenteeForm 
+                    mentee={modalState.data} 
+                    onSave={handleSaveMentee} 
+                    onClose={closeModal}
+                    onSetAdmin={handleSetAdmin}
+                    isSettingAdmin={isSettingAdmin}
+                />
             </Modal>
         )}
 
@@ -1188,5 +1244,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    

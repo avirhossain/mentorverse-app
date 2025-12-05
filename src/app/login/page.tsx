@@ -38,9 +38,6 @@ export default function LoginPage() {
     // If user is logged in, redirect them
     useEffect(() => {
         if (!isUserLoading && user) {
-            // Because role is now in Firestore, we can't immediately know if they are an admin.
-            // A robust solution would read the user's document here, but for simplicity,
-            // we will redirect everyone to the home page and let the admin page handle non-admins.
             router.push('/');
         }
     }, [user, isUserLoading, router]);
@@ -82,7 +79,6 @@ export default function LoginPage() {
                         const userDocRef = doc(firestore, "users", user.uid);
                         getDoc(userDocRef).then(userDocSnap => {
                             if (!userDocSnap.exists()) {
-                                // For new users, create their user document with the default 'user' role.
                                 setDoc(userDocRef, {
                                     id: user.uid,
                                     email: user.email,
@@ -92,7 +88,6 @@ export default function LoginPage() {
                                     interests: [],
                                     mentorshipGoal: '',
                                     status: 'active',
-                                    role: 'user' // Assign default role
                                 });
                             }
                         });
@@ -141,5 +136,3 @@ export default function LoginPage() {
         </div>
     );
 }
-
-    

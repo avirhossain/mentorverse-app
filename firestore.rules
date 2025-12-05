@@ -23,11 +23,10 @@ service cloud.firestore {
     }
 
     /**
-     * Checks if the currently authenticated user has the 'admin' role
-     * by reading their user document in the 'users' collection.
+     * Checks if the currently authenticated user has the 'admin' custom claim.
      */
     function isAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isSignedIn() && request.auth.token.admin == true;
     }
 
     //----------------------------------------------------------------//
@@ -68,15 +67,13 @@ service cloud.firestore {
     }
 
     /**
-     * @description User (mentee) profiles. A user can read their own profile. An admin can read/write any profile.
-     * Users can update their own profile, but cannot change their role.
+     * @description User (mentee) profiles. A user can read/create/update their own profile. An admin can read/write any profile.
      */
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if isOwner(userId);
-      // Allow user to update their own profile, but not their role
-      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -135,5 +132,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

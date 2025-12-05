@@ -1,9 +1,9 @@
 
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Home, Lightbulb, User, LogIn, LogOut } from 'lucide-react';
+import { Home, Lightbulb, User, LogIn, LogOut, Shield } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,20 @@ export const Header = ({ currentView }) => {
     const { user, isUserLoading } = useUser();
     const auth = useAuth();
     const router = useRouter();
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    useEffect(() => {
+        if (user) {
+            user.getIdTokenResult().then(idTokenResult => {
+                const isAdminClaim = !!idTokenResult.claims.admin;
+                setIsAdmin(isAdminClaim);
+            });
+        } else {
+            setIsAdmin(false);
+        }
+    }, [user]);
+
     const isAdminView = currentView === 'admin';
-    const isAdmin = user && user.email === 'mmavir89@gmail.com';
 
     const handleLogout = () => {
         if(auth) {
@@ -58,7 +70,7 @@ export const Header = ({ currentView }) => {
                                     </Link>
                                     {isAdmin && (
                                          <Link href="/admin" className={`flex items-center transition px-3 py-2 rounded-lg ${currentView === 'admin' ? 'text-primary bg-primary/10 font-bold' : 'hover:text-primary hover:bg-gray-100'}`}>
-                                            Admin
+                                            <Shield className="w-5 h-5 mr-1" /> Admin
                                         </Link>
                                     )}
                                     </>
@@ -100,7 +112,7 @@ export const Header = ({ currentView }) => {
                                     </Link>
                                     {isAdmin && (
                                          <Link href="/admin" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                                            Admin
+                                            <Shield className="w-5 h-5 mr-2" /> Admin
                                         </Link>
                                     )}
                                      <Button onClick={handleLogout} className="w-full">
