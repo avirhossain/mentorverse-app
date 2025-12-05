@@ -164,7 +164,6 @@ const PaymentApprovalList = ({ payments, onApprove, isLoading }) => (
 
 const MentorForm = ({ mentor, onSave, onClose }) => {
     const [formData, setFormData] = useState({
-        id: mentor?.id,
         name: '',
         title: '',
         company: '',
@@ -181,7 +180,6 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
     });
 
     const { toast } = useToast();
-    const firestore = useFirestore();
     const isEditing = !!mentor;
 
     const handleChange = (e) => {
@@ -239,15 +237,6 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        if (!firestore) {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: `Firestore is not available.`,
-            });
-            return;
-        }
-        
         try {
             const processedData = {
                 ...formData,
@@ -271,7 +260,7 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                 finalData.id = uuidv4();
             }
             
-            await onSave(finalData);
+            await onSave(finalData, isEditing);
 
             if (isEditing) {
                 toast({ title: 'Success!', description: 'Mentor profile updated.' });
@@ -535,7 +524,7 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
                 };
             }
         
-            await onSave(sessionData);
+            await onSave(sessionData, isEditing);
             toast({
                 title: 'Success!',
                 description: isEditing ? 'Session updated successfully.' : 'New exclusive session has been created.',
@@ -595,7 +584,7 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
     );
 };
 
-const TipForm = ({ onSave, onClose }) => {
+const TipForm = ({ tip, onSave, onClose }) => {
     const { toast } = useToast();
     const [formData, setFormData] = useState({
         type: 'Article',
@@ -603,7 +592,9 @@ const TipForm = ({ onSave, onClose }) => {
         summary: '',
         content: '',
         link: '',
+        ...tip,
     });
+    const isEditing = !!tip;
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -618,19 +609,10 @@ const TipForm = ({ onSave, onClose }) => {
         e.preventDefault();
 
         try {
-            const tipRef = doc(collection(useFirestore(), 'tips'));
-            const newTip = {
-                id: tipRef.id,
-                type: formData.type,
-                title: formData.title,
-                summary: formData.summary,
-                ...(formData.type === 'Article' ? { content: formData.content } : { link: formData.link }),
-            };
-            
-            await onSave(newTip);
+            await onSave(formData, isEditing);
             toast({
                 title: 'Success!',
-                description: 'New tip has been created.',
+                description: isEditing ? 'Tip updated successfully.' : 'New tip has been created.',
             });
             onClose();
         } catch (error) {
@@ -644,7 +626,7 @@ const TipForm = ({ onSave, onClose }) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <Select onValueChange={handleTypeChange} defaultValue={formData.type}>
+            <Select onValueChange={handleTypeChange} value={formData.type}>
                 <SelectTrigger>
                     <SelectValue placeholder="Select a tip type" />
                 </SelectTrigger>
@@ -717,7 +699,6 @@ export default function AdminPage() {
   const [isLoadingSupport, setIsLoadingSupport] = useState(true);
 
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
   const { toast } = useToast();
   
   const [isAdmin, setIsAdmin] = useState(true); // Temporarily true for development
@@ -777,10 +758,15 @@ export default function AdminPage() {
     }
   }, [firestore]);
 
-  const handleSaveMentor = async (mentorData) => {
+  const handleSaveMentor = async (mentorData, isEditing) => {
     if (!firestore) return;
-    const mentorRef = doc(firestore, 'mentors', mentorData.id);
-    await setDoc(mentorRef, mentorData, { merge: true });
+    const finalData = { ...mentorData };
+    if (!isEditing) {
+        // This ID will be used as the document ID
+        finalData.id = uuidv4();
+    }
+    const mentorRef = doc(firestore, 'mentors', finalData.id);
+    await setDoc(mentorRef, finalData, { merge: isEditing }); // Use merge only for updates
     fetchData(); // Refresh data
   };
   
@@ -806,22 +792,33 @@ export default function AdminPage() {
     }
   };
 
-  const handleSaveSession = async (sessionData) => {
+  const handleSaveSession = async (sessionData, isEditing) => {
     if (!firestore) return;
-    if (sessionData.id) { // Editing existing session
-      const sessionRef = doc(firestore, 'sessions', sessionData.id);
+    let finalId;
+    if (isEditing) {
+      finalId = sessionData.id;
+      const sessionRef = doc(firestore, 'sessions', finalId);
       await setDoc(sessionRef, sessionData, { merge: true });
     } else { // Creating new session
-      const sessionsCol = collection(firestore, 'sessions');
-      await addDoc(sessionsCol, sessionData);
+      const newDocRef = doc(collection(firestore, 'sessions'));
+      finalId = newDocRef.id;
+      await setDoc(newDocRef, {...sessionData, id: finalId});
     }
     fetchData(); // Refresh data
   };
   
-  const handleSaveTip = async (tipData) => {
+  const handleSaveTip = async (tipData, isEditing) => {
     if (!firestore) return;
-    const tipRef = doc(firestore, 'tips', tipData.id);
-    await setDoc(tipRef, tipData);
+    let finalId;
+     if (isEditing) {
+        finalId = tipData.id;
+        const tipRef = doc(firestore, 'tips', finalId);
+        await setDoc(tipRef, tipData, { merge: true });
+    } else {
+        const newDocRef = doc(collection(firestore, 'tips'));
+        finalId = newDocRef.id;
+        await setDoc(newDocRef, {...tipData, id: finalId});
+    }
     fetchData();
   };
 
@@ -833,7 +830,7 @@ export default function AdminPage() {
   };
 
   const handleApprovePayment = async (payment) => {
-    if (!firestore || !user) {
+    if (!firestore) {
         toast({ variant: 'destructive', title: 'Error', description: 'Services not available.' });
         return;
     }
@@ -872,16 +869,6 @@ export default function AdminPage() {
   const openModal = (type, data = null) => setModalState({ type, data });
   const closeModal = () => setModalState({ type: null, data: null });
   
-  if (isUserLoading && !isAdmin) { // Show loading only if we are still checking for a user
-      return (
-        <div className="flex items-center justify-center min-h-screen bg-background">
-            <Skeleton className="w-24 h-24 rounded-full" />
-        </div>
-      );
-  }
-  
-  // This check is now bypassed for development by initializing isAdmin to true.
-  // In production, this would be re-enabled.
   if (!isAdmin) {
        return (
         <div className="flex flex-col items-center justify-center min-h-screen text-center p-8 bg-background">
@@ -1244,7 +1231,7 @@ export default function AdminPage() {
 
         {modalState.type === 'tip' && (
             <Modal title={modalState.data ? "Edit Tip" : "Create New Tip"} onClose={closeModal}>
-                <TipForm onSave={handleSaveTip} onClose={closeModal} />
+                <TipForm tip={modalState.data} onSave={handleSaveTip} onClose={closeModal} />
             </Modal>
         )}
         
@@ -1257,4 +1244,3 @@ export default function AdminPage() {
   );
 }
     
-
