@@ -164,7 +164,7 @@ const PaymentApprovalList = ({ payments, onApprove, isLoading }) => (
 
 const MentorForm = ({ mentor, onSave, onClose }) => {
     const [formData, setFormData] = useState({
-        id: mentor?.id || uuidv4(),
+        id: mentor?.id,
         name: '',
         title: '',
         company: '',
@@ -264,7 +264,12 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
             const rating = processedData.reviews.length > 0 ? processedData.reviews.reduce((acc, r) => acc + Number(r.rating), 0) / processedData.reviews.length : 0;
             const ratingsCount = processedData.reviews.length;
             
-            const finalData = { ...processedData, rating, ratingsCount };
+            let finalData = { ...processedData, rating, ratingsCount };
+
+            // Ensure a unique ID for new mentors
+            if (!isEditing) {
+                finalData.id = uuidv4();
+            }
             
             await onSave(finalData);
 
@@ -1252,3 +1257,4 @@ export default function AdminPage() {
   );
 }
     
+
