@@ -29,9 +29,9 @@ export const Header = ({ currentView }) => {
     useEffect(() => {
         // Only perform this check if we are in an admin view
         if (currentView === 'admin') {
-            // Wait until the initial user loading and admin status loading is complete
+            // Wait until loading of user and admin status is complete
             if (!isLoading) {
-                // If, after loading, there's no user or the user is not an admin, redirect
+                // If, after loading, there's no user OR the user is NOT an admin, redirect
                 if (!user || !isAdmin) {
                     router.push('/admin/login');
                 }
