@@ -7,32 +7,19 @@ import { Home, Lightbulb, User, LogIn, LogOut, Shield } from 'lucide-react';
 import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import type { AdminUser } from '@/lib/types';
 
 export const Header = ({ currentView }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const { user, isUserLoading } = useUser();
+    const { user, isUserLoading, isAdmin, currentAdmin, isAuthCheckComplete } = useUser();
     const auth = useAuth();
-    const firestore = useFirestore();
     const router = useRouter();
     const pathname = usePathname();
-
-    const adminQuery = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
-        return collection(firestore, 'admins');
-    }, [firestore, user]);
-
-    const { data: adminData, isLoading: isAdminLoading } = useCollection<AdminUser>(adminQuery);
-
-    const isAdmin = adminData?.some(admin => admin.email === user?.email) ?? false;
-    const isAuthCheckComplete = !isUserLoading && !isAdminLoading;
 
     useEffect(() => {
         const isAdminView = pathname.startsWith('/admin');
         
-        // This condition is critical. It waits until we have a definitive answer.
-        // It will only redirect if the check is complete AND the user is not an admin.
         if (isAdminView && isAuthCheckComplete && !isAdmin) {
             router.push('/');
         }

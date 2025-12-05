@@ -170,7 +170,7 @@ const CouponForm = ({ onSave, onClose, firestore }) => {
     );
 };
 
-const PaymentApprovalList = ({ payments, onApprove, isLoading, onDetails }) => (
+const PaymentApprovalList = ({ payments, onApprove, isLoading, onDetails, canWrite }) => (
     <div className="mt-8">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
             <Banknote className="w-6 h-6 mr-3 text-primary" />
@@ -191,7 +191,7 @@ const PaymentApprovalList = ({ payments, onApprove, isLoading, onDetails }) => (
                         </div>
                         <div className="flex items-center gap-2">
                             <Button variant="ghost" size="sm" onClick={() => onDetails(payment)}><Eye className="w-4 h-4"/></Button>
-                            <Button onClick={() => onApprove(payment)}>Approve</Button>
+                            {canWrite && <Button onClick={() => onApprove(payment)}>Approve</Button>}
                         </div>
                     </div>
                 ))
@@ -736,7 +736,7 @@ const DataListView = ({ title, data, isLoading, icon: Icon, columns, emptyMessag
     </div>
 );
 
-const AdminManagement = ({ firestore, toast, openModal, fetchAdmins }) => {
+const AdminManagement = ({ firestore, toast, openModal, fetchAdmins, currentAdmin }) => {
     const [newAdminEmail, setNewAdminEmail] = useState('');
     const [permissions, setPermissions] = useState({ canRead: true, canWrite: false, canDelete: false });
     const [isAdding, setIsAdding] = useState(false);
@@ -915,7 +915,7 @@ const EditAdminPermsForm = ({ admin, onSave, onClose }) => {
 
 
 export default function AdminPage() {
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading, currentAdmin } = useUser();
   const router = useRouter();
   const [modalState, setModalState] = useState({ type: null, data: null });
   
@@ -939,6 +939,8 @@ export default function AdminPage() {
   
   const [adminFetchTrigger, setAdminFetchTrigger] = useState(0);
 
+  const superAdminEmail = 'mmavir89@gmail.com';
+  const isSuperAdmin = user?.email === superAdminEmail;
 
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -1170,6 +1172,9 @@ export default function AdminPage() {
     );
   }
 
+  const canWrite = currentAdmin?.canWrite ?? false;
+  const canDelete = currentAdmin?.canDelete ?? false;
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header currentView="admin" />
@@ -1183,7 +1188,7 @@ export default function AdminPage() {
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-t-4 border-primary">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Content Management</h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+              {canWrite && <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                 <UsersIcon className="w-8 h-8 text-primary" />
                 <h3 className="text-lg font-semibold dark:text-white">Manage Mentors</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1192,8 +1197,8 @@ export default function AdminPage() {
                 <Button onClick={() => openModal('mentor')} className="mt-2">
                   Create New Mentor
                 </Button>
-              </div>
-              <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+              </div>}
+              {canWrite && <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                 <FilePlus className="w-8 h-8 text-primary" />
                 <h3 className="text-lg font-semibold dark:text-white">Manage Sessions</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1202,8 +1207,8 @@ export default function AdminPage() {
                 <Button onClick={() => openModal('session')} className="mt-2">
                   Create New Session
                 </Button>
-              </div>
-               <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+              </div>}
+               {canWrite && <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                 <Lightbulb className="w-8 h-8 text-primary" />
                 <h3 className="text-lg font-semibold dark:text-white">Manage Tips</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1212,8 +1217,8 @@ export default function AdminPage() {
                 <Button onClick={() => openModal('tip')} className="mt-2">
                   Create New Tip
                 </Button>
-              </div>
-               <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+              </div>}
+               {canWrite && <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                 <Ticket className="w-8 h-8 text-primary" />
                 <h3 className="text-lg font-semibold dark:text-white">Manage Coupons</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1222,7 +1227,7 @@ export default function AdminPage() {
                 <Button onClick={() => openModal('coupon')} className="mt-2">
                   Create Coupons
                 </Button>
-              </div>
+              </div>}
               <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                 <CreditCard className="w-8 h-8 text-primary" />
                 <h3 className="text-lg font-semibold dark:text-white">User Balances</h3>
@@ -1236,13 +1241,14 @@ export default function AdminPage() {
             </div>
           </div>
           
-          <AdminManagement firestore={firestore} toast={toast} openModal={openModal} fetchAdmins={adminFetchTrigger} />
+          {isSuperAdmin && <AdminManagement firestore={firestore} toast={toast} openModal={openModal} fetchAdmins={adminFetchTrigger} currentAdmin={currentAdmin} />}
 
           <PaymentApprovalList 
             payments={pendingPayments.filter(p => p.status === 'pending')} 
             onApprove={handleApprovePayment} 
             isLoading={isLoadingPayments}
             onDetails={(payment) => openModal('payment_details', payment)}
+            canWrite={canWrite}
           />
 
           <DataListView
@@ -1263,12 +1269,14 @@ export default function AdminPage() {
                             return (
                                 <>
                                     <Button variant="ghost" size="sm" onClick={() => openModal('mentor_app_details', app)}><Eye className="w-4 h-4"/></Button>
+                                    {canWrite && <>
                                     <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" onClick={() => handleUpdateApplicationStatus(app, 'approved')}>
                                         <Check className="w-4 h-4" />
                                     </Button>
                                     <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => handleUpdateApplicationStatus(app, 'rejected')}>
                                         <ThumbsDown className="w-4 h-4" />
                                     </Button>
+                                    </>}
                                 </>
                             );
                         case 'approved':
@@ -1297,7 +1305,7 @@ export default function AdminPage() {
                 renderActions={(req) => (
                      <>
                         <Button variant="ghost" size="sm" onClick={() => openModal('support_details', req)}><Eye className="w-4 h-4"/></Button>
-                        <AlertDialog>
+                        {canDelete && <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
                             </AlertDialogTrigger>
@@ -1313,7 +1321,7 @@ export default function AdminPage() {
                                 <AlertDialogAction onClick={() => handleDelete('support_requests', req.id, `request from ${req.name}`)}>Delete</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
-                        </AlertDialog>
+                        </AlertDialog>}
                     </>
                 )}
                 emptyMessage="No new support requests."
@@ -1334,8 +1342,8 @@ export default function AdminPage() {
             renderActions={(mentor) => (
                 <>
                     <Link href={`/mentors/${mentor.id}`} className="text-sm text-primary hover:underline">View</Link>
-                    <Button variant="ghost" size="sm" onClick={() => openModal('mentor', mentor)}><Edit className="w-4 h-4" /></Button>
-                    <AlertDialog>
+                    {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('mentor', mentor)}><Edit className="w-4 h-4" /></Button>}
+                    {canDelete && <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
                         </AlertDialogTrigger>
@@ -1351,7 +1359,7 @@ export default function AdminPage() {
                             <AlertDialogAction onClick={() => handleDelete('mentors', mentor.id, mentor.name)}>Delete</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
-                    </AlertDialog>
+                    </AlertDialog>}
                 </>
             )}
            />
@@ -1370,13 +1378,13 @@ export default function AdminPage() {
                 ]}
                 renderActions={(session) => (
                      <>
-                        {session.status === 'scheduled' && (
+                        {session.status === 'scheduled' && canWrite && (
                             <Button size="sm" onClick={() => handleUpdateSessionStatus(session, 'active')}>
                                 <PlayCircle className="w-4 h-4 mr-2" />
                                 Start Session
                             </Button>
                         )}
-                        {session.status === 'active' && (
+                        {session.status === 'active' && canWrite && (
                              <Button size="sm" variant="destructive" onClick={() => handleUpdateSessionStatus(session, 'completed')}>
                                 End Session
                             </Button>
@@ -1384,8 +1392,8 @@ export default function AdminPage() {
                         {session.status === 'completed' && (
                             <span className="text-sm font-semibold text-gray-500">Completed</span>
                         )}
-                        <Button variant="ghost" size="sm" onClick={() => openModal('session', session)}><Edit className="w-4 h-4" /></Button>
-                         <AlertDialog>
+                        {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('session', session)}><Edit className="w-4 h-4" /></Button>}
+                        {canDelete && <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
                             </AlertDialogTrigger>
@@ -1401,7 +1409,7 @@ export default function AdminPage() {
                                 <AlertDialogAction onClick={() => handleDelete('sessions', session.id, session.title)}>Delete</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
-                        </AlertDialog>
+                        </AlertDialog>}
                     </>
                 )}
             />
@@ -1420,8 +1428,8 @@ export default function AdminPage() {
               ]}
               renderActions={(tip) => (
                 <>
-                    <Button variant="ghost" size="sm" onClick={() => openModal('tip', tip)}><Edit className="w-4 h-4" /></Button>
-                    <AlertDialog>
+                    {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('tip', tip)}><Edit className="w-4 h-4" /></Button>}
+                    {canDelete && <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
                       </AlertDialogTrigger>
@@ -1437,7 +1445,7 @@ export default function AdminPage() {
                           <AlertDialogAction onClick={() => handleDelete('tips', tip.id, tip.title)}>Delete</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
-                    </AlertDialog>
+                    </AlertDialog>}
                 </>
               )}
             />
@@ -1476,8 +1484,8 @@ export default function AdminPage() {
                 renderActions={(mentee) => (
                     <>
                         <Link href={`/account?userId=${mentee.id}`} className="text-sm text-primary hover:underline">View</Link>
-                        <Button variant="ghost" size="sm" onClick={() => openModal('mentee', mentee)}><Edit className="w-4 h-4" /></Button>
-                        <AlertDialog>
+                        {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('mentee', mentee)}><Edit className="w-4 h-4" /></Button>}
+                        {canDelete && <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
                             </AlertDialogTrigger>
@@ -1493,7 +1501,7 @@ export default function AdminPage() {
                                 <AlertDialogAction onClick={() => handleDelete('users', mentee.id, mentee.name || mentee.id)}>Delete</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
-                        </AlertDialog>
+                        </AlertDialog>}
                     </>
                 )}
             />
@@ -1501,19 +1509,19 @@ export default function AdminPage() {
         </div>
       </main>
 
-        {modalState.type === 'mentor' && (
+        {modalState.type === 'mentor' && canWrite && (
             <Modal title={modalState.data ? "Edit Mentor" : "Create New Mentor"} onClose={closeModal}>
                 <MentorForm mentor={modalState.data} onSave={handleSaveMentor} onClose={closeModal} />
             </Modal>
         )}
         
-        {modalState.type === 'admin_perms' && (
+        {modalState.type === 'admin_perms' && isSuperAdmin && (
             <Modal title="Edit Admin Permissions" onClose={closeModal}>
                 <EditAdminPermsForm admin={modalState.data} onSave={handleUpdateAdminPermissions} onClose={closeModal} />
             </Modal>
         )}
 
-        {modalState.type === 'mentee' && (
+        {modalState.type === 'mentee' && canWrite && (
             <Modal title="Edit Mentee" onClose={closeModal}>
                 <MenteeForm 
                     mentee={modalState.data} 
@@ -1523,19 +1531,19 @@ export default function AdminPage() {
             </Modal>
         )}
 
-        {modalState.type === 'session' && (
+        {modalState.type === 'session' && canWrite && (
             <Modal title={modalState.data ? "Edit Session" : "Create New Session"} onClose={closeModal}>
                 <SessionForm session={modalState.data} mentors={mentors} onSave={handleSaveSession} onClose={closeModal} />
             </Modal>
         )}
 
-        {modalState.type === 'tip' && (
+        {modalState.type === 'tip' && canWrite && (
             <Modal title={modalState.data ? "Edit Tip" : "Create New Tip"} onClose={closeModal}>
                 <TipForm tip={modalState.data} onSave={handleSaveTip} onClose={closeModal} />
             </Modal>
         )}
         
-        {modalState.type === 'coupon' && (
+        {modalState.type === 'coupon' && canWrite && (
             <Modal title="Manage Coupons" onClose={closeModal}>
                 <CouponForm onSave={handleSaveCoupon} onClose={closeModal} firestore={firestore} />
             </Modal>
