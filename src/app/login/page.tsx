@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { useUser, useAuth, useFirestore } from '@/firebase';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,15 +41,18 @@ export default function LoginPage() {
         },
     });
 
+    const handleRedirect = async (user: User) => {
+        const idTokenResult = await user.getIdTokenResult(true); // Force refresh
+        if (idTokenResult.claims.admin) {
+            router.push('/admin');
+        } else {
+            router.push('/account');
+        }
+    }
+
     useEffect(() => {
         if (!isUserLoading && user) {
-            user.getIdTokenResult().then((idTokenResult) => {
-                if (idTokenResult.claims.admin) {
-                    router.push('/admin');
-                } else {
-                    router.push('/account');
-                }
-            });
+            handleRedirect(user);
         }
     }, [user, isUserLoading, router]);
     
@@ -66,19 +69,17 @@ export default function LoginPage() {
         }
     };
 
-    const createUserProfile = async (user: any) => {
+    const createUserProfile = async (user: User) => {
         if (!firestore) return;
         const userDocRef = doc(firestore, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
-        
-        let isAdmin = false;
-        if (user.email === FIRST_ADMIN_EMAIL) {
-            isAdmin = true;
-            // This call can happen in the background
-            setAdminClaim(user.uid);
-        }
 
         if (!userDocSnap.exists()) {
+            let isAdmin = false;
+            if (user.email === FIRST_ADMIN_EMAIL) {
+                await setAdminClaim(user.uid);
+                isAdmin = true;
+            }
             await setDoc(userDocRef, {
                 id: user.uid,
                 email: user.email,
@@ -89,6 +90,8 @@ export default function LoginPage() {
                 status: 'active',
                 isAdmin: isAdmin,
             });
+        } else if (user.email === FIRST_ADMIN_EMAIL && !userDocSnap.data().isAdmin) {
+             await setAdminClaim(user.uid);
         }
     };
 
@@ -109,7 +112,7 @@ export default function LoginPage() {
         try {
             const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
             await createUserProfile(userCredential.user);
-            // Let the useEffect handle redirection
+            await handleRedirect(userCredential.user);
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -129,7 +132,7 @@ export default function LoginPage() {
         try {
             const result = await signInWithPopup(auth, provider);
             await createUserProfile(result.user);
-            // Let the useEffect handle redirection
+            await handleRedirect(result.user);
         } catch (error: any) {
              toast({
                 variant: 'destructive',
@@ -215,7 +218,7 @@ export default function LoginPage() {
                     </div>
 
                      <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
-                        <Mail className="mr-2 h-4 w-4" /> Google
+                        <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 177.2 56.4l-64.3 64.3c-35.2-30.3-81.2-48.4-112.9-48.4-98.2 0-178.5 80.3-178.5 178.5s80.3 178.5 178.5 178.5c110.3 0 162-72.7 167-109.8H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path></svg> Google
                     </Button>
 
                     <div className="text-center">

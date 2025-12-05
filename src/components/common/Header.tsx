@@ -17,7 +17,7 @@ export const Header = ({ currentView }) => {
 
     useEffect(() => {
         if (user) {
-            user.getIdTokenResult().then(idTokenResult => {
+            user.getIdTokenResult(true).then(idTokenResult => {
                 const isAdminClaim = !!idTokenResult.claims.admin;
                 setIsAdmin(isAdminClaim);
             });

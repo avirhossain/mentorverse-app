@@ -9,14 +9,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { useUser, useAuth, useFirestore } from '@/firebase';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile, User } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Mail } from 'lucide-react';
+
 
 const signupSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -42,48 +42,45 @@ export default function SignUpPage() {
             password: '',
         },
     });
+
+    const handleRedirect = async (user: User) => {
+        const idTokenResult = await user.getIdTokenResult(true); // Force refresh
+        if (idTokenResult.claims.admin) {
+            router.push('/admin');
+        } else {
+            router.push('/account');
+        }
+    }
     
     useEffect(() => {
         if (!isUserLoading && user) {
-             user.getIdTokenResult().then((idTokenResult) => {
-                if (idTokenResult.claims.admin) {
-                    router.push('/admin');
-                } else {
-                    router.push('/account');
-                }
-            });
+            handleRedirect(user);
         }
     }, [user, isUserLoading, router]);
 
     const setAdminClaim = async (uid: string) => {
-        // This function will be called for the first admin user.
-        // It makes a request to a serverless function that securely sets the custom claim.
         try {
             await fetch('/api/set-admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // Note: In a real app, this endpoint itself would need to be secured.
-                // For this bootstrapping process, we assume it can be called during the first admin's sign-up.
                 body: JSON.stringify({ uid, admin: true }),
             });
         } catch (error) {
             console.error("Failed to set admin claim:", error);
-            // This is a non-critical failure for the user's sign-up flow, but should be logged.
         }
     };
     
-    const createUserProfile = async (user: any, extraData = {}) => {
+    const createUserProfile = async (user: User, extraData = {}) => {
         if (!firestore) return;
         const userDocRef = doc(firestore, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
 
-        let isAdmin = false;
-        if (user.email === FIRST_ADMIN_EMAIL) {
-            isAdmin = true;
-            await setAdminClaim(user.uid);
-        }
-        
         if (!userDocSnap.exists()) {
+             let isAdmin = false;
+            if (user.email === FIRST_ADMIN_EMAIL) {
+                await setAdminClaim(user.uid);
+                isAdmin = true;
+            }
             await setDoc(userDocRef, {
                 id: user.uid,
                 email: user.email,
@@ -95,6 +92,8 @@ export default function SignUpPage() {
                 isAdmin: isAdmin,
                 ...extraData,
             });
+        } else if (user.email === FIRST_ADMIN_EMAIL && !userDocSnap.data().isAdmin) {
+            await setAdminClaim(user.uid);
         }
     };
 
@@ -114,8 +113,8 @@ export default function SignUpPage() {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, identifier, password);
             await updateProfile(userCredential.user, { displayName: name });
-            await createUserProfile(userCredential.user);
-            // Let the useEffect handle redirection
+            await createUserProfile(userCredential.user, {name});
+             await handleRedirect(userCredential.user);
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -135,7 +134,7 @@ export default function SignUpPage() {
         try {
             const result = await signInWithPopup(auth, provider);
             await createUserProfile(result.user);
-            // Let the useEffect handle redirection
+            await handleRedirect(result.user);
         } catch (error: any) {
              toast({
                 variant: 'destructive',
@@ -227,7 +226,7 @@ export default function SignUpPage() {
                     </div>
                     
                     <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
-                        <Mail className="mr-2 h-4 w-4" /> Google
+                        <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 177.2 56.4l-64.3 64.3c-35.2-30.3-81.2-48.4-112.9-48.4-98.2 0-178.5 80.3-178.5 178.5s80.3 178.5 178.5 178.5c110.3 0 162-72.7 167-109.8H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path></svg> Google
                     </Button>
 
                     <div className="text-center">
