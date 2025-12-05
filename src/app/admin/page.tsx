@@ -1,6 +1,5 @@
 
 'use client';
-import React, 'use client';
 import React, { useState, useEffect } from 'react';
 import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
@@ -761,16 +760,14 @@ export default function AdminPage() {
   const handleSaveMentor = async (mentorData: Omit<Mentor, 'id'> & { id?: string }, isEditing: boolean) => {
     if (!firestore) return;
 
-    let finalData: Mentor;
-    if (isEditing && mentorData.id) {
+    if (isEditing) {
         // Update existing mentor
-        finalData = mentorData as Mentor;
-        const mentorRef = doc(firestore, 'mentors', finalData.id);
-        await setDoc(mentorRef, finalData, { merge: true });
+        const mentorRef = doc(firestore, 'mentors', mentorData.id);
+        await setDoc(mentorRef, mentorData, { merge: true });
     } else {
-        // Create new mentor
-        const newId = uuidv4();
-        finalData = { ...mentorData, id: newId } as Mentor;
+        // Create new mentor with a unique ID
+        const newId = mentorData.id || uuidv4();
+        const finalData = { ...mentorData, id: newId };
         const mentorRef = doc(firestore, 'mentors', newId);
         await setDoc(mentorRef, finalData);
     }
@@ -1229,4 +1226,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
     
