@@ -218,7 +218,6 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
             expertise: '',
             status: 'active',
             reviews: [],
-            availableTimeslots: [],
             sessionCost: 0,
             title: '',
             company: '',
@@ -229,7 +228,6 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
             intro: '',
             professionalExperience: [],
             education: [],
-            sessions: []
         };
     };
 
@@ -257,15 +255,6 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
         setFormData(prev => ({ ...prev, [section]: list }));
     };
 
-     const handleNestedDynamicChange = (section, parentIndex, nestedSection, index, e) => {
-        const { name, value } = e.target;
-        const list = [...formData[section]];
-        const nestedList = [...list[parentIndex][nestedSection]];
-        nestedList[index][name] = value;
-        list[parentIndex][nestedSection] = nestedList;
-        setFormData(prev => ({ ...prev, [section]: list }));
-    };
-
     const addDynamicItem = (section, item) => {
         setFormData(prev => ({
             ...prev,
@@ -273,23 +262,9 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
         }));
     };
     
-    const addNestedDynamicItem = (section, parentIndex, nestedSection, item) => {
-        const list = [...formData[section]];
-        list[parentIndex][nestedSection] = [...(list[parentIndex][nestedSection] || []), item];
-        setFormData(prev => ({ ...prev, [section]: list }));
-    };
-
     const removeDynamicItem = (section, index) => {
         const list = [...formData[section]];
         list.splice(index, 1);
-        setFormData(prev => ({ ...prev, [section]: list }));
-    };
-
-    const removeNestedDynamicItem = (section, parentIndex, nestedSection, index) => {
-        const list = [...formData[section]];
-        const nestedList = [...list[parentIndex][nestedSection]];
-        nestedList.splice(index, 1);
-        list[parentIndex][nestedSection] = nestedList;
         setFormData(prev => ({ ...prev, [section]: list }));
     };
 
@@ -305,10 +280,6 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                 rating: Number(formData.rating),
                 ratingsCount: Number(formData.ratingsCount),
                 reviews: (formData.reviews || []).map(r => ({...r, rating: Number(r.rating)})),
-                sessions: (formData.sessions || []).map(s => ({
-                    ...s,
-                    learningObjectives: typeof s.learningObjectives === 'string' ? s.learningObjectives.split('\n').map(l => l.trim()).filter(l => l) : s.learningObjectives || [],
-                })),
             };
             
             await onSave(processedData, isEditing);
@@ -354,21 +325,6 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                             onChange={(e) => handleDynamicChange(sectionKey, index, e)}
                         />
                     ))}
-                    {sectionKey === 'sessions' && (
-                        <div className="pl-4 mt-2 space-y-2 border-l-2 border-primary">
-                            <h5 className="text-sm font-semibold">Available Slots for this Session</h5>
-                             {(item.availability || []).map((avail, availIndex) => (
-                                <div key={avail.id || availIndex} className="flex items-center gap-2">
-                                    <Input name="date" placeholder="Date (e.g., 18th November)" value={avail.date} onChange={(e) => handleNestedDynamicChange(sectionKey, index, 'availability', availIndex, e)} />
-                                    <Input name="time" placeholder="Time (e.g., 7:00 PM - 8:00 PM)" value={avail.time} onChange={(e) => handleNestedDynamicChange(sectionKey, index, 'availability', availIndex, e)} />
-                                    <Button type="button" size="sm" variant="ghost" className="p-1 h-auto" onClick={() => removeNestedDynamicItem(sectionKey, index, 'availability', availIndex)}><Trash2 className="w-4 h-4 text-red-500"/></Button>
-                                </div>
-                            ))}
-                            <Button type="button" variant="outline" size="sm" onClick={() => addNestedDynamicItem(sectionKey, index, 'availability', { id: uuidv4(), date: '', time: ''})}>
-                                <PlusCircle className="w-4 h-4 mr-2"/> Add Slot
-                            </Button>
-                        </div>
-                    )}
                 </div>
             ))}
             <Button type="button" variant="outline" size="sm" onClick={() => addDynamicItem(sectionKey, newItem)}>
@@ -429,20 +385,6 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                     { name: 'duration', placeholder: 'Duration (e.g., 2016 - 2020)' }
                 ],
                 { degree: '', institution: '', duration: '' }
-            )}
-
-             {renderDynamicSection('Sessions', 'sessions',
-                [
-                    { name: 'name', placeholder: 'Session Name' },
-                    { name: 'price', placeholder: 'Price', type: 'number' },
-                    { name: 'currency', placeholder: 'Currency (e.g., BDT)' },
-                    { name: 'duration', placeholder: 'Duration (minutes)', type: 'number' },
-                    { name: 'description', placeholder: 'Session Description', type: 'textarea' },
-                    { name: 'learningObjectives', placeholder: 'What will they learn? (one per line)', type: 'textarea' },
-                    { name: 'whoIsItFor', placeholder: 'Who is this session for?', type: 'textarea' },
-                    { name: 'setupRequirements', placeholder: 'Setup requirements', type: 'textarea' }
-                ],
-                { id: uuidv4(), name: '', price: 0, currency: 'BDT', duration: 60, description: '', learningObjectives: '', whoIsItFor: '', setupRequirements: '', availability: [] }
             )}
 
             {renderDynamicSection('Mentees Reviews', 'reviews',

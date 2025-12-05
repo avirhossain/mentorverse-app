@@ -26,22 +26,6 @@ export interface Mentor {
     institution: string;
     duration: string;
   }[];
-  sessions: {
-    id: string;
-    name: string;
-    price: number;
-    currency: string;
-    duration: number;
-    description: string;
-    learningObjectives: string[];
-    whoIsItFor: string;
-    setupRequirements: string;
-    availability: {
-      id: string;
-      date: string;
-      time: string;
-    }[];
-  }[];
   reviews: {
     mentee: string;
     date: string;
