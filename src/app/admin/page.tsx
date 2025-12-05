@@ -1,7 +1,7 @@
 
 'use client';
 import React, { useState, useEffect } from 'react';
-import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown, Eye, Phone, PlayCircle } from 'lucide-react';
+import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown, Eye, Phone, PlayCircle, UserCog } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { collection, getDocs, doc, runTransaction, deleteDoc, setDoc, updateDoc, addDoc, writeBatch } from 'firebase/firestore';
-import { useAuth, useFirestore, useUser } from '@/firebase';
+import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import type { Mentor, Mentee, Session, Tip, Coupon, PendingPayment, MentorApplication, SupportRequest } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -734,6 +734,96 @@ const DataListView = ({ title, data, isLoading, icon: Icon, columns, emptyMessag
     </div>
 );
 
+const AdminManagement = ({ firestore, toast }) => {
+    const [newAdminEmail, setNewAdminEmail] = useState('');
+    const [isAdding, setIsAdding] = useState(false);
+
+    const adminsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'admins') : null, [firestore]);
+    const { data: admins, isLoading, error } = useCollection<{email: string}>(adminsQuery);
+    
+    useEffect(() => {
+        // Seed initial admin if collection is empty
+        if (!isLoading && (!admins || admins.length === 0) && firestore) {
+            const initialAdminEmail = 'mmavir89@gmail.com';
+            const adminRef = doc(firestore, 'admins', initialAdminEmail);
+            setDoc(adminRef, { email: initialAdminEmail, createdAt: new Date().toISOString() });
+        }
+    }, [admins, isLoading, firestore]);
+
+    const handleAddAdmin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!firestore || !newAdminEmail) return;
+        setIsAdding(true);
+        const adminRef = doc(firestore, 'admins', newAdminEmail);
+        try {
+            await setDoc(adminRef, { email: newAdminEmail, createdAt: new Date().toISOString() });
+            toast({ title: 'Success!', description: `${newAdminEmail} has been added as an admin.` });
+            setNewAdminEmail('');
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to add admin.' });
+        } finally {
+            setIsAdding(false);
+        }
+    };
+
+    const handleRemoveAdmin = async (email: string) => {
+        if (!firestore) return;
+        if (email === 'mmavir89@gmail.com') {
+            toast({ variant: 'destructive', title: 'Action Forbidden', description: 'Cannot remove the primary administrator.' });
+            return;
+        }
+        const adminRef = doc(firestore, 'admins', email);
+        try {
+            await deleteDoc(adminRef);
+            toast({ title: 'Success!', description: `${email} has been removed from admins.` });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to remove admin.' });
+        }
+    };
+    
+    return (
+        <div className="mt-8">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
+                <UserCog className="w-6 h-6 mr-3 text-primary" />
+                Administrator Management
+            </h2>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-t-4 border-primary/50">
+                <form onSubmit={handleAddAdmin} className="flex items-center gap-4 mb-6">
+                    <Input 
+                        type="email"
+                        placeholder="new.admin@example.com"
+                        value={newAdminEmail}
+                        onChange={(e) => setNewAdminEmail(e.target.value)}
+                        required
+                    />
+                    <Button type="submit" disabled={isAdding}>{isAdding ? 'Adding...' : 'Add Admin'}</Button>
+                </form>
+                <div className="space-y-2">
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Current Admins</h3>
+                     {isLoading ? (
+                        <Skeleton className="h-8 w-full" />
+                    ) : (
+                        admins?.map(admin => (
+                            <div key={admin.id} className="flex justify-between items-center bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
+                                <span className="font-mono text-gray-800 dark:text-gray-200">{admin.email}</span>
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="text-red-500 hover:text-red-700" 
+                                    onClick={() => handleRemoveAdmin(admin.email)}
+                                    disabled={admin.email === 'mmavir89@gmail.com'}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 export default function AdminPage() {
   const { user, isUserLoading } = useUser();
@@ -809,6 +899,7 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
+    // Admin check is now in Header, so just ensure a user is logged in.
     if (!isUserLoading && !user) {
         router.push('/admin/login');
     }
@@ -1058,6 +1149,8 @@ export default function AdminPage() {
             </div>
           </div>
           
+          <AdminManagement firestore={firestore} toast={toast} />
+
           <PaymentApprovalList 
             payments={pendingPayments.filter(p => p.status === 'pending')} 
             onApprove={handleApprovePayment} 

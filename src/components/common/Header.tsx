@@ -4,26 +4,33 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Home, Lightbulb, User, LogIn, LogOut, Shield } from 'lucide-react';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
+import { doc } from 'firebase/firestore';
 
 export const Header = ({ currentView }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { user, isUserLoading } = useUser();
     const auth = useAuth();
+    const firestore = useFirestore();
     const router = useRouter();
-    const [isAdmin, setIsAdmin] = useState(false);
+
+    const adminDocRef = useMemoFirebase(() => {
+        if (!firestore || !user?.email) return null;
+        return doc(firestore, 'admins', user.email);
+    }, [firestore, user]);
+
+    const { data: adminDoc, isLoading: isAdminLoading } = useDoc(adminDocRef);
+
+    const isAdmin = !!adminDoc;
+    const isLoading = isUserLoading || (user && isAdminLoading);
 
     useEffect(() => {
-        const hardcodedAdminEmail = 'mmavir89@gmail.com';
-        const isAdminUser = user?.email === hardcodedAdminEmail;
-        setIsAdmin(isAdminUser);
-
-        if (currentView === 'admin' && !isUserLoading && !isAdminUser) {
+        if (currentView === 'admin' && !isLoading && !isAdmin) {
             router.push('/admin/login');
         }
-    }, [user, isUserLoading, currentView, router]);
+    }, [user, isLoading, isAdmin, currentView, router]);
 
     const isAdminView = currentView === 'admin';
 
@@ -61,7 +68,7 @@ export const Header = ({ currentView }) => {
                             <NavLink href="/" view="home" icon={Home} text="Home" />
                             <NavLink href="/tips" view="tips" icon={Lightbulb} text="Tips" />
 
-                            {!isUserLoading && (
+                            {!isLoading && (
                                 user ? (
                                     <>
                                     <Link href="/account" className={`flex items-center transition px-3 py-2 rounded-lg ${currentView === 'account' ? 'text-primary bg-primary/10 font-bold' : 'hover:text-primary hover:bg-gray-100'}`}>
@@ -103,7 +110,7 @@ export const Header = ({ currentView }) => {
                             <Link href="/" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Home className="w-5 h-5 mr-2" /> Home</Link>
                             <Link href="/tips" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Lightbulb className="w-5 h-5 mr-2" /> Tips & Resources</Link>
                             
-                            {!isUserLoading && (
+                            {!isLoading && (
                                 user ? (
                                     <>
                                     <Link href="/account" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}>
