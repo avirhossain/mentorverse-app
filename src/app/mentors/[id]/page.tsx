@@ -5,7 +5,7 @@ import { Star, CheckCircle, Briefcase, GraduationCap, Clock, Calendar, MessageSq
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { doc, runTransaction, collection } from 'firebase/firestore';
+import { doc, runTransaction, collection, setDoc } from 'firebase/firestore';
 import type { Mentor, Session, Mentee } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from '@/components/ui/button';
@@ -80,10 +80,6 @@ const CheckoutModal = ({ session, timeSlot, mentor, onClose, onBookingComplete }
         }
 
         setIsSubmitting(true);
-        // This assumes a session from a mentor's profile is a one-off booking.
-        // A more complex system might have a global `sessions` collection.
-        // For now, we'll simulate creating a booked session for the user.
-        const userSessionsRef = collection(firestore, 'users', user.uid, 'sessions');
         const userRef = doc(firestore, 'users', user.uid);
 
         try {
@@ -103,9 +99,7 @@ const CheckoutModal = ({ session, timeSlot, mentor, onClose, onBookingComplete }
                     const newBalance = balance - price;
                     transaction.update(userRef, { balance: newBalance });
                     
-                    // Create a balance transaction record
-                    const transactionsRef = collection(firestore, 'balance_transactions');
-                    const newTransactionRef = doc(transactionsRef);
+                    const newTransactionRef = doc(collection(firestore, 'balance_transactions'));
                     transaction.set(newTransactionRef, {
                         id: newTransactionRef.id,
                         userId: user.uid,
@@ -116,8 +110,7 @@ const CheckoutModal = ({ session, timeSlot, mentor, onClose, onBookingComplete }
                     });
                 }
                 
-                // Add the session to the user's subcollection
-                const newSessionRef = doc(userSessionsRef);
+                const newSessionRef = doc(collection(firestore, 'users', user.uid, 'sessions'));
                  transaction.set(newSessionRef, {
                     id: newSessionRef.id,
                     title: session.name,
@@ -218,7 +211,7 @@ const CheckoutModal = ({ session, timeSlot, mentor, onClose, onBookingComplete }
                     <div className="text-center py-8">
                         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                         <h3 className="text-2xl font-bold text-gray-800 mb-2">Booking Confirmed!</h3>
-                        <p className="text-gray-600">Thank you for booking your session with **{mentor.name}**. A confirmation email has been sent.</p>
+                        <p className="text-gray-600">Thank you for booking your session with {mentor.name}. A confirmation has been sent to your account dashboard.</p>
                         <Button onClick={onClose} className="mt-6 w-full">Finish</Button>
                     </div>
                 );
@@ -280,7 +273,7 @@ const BookingSection = ({ mentor, onBook }) => {
         <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg border-t-4 border-green-500">
             <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center"><Zap className="w-6 h-6 mr-2 text-green-600" /> Book a Session</h3>
             <Accordion type="single" collapsible className="w-full" defaultValue={mentor.sessions?.[0]?.id}>
-                {mentor.sessions.map((session) => (
+                {mentor.sessions?.map((session) => (
                     <AccordionItem value={session.id} key={session.id}>
                         <AccordionTrigger className="hover:no-underline">
                             <div className="flex justify-between items-center w-full">
@@ -335,7 +328,7 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
     };
     
     const handleBookingComplete = () => {
-        setBookingUpdate(prev => prev + 1); // This might be used to refresh data
+        setBookingUpdate(prev => prev + 1);
         // The modal will close itself upon success.
     };
 
@@ -371,7 +364,7 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
                         )}
                         
                         <div className="flex flex-wrap gap-2 justify-center">
-                            {mentor.skills.map(skill => (
+                            {mentor.skills?.map(skill => (
                                 <span key={skill} className="px-3 py-1 text-sm font-medium text-primary bg-primary/10 rounded-full">
                                     {skill}
                                 </span>
