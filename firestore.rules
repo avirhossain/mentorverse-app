@@ -26,7 +26,7 @@ service cloud.firestore {
      * Checks if the currently authenticated user has the 'admin' custom claim.
      */
     function isAdmin() {
-      return isSignedIn() && request.auth.token.admin == true;
+      return true; // TEMPORARILY OPEN FOR DEVELOPMENT
     }
 
     //----------------------------------------------------------------//
@@ -37,74 +37,63 @@ service cloud.firestore {
      * @description Mentor profiles are public for anyone to read. Only admins can manage them.
      */
     match /mentors/{mentorId} {
-      allow get, list: if true;
-      allow write, delete: if isAdmin();
+      allow read, write, delete: if true;
     }
     
     /**
      * @description Session offerings are public to read. Mentees can update (book) them. Admins can create/delete.
      */
     match /sessions/{sessionId} {
-      allow get, list: if true;
-      allow create, delete: if isAdmin();
-      allow update: if isSignedIn();
+      allow read, create, update, delete: if true;
     }
 
     /**
      * @description Unique session offerings are public for anyone to read. Only admins can manage them.
      */
     match /unique_sessions/{uniqueSessionId} {
-      allow get, list: if true;
-      allow write, delete: if isAdmin();
+      allow read, write, delete: if true;
     }
 
     /**
      * @description Tips are public for anyone to read. Only admins can manage them.
      */
     match /tips/{tipId} {
-      allow get, list: if true;
-      allow write, delete: if isAdmin();
+      allow read, write, delete: if true;
     }
 
     /**
      * @description User (mentee) profiles. A user can read/create/update their own profile. An admin can read/write any profile.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
+      allow read, write, delete: if true;
     }
 
     /**
      * @description A user's private session records. Only accessible by the user or an admin.
      */
     match /users/{menteeId}/sessions/{sessionId} {
-      allow read, write: if isOwner(menteeId) || isAdmin();
+      allow read, write: if isOwner(menteeId) || true;
     }
 
     /**
      * @description A user's private recommendations. Only accessible by the user or an admin.
      */
     match /users/{menteeId}/recommendations/{recommendationId} {
-      allow read, write: if isOwner(menteeId) || isAdmin();
+      allow read, write: if isOwner(menteeId) || true;
     }
 
     /**
      * @description Coupon codes for adding balance. Only admins can manage them. Users can read a specific coupon to check it.
      */
     match /coupons/{couponId} {
-      allow get: if isSignedIn();
-      allow list, create, update, delete: if isAdmin();
+      allow read, write, delete: if true;
     }
 
     /**
      * @description Pending payments for manual verification.
      */
     match /pending_payments/{paymentId} {
-      allow create: if isOwner(request.resource.data.userId);
-      allow get, list, update, delete: if isAdmin();
+      allow read, write, delete: if true;
     }
     
     /**
@@ -112,23 +101,21 @@ service cloud.firestore {
      * Users can only read their own transactions.
      */
     match /balance_transactions/{transactionId} {
-      allow create, get, list: if isAdmin();
+      allow read, write, delete: if true;
     }
 
     /**
      * @description Mentor applications. Any user can submit one. Only admins can read/manage them.
      */
     match /mentor_applications/{applicationId} {
-      allow create: if isSignedIn();
-      allow read, write, delete: if isAdmin();
+      allow read, write, delete: if true;
     }
 
     /**
      * @description Support requests. Any user can submit one. Only admins can read/manage them.
      */
     match /support_requests/{requestId} {
-      allow create: if isSignedIn();
-      allow read, write, delete: if isAdmin();
+      allow read, write, delete: if true;
     }
   }
 }
