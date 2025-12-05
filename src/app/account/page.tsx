@@ -2,7 +2,7 @@
 'use client';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
-    User, BookOpen, Clock, Zap, Star, ChevronRight, Calendar, Phone, Cake, Building, Briefcase, Mail, CheckCircle, Save, UploadCloud, LogOut, LayoutGrid, Heart, Bookmark, Wallet, PlusCircle, X, LogIn, Video
+    User, BookOpen, Clock, Zap, Star, ChevronRight, Calendar, Phone, Cake, Building, Briefcase, Mail, CheckCircle, Save, UploadCloud, LogOut, LayoutGrid, Heart, Bookmark, Wallet, PlusCircle, X, LogIn, Video, Edit
 } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
@@ -152,21 +152,32 @@ const RatingStars = ({ count }) => (
     </div>
 );
 
-const ProfileInfoField = ({ label, value, icon: Icon }) => (
+const ProfileInfoField = ({ label, value, name, icon: Icon, isEditing, onChange, type = "text" }) => (
     <div className="flex flex-col space-y-1">
-        <label className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">{label}</label>
+        <label htmlFor={name} className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">{label}</label>
         <div className="flex items-center">
             <div className="text-primary mr-3">
                 <Icon className="w-5 h-5" />
             </div>
-            <p className="w-full p-3 text-gray-800 dark:text-white">
-                {value || <span className="text-gray-400 dark:text-gray-500">Not set</span>}
-            </p>
+            {isEditing ? (
+                 <Input 
+                    id={name}
+                    name={name}
+                    type={type}
+                    value={value || ''} 
+                    onChange={onChange}
+                    className="p-2 border rounded-md w-full"
+                />
+            ) : (
+                <p className="w-full p-2 text-gray-800 dark:text-white">
+                    {value || <span className="text-gray-400 dark:text-gray-500">Not set</span>}
+                </p>
+            )}
         </div>
     </div>
 );
 
-const ProfilePicture = ({ imageUrl }) => (
+const ProfilePicture = ({ imageUrl, isEditing }) => (
     <div className="flex flex-col items-center justify-center mb-8">
         <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-primary shadow-xl">
             <img
@@ -175,12 +186,40 @@ const ProfilePicture = ({ imageUrl }) => (
                 className="w-full h-full object-cover"
                 onError={(e) => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = 'https://placehold.co/150x150/7c3aed/ffffff?text=AR' }}
             />
+            {isEditing && (
+                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                    <UploadCloud className="w-8 h-8 text-white" />
+                </div>
+            )}
         </div>
     </div>
 );
 
 
-const ProfileDetails = ({ user }) => {
+const ProfileDetails = ({ user, onUpdate }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState(user);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        setFormData(user);
+    }, [user]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSave = async () => {
+        try {
+            await onUpdate(formData);
+            toast({ title: 'Success!', description: 'Your profile has been updated.' });
+            setIsEditing(false);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+        }
+    };
+    
     if (!user) {
         return (
             <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl border-t-4 border-primary h-full">
@@ -195,23 +234,40 @@ const ProfileDetails = ({ user }) => {
 
     return (
         <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl border-t-4 border-primary h-full relative">
-            <h2 className="text-3xl font-extrabold text-center text-gray-900 dark:text-white mb-6">
-                Your Profile Details
-            </h2>
+            <div className="flex justify-between items-center mb-6">
+                 <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white">
+                    Your Profile
+                </h2>
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    {isEditing ? 'Cancel' : 'Edit Profile'}
+                </Button>
+            </div>
+            
 
             <ProfilePicture
-                imageUrl={user?.profileImageUrl || 'https://placehold.co/150x150/7c3aed/ffffff?text=AR'}
+                imageUrl={formData?.profileImageUrl || 'https://placehold.co/150x150/7c3aed/ffffff?text=AR'}
+                isEditing={isEditing}
             />
 
             <div className="space-y-4">
-                <ProfileInfoField label="Full Name" value={user.name} icon={User} />
-                <ProfileInfoField label="Email" value={user.email} icon={Mail} />
-                <ProfileInfoField label="Phone Number" value={user.phone} icon={Phone} />
-                <ProfileInfoField label="Sex/Gender" value={user.sex} icon={User} />
-                <ProfileInfoField label="Date of Birth" value={user.birthDate} icon={Cake} />
-                <ProfileInfoField label="Institution" value={user.institution} icon={Building} />
-                <ProfileInfoField label="Job Title" value={user.job} icon={Briefcase} />
+                <ProfileInfoField label="Full Name" name="name" value={formData.name} icon={User} isEditing={isEditing} onChange={handleChange} />
+                <ProfileInfoField label="Email" name="email" value={formData.email} icon={Mail} isEditing={false} onChange={handleChange} />
+                <ProfileInfoField label="Phone Number" name="phone" value={formData.phone} icon={Phone} isEditing={isEditing} onChange={handleChange} />
+                <ProfileInfoField label="Sex/Gender" name="sex" value={formData.sex} icon={User} isEditing={isEditing} onChange={handleChange} />
+                <ProfileInfoField label="Date of Birth" name="birthDate" value={formData.birthDate} icon={Cake} isEditing={isEditing} onChange={handleChange} type="date" />
+                <ProfileInfoField label="Institution" name="institution" value={formData.institution} icon={Building} isEditing={isEditing} onChange={handleChange} />
+                <ProfileInfoField label="Job Title" name="job" value={formData.job} icon={Briefcase} isEditing={isEditing} onChange={handleChange} />
             </div>
+            
+            {isEditing && (
+                <div className="mt-8">
+                    <Button onClick={handleSave} className="w-full">
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Changes
+                    </Button>
+                </div>
+            )}
         </div>
     );
 };
@@ -596,6 +652,12 @@ export default function AccountPage() {
         }
     };
     
+    const handleProfileUpdate = async (updatedData: Mentee) => {
+        if (!userDocRef) throw new Error("User reference not available.");
+        await updateDoc(userDocRef, updatedData);
+        // The useDoc hook will automatically fetch the latest data
+    };
+
     const LogoutButton = () => (
         <div className="pt-8 mt-8">
             <button
@@ -630,7 +692,7 @@ export default function AccountPage() {
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             <aside className="lg:col-span-1">
-                                <ProfileDetails user={menteeData} />
+                                <ProfileDetails user={menteeData} onUpdate={handleProfileUpdate} />
                             </aside>
 
                             <div className="lg:col-span-2 space-y-8">
