@@ -54,7 +54,9 @@ export default function LoginPage() {
             toast({
                 variant: 'destructive',
                 title: 'Login Failed',
-                description: error.message || 'An unexpected error occurred.',
+                description: error.code === 'auth/invalid-credential' 
+                    ? 'Invalid email or password. Please try again.'
+                    : error.message || 'An unexpected error occurred.',
             });
         } finally {
             setIsLoading(false);
@@ -122,7 +124,14 @@ export default function LoginPage() {
                                 name="password"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Password</FormLabel>
+                                        <div className="flex justify-between items-center">
+                                            <FormLabel>Password</FormLabel>
+                                            <Link href="/forgot-password" passHref>
+                                                <span className="text-sm font-medium text-primary hover:underline cursor-pointer">
+                                                    Forgot Password?
+                                                </span>
+                                            </Link>
+                                        </div>
                                         <FormControl>
                                             <Input type="password" placeholder="••••••••" {...field} />
                                         </FormControl>
