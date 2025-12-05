@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -43,6 +42,43 @@ export default function SignUpPage() {
         },
     });
 
+    const setAdminClaim = async (uid: string) => {
+        try {
+            const response = await fetch('/api/set-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid, admin: true }),
+            });
+            if (!response.ok) {
+                throw new Error('Failed to set admin claim');
+            }
+        } catch (error) {
+            console.error("Failed to set admin claim:", error);
+        }
+    };
+    
+    const createUserProfile = async (user: User, extraData = {}) => {
+        if (!firestore) return;
+        const userDocRef = doc(firestore, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (!userDocSnap.exists()) {
+            await setDoc(userDocRef, {
+                id: user.uid,
+                email: user.email,
+                name: user.displayName,
+                balance: 0,
+                interests: [],
+                mentorshipGoal: '',
+                status: 'active',
+                ...extraData,
+            });
+             if (user.email === FIRST_ADMIN_EMAIL) {
+                await setAdminClaim(user.uid);
+            }
+        }
+    };
+
     const handleRedirect = async (user: User) => {
         const idTokenResult = await user.getIdTokenResult(true); // Force refresh
         if (idTokenResult.claims.admin) {
@@ -57,45 +93,6 @@ export default function SignUpPage() {
             handleRedirect(user);
         }
     }, [user, isUserLoading, router]);
-
-    const setAdminClaim = async (uid: string) => {
-        try {
-            await fetch('/api/set-admin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid, admin: true }),
-            });
-        } catch (error) {
-            console.error("Failed to set admin claim:", error);
-        }
-    };
-    
-    const createUserProfile = async (user: User, extraData = {}) => {
-        if (!firestore) return;
-        const userDocRef = doc(firestore, "users", user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-
-        if (!userDocSnap.exists()) {
-             let isAdmin = false;
-            if (user.email === FIRST_ADMIN_EMAIL) {
-                await setAdminClaim(user.uid);
-                isAdmin = true;
-            }
-            await setDoc(userDocRef, {
-                id: user.uid,
-                email: user.email,
-                name: user.displayName,
-                balance: 0,
-                interests: [],
-                mentorshipGoal: '',
-                status: 'active',
-                isAdmin: isAdmin,
-                ...extraData,
-            });
-        } else if (user.email === FIRST_ADMIN_EMAIL && !userDocSnap.data().isAdmin) {
-            await setAdminClaim(user.uid);
-        }
-    };
 
     const handleSignUp = async (values: z.infer<typeof signupSchema>) => {
         if (!auth) return;
@@ -189,7 +186,7 @@ export default function SignUpPage() {
                                     <FormItem>
                                         <FormLabel>Email or Phone</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="name@example.com or 01..." {...field} />
+                                            <Input placeholder="name@example.com or +88..." {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -15,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Mail } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const loginSchema = z.object({
@@ -41,8 +39,55 @@ export default function LoginPage() {
         },
     });
 
+    const setAdminClaim = async (uid: string) => {
+        try {
+            const response = await fetch('/api/set-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid, admin: true }),
+            });
+            if (!response.ok) {
+                 throw new Error('Failed to set admin claim');
+            }
+        } catch (error) {
+            console.error("Failed to set admin claim:", error);
+            // This is a critical step for the first admin, so we should inform the user.
+            toast({
+                variant: 'destructive',
+                title: 'Admin Setup Failed',
+                description: 'Could not grant admin privileges. Please contact support.',
+            });
+        }
+    };
+    
+    const createUserProfile = async (user: User) => {
+        if (!firestore) return;
+        const userDocRef = doc(firestore, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        let isNewUser = !userDocSnap.exists();
+
+        if (isNewUser) {
+            await setDoc(userDocRef, {
+                id: user.uid,
+                email: user.email,
+                name: user.displayName,
+                balance: 0,
+                interests: [],
+                mentorshipGoal: '',
+                status: 'active',
+            });
+        }
+        
+        // This is the crucial part for the first admin user
+        if (user.email === FIRST_ADMIN_EMAIL) {
+            await setAdminClaim(user.uid);
+        }
+    };
+
+
     const handleRedirect = async (user: User) => {
-        const idTokenResult = await user.getIdTokenResult(true); // Force refresh
+        const idTokenResult = await user.getIdTokenResult(true); // Force refresh claims
         if (idTokenResult.claims.admin) {
             router.push('/admin');
         } else {
@@ -54,46 +99,7 @@ export default function LoginPage() {
         if (!isUserLoading && user) {
             handleRedirect(user);
         }
-    }, [user, isUserLoading, router]);
-    
-    const setAdminClaim = async (uid: string) => {
-        try {
-            await fetch('/api/set-admin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid, admin: true }),
-            });
-        } catch (error) {
-            console.error("Failed to set admin claim:", error);
-            // Non-critical, so we don't block the user flow
-        }
-    };
-
-    const createUserProfile = async (user: User) => {
-        if (!firestore) return;
-        const userDocRef = doc(firestore, "users", user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-
-        if (!userDocSnap.exists()) {
-            let isAdmin = false;
-            if (user.email === FIRST_ADMIN_EMAIL) {
-                await setAdminClaim(user.uid);
-                isAdmin = true;
-            }
-            await setDoc(userDocRef, {
-                id: user.uid,
-                email: user.email,
-                name: user.displayName,
-                balance: 0,
-                interests: [],
-                mentorshipGoal: '',
-                status: 'active',
-                isAdmin: isAdmin,
-            });
-        } else if (user.email === FIRST_ADMIN_EMAIL && !userDocSnap.data().isAdmin) {
-             await setAdminClaim(user.uid);
-        }
-    };
+    }, [user, isUserLoading]);
 
     const handleLogin = async (values: z.infer<typeof loginSchema>) => {
         if (!auth) return;
@@ -174,7 +180,7 @@ export default function LoginPage() {
                                     <FormItem>
                                         <FormLabel>Email or Phone</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="name@example.com or 01..." {...field} />
+                                            <Input placeholder="name@example.com or +88..." {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

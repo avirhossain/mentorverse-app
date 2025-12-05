@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare } from 'lucide-react';
@@ -403,7 +402,7 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
     );
 };
 
-const MenteeForm = ({ mentee, onSave, onClose, onSetAdmin, isSettingAdmin }) => {
+const MenteeForm = ({ mentee, onSave, onClose }) => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -414,16 +413,7 @@ const MenteeForm = ({ mentee, onSave, onClose, onSetAdmin, isSettingAdmin }) => 
         interests: mentee?.interests?.join(', ') || '',
     });
     
-    const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState(false);
     const { toast } = useToast();
-    
-    useEffect(() => {
-        if (mentee && mentee.isAdmin) {
-             setIsCurrentUserAdmin(true);
-        } else {
-             setIsCurrentUserAdmin(false);
-        }
-    }, [mentee]);
     
     const handleChange = (e) => {
         const { name, value, type } = e.target;
@@ -466,30 +456,6 @@ const MenteeForm = ({ mentee, onSave, onClose, onSetAdmin, isSettingAdmin }) => 
                         <SelectItem value="suspended">Suspended</SelectItem>
                     </SelectContent>
                 </Select>
-            </div>
-
-            <div className="pt-4 border-t">
-                <h4 className="font-semibold text-lg mb-2">Admin Controls</h4>
-                <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                    <p>Is user an administrator?</p>
-                    <div className="flex items-center gap-2">
-                        <Button 
-                            type="button"
-                            variant={isCurrentUserAdmin ? 'default' : 'outline'}
-                            disabled={isSettingAdmin || isCurrentUserAdmin}
-                            onClick={() => onSetAdmin(mentee.id, true)}>
-                                <ShieldCheck className="mr-2"/> Yes
-                        </Button>
-                        <Button 
-                            type="button" 
-                            variant={!isCurrentUserAdmin ? 'destructive' : 'outline'}
-                            disabled={isSettingAdmin || !isCurrentUserAdmin}
-                            onClick={() => onSetAdmin(mentee.id, false)}>
-                                <ShieldX className="mr-2"/> No
-                        </Button>
-                    </div>
-                </div>
-                {isSettingAdmin && <p className="text-sm text-center mt-2 text-primary">Updating admin status...</p>}
             </div>
 
             <div className="flex justify-end gap-4 pt-4">
@@ -751,7 +717,6 @@ export default function AdminPage() {
   const [isLoadingCoupons, setIsLoadingCoupons] = useState(true);
   const [isLoadingMentorApps, setIsLoadingMentorApps] = useState(true);
   const [isLoadingSupport, setIsLoadingSupport] = useState(true);
-  const [isSettingAdmin, setIsSettingAdmin] = useState(false);
 
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
@@ -833,9 +798,8 @@ export default function AdminPage() {
   
   const handleSaveMentee = async (menteeData) => {
     if (!firestore) return;
-    const { isAdmin, ...restOfMenteeData } = menteeData; // Exclude role from Firestore write
-    const menteeRef = doc(firestore, 'users', restOfMenteeData.id);
-    await updateDoc(menteeRef, restOfMenteeData);
+    const menteeRef = doc(firestore, 'users', menteeData.id);
+    await updateDoc(menteeRef, menteeData);
     fetchData(); // Refresh data
   };
   
@@ -879,32 +843,6 @@ export default function AdminPage() {
     await setDoc(couponRef, couponData, { merge: true });
     fetchData();
   };
-
-    const handleSetAdmin = async (uid: string, isAdmin: boolean) => {
-        setIsSettingAdmin(true);
-        try {
-            const response = await fetch('/api/set-admin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid, admin: isAdmin }),
-            });
-
-            if (!response.ok) {
-                const { error } = await response.json();
-                throw new Error(error || 'Failed to set admin status.');
-            }
-
-            toast({ title: 'Success!', description: 'Admin status updated. The user must log in again to see the change.' });
-            
-            // Optimistically update UI
-            setMentees(prevMentees => prevMentees.map(m => m.id === uid ? { ...m, isAdmin } : m));
-            closeModal();
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message });
-        } finally {
-            setIsSettingAdmin(false);
-        }
-    };
 
   const handleApprovePayment = async (payment) => {
     if (!firestore || !user) {
@@ -1304,8 +1242,6 @@ export default function AdminPage() {
                     mentee={modalState.data} 
                     onSave={handleSaveMentee} 
                     onClose={closeModal}
-                    onSetAdmin={handleSetAdmin}
-                    isSettingAdmin={isSettingAdmin}
                 />
             </Modal>
         )}
