@@ -233,7 +233,7 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
                 <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-8 flex flex-col items-center border-t-4 border-primary">
                     
                     <img 
-                        src={mentor.avatar} 
+                        src={mentor.avatar || 'https://placehold.co/150x150/7c3aed/ffffff?text=AR'} 
                         alt={mentor.name} 
                         className="w-40 h-40 sm:w-48 sm:h-48 rounded-full object-cover ring-4 ring-primary/20 mb-6"
                     />

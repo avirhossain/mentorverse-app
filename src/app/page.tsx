@@ -37,7 +37,7 @@ const MentorCard = ({ mentor }: { mentor: Mentor }) => (
     <Link href={`/mentors/${mentor.id}`} className="group block h-full">
         <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition duration-300 p-5 sm:p-6 flex flex-col items-start border border-gray-100 h-full">
             <div className="flex items-start space-x-3 sm:space-x-4 mb-4">
-                <img className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-4 border-violet-100" src={mentor.avatar} alt={mentor.name} />
+                <img className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-4 border-violet-100" src={mentor.avatar || 'https://placehold.co/150x150/7c3aed/ffffff?text=AR'} alt={mentor.name} />
                 <div>
                     <div className="flex items-center">
                         <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mr-2">{mentor.name}</h3>
