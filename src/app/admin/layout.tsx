@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect } from 'react';
@@ -17,25 +18,33 @@ export default function AdminLayout({
   const isLoginPage = pathname === '/admin/login';
 
   useEffect(() => {
-    // If we are on the login page, we don't need to run any auth checks here.
-    if (isLoginPage || !isAuthCheckComplete) {
+    // If auth check is not complete, we wait.
+    if (!isAuthCheckComplete) {
       return;
     }
 
-    // If check is complete and the user is not an admin, redirect.
-    // This now applies to all admin pages EXCEPT the login page.
-    if (!isAdmin) {
-      router.push('/');
+    // If auth check is complete, and the user is on the login page...
+    if (isLoginPage) {
+      // ...and they are an admin, redirect them to the dashboard.
+      if (isAdmin) {
+        router.push('/admin');
+      }
+      // Otherwise, they can stay on the login page.
+    } else {
+      // For any other admin page, if the user is not an admin, redirect them away.
+      if (!isAdmin) {
+        router.push('/admin/login');
+      }
     }
-  }, [user, isAdmin, isAuthCheckComplete, router, isLoginPage]);
+  }, [user, isAdmin, isAuthCheckComplete, router, pathname, isLoginPage]);
   
-  // If we are on the login page, just render it without any wrappers or checks.
-  if (isLoginPage) {
+  // If we are on the login page, and the user isn't an admin yet, render it.
+  if (isLoginPage && !isAdmin) {
     return <>{children}</>;
   }
 
 
-  // While checking authentication for other admin pages, show a loading state.
+  // While checking authentication or if the user isn't an admin, show a loading state for protected pages.
   if (!isAuthCheckComplete || !isAdmin) {
     return (
       <div className="flex flex-col min-h-screen">

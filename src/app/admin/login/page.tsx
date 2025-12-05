@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Shield } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const adminLoginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -24,7 +25,7 @@ const adminLoginSchema = z.object({
 export default function AdminLoginPage() {
     const router = useRouter();
     const auth = useAuth();
-    const { user, isAdmin, isAuthCheckComplete } = useUser();
+    const { isAdmin, isAuthCheckComplete } = useUser();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
 
@@ -36,8 +37,9 @@ export default function AdminLoginPage() {
         },
     });
 
-    // If an admin is already logged in, redirect them to the dashboard.
     useEffect(() => {
+        // This effect will handle redirecting an already logged-in admin.
+        // The AdminLayout handles redirecting non-admins away from other pages.
         if (isAuthCheckComplete && isAdmin) {
             router.push('/admin');
         }
@@ -58,12 +60,12 @@ export default function AdminLoginPage() {
             await signInWithEmailAndPassword(auth, values.email, values.password);
             // On successful sign-in, the onAuthStateChanged listener will fire,
             // the useUser hook will update with isAdmin status, and the useEffect above
-            // will handle the redirection. We don't redirect here to ensure
-            // the isAdmin status is confirmed before moving.
+            // will handle the redirection.
             toast({
                 title: 'Login Successful',
                 description: 'Redirecting to the admin dashboard...',
             });
+            // We no longer need to manually push here. Let the hook do the work.
 
         } catch (error: any) {
              toast({
@@ -76,15 +78,23 @@ export default function AdminLoginPage() {
         }
     };
     
-    // While checking auth or if user is an admin already (and redirecting), show a loading state.
-    if (!isAuthCheckComplete || (isAuthCheckComplete && isAdmin)) {
+    // While checking auth state, show a generic loading screen.
+    // If check is complete and user is admin, the useEffect will redirect.
+    if (!isAuthCheckComplete || isAdmin) {
         return (
-             <div className="flex items-center justify-center min-h-screen">
-                <p>Loading...</p>
+             <div className="flex flex-col min-h-screen">
+                <Header currentView="admin" />
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="p-8">
+                        <Skeleton className="h-8 w-48 mb-4" />
+                        <Skeleton className="h-4 w-64" />
+                    </div>
+                </div>
             </div>
         );
     }
     
+    // If auth check is complete and the user is NOT an admin, show the login form.
     return (
         <div className="min-h-screen bg-background">
             <Header currentView="admin" />
