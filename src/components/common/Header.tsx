@@ -44,13 +44,20 @@ export const Header = ({ currentView }) => {
                 <Link href={isAdminView ? "/admin" : "/"} className="text-2xl font-extrabold text-primary">Mentees</Link>
                 
                 <nav className="hidden lg:flex space-x-2 items-center text-gray-600 font-medium">
-                    {isAdminView ? (
-                         user && isAdmin && (
-                            <Button onClick={handleLogout} variant="outline">
-                                <LogOut className="w-5 h-5 mr-2" /> Logout
-                            </Button>
-                         )
+                   {/* Admin View Navigation */}
+                   {isAdminView ? (
+                        <>
+                            {user && isAdmin ? (
+                                <Button onClick={handleLogout} variant="outline">
+                                    <LogOut className="w-5 h-5 mr-2" /> Logout
+                                </Button>
+                            ) : (
+                                // Show nothing or a login link if not authenticated in admin view
+                                !isUserLoading && !user && <Link href="/admin/login">Login</Link>
+                            )}
+                        </>
                     ) : (
+                        // Standard User View Navigation
                         <>
                             <NavLink href="/" view="home" icon={Home} text="Home" />
                             <NavLink href="/tips" view="tips" icon={Lightbulb} text="Tips" />
@@ -58,14 +65,17 @@ export const Header = ({ currentView }) => {
                             {!isUserLoading && (
                                 user ? (
                                     <>
-                                    <Link href="/account" className={`flex items-center transition px-3 py-2 rounded-lg ${currentView === 'account' ? 'text-primary bg-primary/10 font-bold' : 'hover:text-primary hover:bg-gray-100'}`}>
-                                        <User className="w-5 h-5 mr-1" /> Account
-                                    </Link>
-                                    {isAdmin && (
-                                         <Link href="/admin" className={`flex items-center transition px-3 py-2 rounded-lg ${currentView === 'admin' ? 'text-primary bg-primary/10 font-bold' : 'hover:text-primary hover:bg-gray-100'}`}>
-                                            <Shield className="w-5 h-5 mr-1" /> Admin
+                                        <Link href="/account" className={`flex items-center transition px-3 py-2 rounded-lg ${currentView === 'account' ? 'text-primary bg-primary/10 font-bold' : 'hover:text-primary hover:bg-gray-100'}`}>
+                                            <User className="w-5 h-5 mr-1" /> Account
                                         </Link>
-                                    )}
+                                        {isAdmin && (
+                                            <Link href="/admin" className={`flex items-center transition px-3 py-2 rounded-lg ${currentView === 'admin' ? 'text-primary bg-primary/10 font-bold' : 'hover:text-primary hover:bg-gray-100'}`}>
+                                                <Shield className="w-5 h-5 mr-1" /> Admin
+                                            </Link>
+                                        )}
+                                        <Button onClick={handleLogout} variant="outline" size="sm">
+                                            <LogOut className="w-4 h-4 mr-2" /> Logout
+                                        </Button>
                                     </>
                                 ) : (
                                     <Button asChild>
