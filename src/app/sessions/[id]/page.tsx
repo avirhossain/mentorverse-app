@@ -188,14 +188,15 @@ const SpecialRequestModal = ({ session, user, onClose, onComplete }) => {
 export default function SessionDetailsPage({ params }: { params: { id: string } }) {
     const firestore = useFirestore();
     const { user } = useUser();
+    const resolvedParams = React.use(params);
     const [bookingUpdate, setBookingUpdate] = useState(0);
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
     
     const sessionRef = useMemoFirebase(() => {
         if (!firestore) return null;
-        return doc(firestore, 'sessions', params.id);
-    }, [firestore, params]);
+        return doc(firestore, 'sessions', resolvedParams.id);
+    }, [firestore, resolvedParams, bookingUpdate]);
 
     const { data: session, isLoading } = useDoc<Session>(sessionRef);
     

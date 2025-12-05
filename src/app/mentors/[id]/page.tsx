@@ -355,8 +355,10 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
                         
                         {mentor.rating > 0 && (
                             <div className="flex items-center justify-center text-base font-medium text-yellow-500 mb-4">
-                                <Star className="w-5 h-5 mr-1 fill-current" />
-                                <span className="text-gray-800 font-bold mr-2">{mentor.rating.toFixed(1)}</span>
+                                <div className="flex items-center">
+                                  <Star className="w-5 h-5 mr-1 fill-current" />
+                                  <span className="text-gray-800 font-bold mr-2">{mentor.rating.toFixed(1)}</span>
+                                </div>
                                 {mentor.ratingsCount >= 30 && (
                                     <span className="text-gray-500">({mentor.ratingsCount} ratings)</span>
                                 )}
@@ -431,11 +433,12 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
 
 export default function MentorPage({ params }: { params: { id: string } }) {
     const firestore = useFirestore();
+    const resolvedParams = React.use(params);
 
     const mentorRef = useMemoFirebase(() => {
         if (!firestore) return null;
-        return doc(firestore, 'mentors', params.id);
-    }, [firestore, params]);
+        return doc(firestore, 'mentors', resolvedParams.id);
+    }, [firestore, resolvedParams]);
 
     const { data: mentor, isLoading } = useDoc<Mentor>(mentorRef);
 
@@ -448,5 +451,3 @@ export default function MentorPage({ params }: { params: { id: string } }) {
         </div>
     );
 };
-
-    
