@@ -118,7 +118,7 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
             <Button 
                 onClick={() => onBook(session)} 
                 disabled={isBooked || isFull} 
-                className="w-full font-bold text-lg"
+                className="w-full font-bold"
             >
                  {isBooked ? (
                     <>
@@ -130,9 +130,9 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
                     'Book Session'
                 )}
             </Button>
-            <Button asChild variant="outline" size="icon">
+            <Button asChild variant="outline">
                 <Link href={`/sessions/${session.id}`}>
-                    <Info className="w-5 h-5"/>
+                    See More
                 </Link>
             </Button>
         </div>
@@ -393,3 +393,5 @@ export default function HomePage() {
         </div>
     );
 };
+
+    
