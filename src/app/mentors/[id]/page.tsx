@@ -433,7 +433,7 @@ export default function MentorPage({ params }: { params: { id: string } }) {
     const firestore = useFirestore();
 
     const mentorRef = useMemoFirebase(() => {
-        if (!firestore || !params.id) return null;
+        if (!firestore) return null;
         return doc(firestore, 'mentors', params.id);
     }, [firestore, params]);
 
@@ -448,3 +448,5 @@ export default function MentorPage({ params }: { params: { id: string } }) {
         </div>
     );
 };
+
+    
