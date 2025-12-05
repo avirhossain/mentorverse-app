@@ -44,10 +44,12 @@ export const Header = ({ currentView }) => {
                 <Link href={isAdminView ? "/admin" : "/"} className="text-2xl font-extrabold text-primary">Mentees</Link>
                 
                 <nav className="hidden lg:flex space-x-2 items-center text-gray-600 font-medium">
-                    {isAdminView && user ? (
-                         <Button onClick={handleLogout} variant="outline">
-                            <LogOut className="w-5 h-5 mr-2" /> Logout
-                        </Button>
+                    {isAdminView ? (
+                         user && isAdmin && (
+                            <Button onClick={handleLogout} variant="outline">
+                                <LogOut className="w-5 h-5 mr-2" /> Logout
+                            </Button>
+                         )
                     ) : (
                         <>
                             <NavLink href="/" view="home" icon={Home} text="Home" />
@@ -86,10 +88,12 @@ export const Header = ({ currentView }) => {
             
             {isMenuOpen && (
                 <div className="lg:hidden absolute w-full bg-white shadow-lg border-t border-gray-100 py-4 px-4 space-y-3">
-                     {isAdminView && user ? (
-                         <Button onClick={handleLogout} className="w-full">
-                            <LogOut className="w-5 h-5 mr-2" /> Logout
-                        </Button>
+                     {isAdminView ? (
+                         user && isAdmin && (
+                            <Button onClick={handleLogout} className="w-full">
+                                <LogOut className="w-5 h-5 mr-2" /> Logout
+                            </Button>
+                         )
                      ) : (
                         <>
                             <Link href="/" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Home className="w-5 h-5 mr-2" /> Home</Link>
