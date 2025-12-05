@@ -6,14 +6,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore } from '@/firebase';
 import { initializeFirebase } from '@/firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { GoogleAuthProvider, PhoneAuthProvider, EmailAuthProvider } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 
 // Dynamically import firebaseui to ensure it's only run on the client
 import('firebaseui/dist/firebaseui.css');
 
-export default function LoginPage() {
+export default function SignUpPage() {
     const router = useRouter();
+    const firestore = useFirestore();
     const { user, isUserLoading } = useUser();
     const [firebaseui, setFirebaseui] = useState(null);
     const elementRef = useRef(null);
@@ -31,10 +33,9 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (!isUserLoading && user) {
-            router.push('/account');
+            router.push('/account'); // Redirect logged-in users to their account
         }
     }, [user, isUserLoading, router]);
-
 
     useEffect(() => {
         if (!authCompat || !firebaseui || !elementRef.current) {
@@ -50,6 +51,10 @@ export default function LoginPage() {
             signInFlow: 'redirect',
             signInSuccessUrl: '/account',
             signInOptions: [
+                {
+                    provider: EmailAuthProvider.PROVIDER_ID,
+                    requireDisplayName: true, // Ask for name on sign-up
+                },
                 GoogleAuthProvider.PROVIDER_ID,
                 {
                     provider: PhoneAuthProvider.PROVIDER_ID,
@@ -59,15 +64,30 @@ export default function LoginPage() {
                         badge: 'bottomleft'
                     },
                     defaultCountry: 'BD'
-                },
-                {
-                    provider: EmailAuthProvider.PROVIDER_ID,
-                    signInMethod: EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD
                 }
             ],
             callbacks: {
                 signInSuccessWithAuthResult: (authResult, redirectUrl) => {
-                    // This callback is not invoked with a redirect flow.
+                    const user = authResult.user;
+                    // Check if it's a new user and create their profile document
+                    if (authResult.additionalUserInfo.isNewUser && firestore) {
+                        const userDocRef = doc(firestore, "users", user.uid);
+                        getDoc(userDocRef).then(userDocSnap => {
+                            if (!userDocSnap.exists()) {
+                                setDoc(userDocRef, {
+                                    id: user.uid,
+                                    email: user.email,
+                                    name: user.displayName,
+                                    phone: user.phoneNumber,
+                                    balance: 0,
+                                    interests: [],
+                                    mentorshipGoal: '',
+                                    status: 'active',
+                                });
+                            }
+                        });
+                    }
+                    // Let FirebaseUI handle the redirect on success.
                     return true;
                 },
             },
@@ -85,7 +105,7 @@ export default function LoginPage() {
             }
         };
 
-    }, [authCompat, firebaseui]);
+    }, [authCompat, firebaseui, firestore, router]);
 
     return (
         <div className="min-h-screen bg-background">
@@ -94,10 +114,10 @@ export default function LoginPage() {
                 <div className="w-full max-w-sm p-8 space-y-6 bg-white rounded-xl shadow-2xl border-t-4 border-primary">
                     <div className="text-center">
                         <h1 className="text-3xl font-extrabold text-gray-900">
-                            Welcome Back
+                            Create an Account
                         </h1>
                         <p className="mt-2 text-gray-500">
-                            Sign in to continue to Guidelab
+                            Join Guidelab to start your journey
                         </p>
                     </div>
 
@@ -105,9 +125,9 @@ export default function LoginPage() {
                     
                     <div className="text-center">
                         <p className="text-sm text-gray-600">
-                            Don't have an account?{' '}
-                            <Link href="/signup" className="font-medium text-primary hover:underline">
-                                Sign Up
+                            Already have an account?{' '}
+                            <Link href="/login" className="font-medium text-primary hover:underline">
+                                Sign In
                             </Link>
                         </p>
                     </div>
