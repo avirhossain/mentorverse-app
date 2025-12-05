@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -12,18 +12,30 @@ export default function AdminLayout({
 }) {
   const { user, isAdmin, isAuthCheckComplete } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const isLoginPage = pathname === '/admin/login';
 
   useEffect(() => {
-    // Wait until the authentication check is fully complete
-    if (isAuthCheckComplete) {
-      // If check is complete and there's no user OR the user is not an admin, redirect
-      if (!user || !isAdmin) {
-        router.push('/');
-      }
+    // If we are on the login page, we don't need to run any auth checks here.
+    if (isLoginPage || !isAuthCheckComplete) {
+      return;
     }
-  }, [user, isAdmin, isAuthCheckComplete, router]);
 
-  // While checking, show a loading state to prevent flashing content
+    // If check is complete and the user is not an admin, redirect.
+    // This now applies to all admin pages EXCEPT the login page.
+    if (!isAdmin) {
+      router.push('/');
+    }
+  }, [user, isAdmin, isAuthCheckComplete, router, isLoginPage]);
+  
+  // If we are on the login page, just render it without any wrappers or checks.
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
+
+
+  // While checking authentication for other admin pages, show a loading state.
   if (!isAuthCheckComplete || !isAdmin) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -39,6 +51,6 @@ export default function AdminLayout({
     );
   }
 
-  // If the user is an admin and the auth check is complete, render the admin content
+  // If the user is an admin and the auth check is complete, render the protected admin content.
   return <>{children}</>;
 }
