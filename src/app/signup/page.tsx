@@ -26,7 +26,7 @@ const signupSchema = z.object({
 
 export default function SignUpPage() {
     const router = useRouter();
-    const { user, isAuthCheckComplete, isAdmin } = useUser();
+    const { user, isAuthCheckComplete } = useUser();
     const auth = useAuth();
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -60,12 +60,12 @@ export default function SignUpPage() {
     };
 
     // This effect handles redirection for standard users after they sign up.
-    // It specifically avoids interfering with the admin flow.
     useEffect(() => {
-        if (isAuthCheckComplete && user && !isAdmin) {
-            router.push('/account'); // Or '/' if you prefer
+        if (isAuthCheckComplete && user) {
+             // This is a standard user signup page, so we always redirect to the account page.
+            router.push('/account');
         }
-    }, [user, isAdmin, isAuthCheckComplete, router]);
+    }, [user, isAuthCheckComplete, router]);
 
 
     const handleSignUp = async (values: z.infer<typeof signupSchema>) => {

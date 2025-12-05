@@ -24,7 +24,7 @@ const loginSchema = z.object({
 
 export default function LoginPage() {
     const router = useRouter();
-    const { user, isAuthCheckComplete, isAdmin } = useUser();
+    const { user, isAuthCheckComplete } = useUser();
     const auth = useAuth();
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -61,12 +61,12 @@ export default function LoginPage() {
     };
 
     // This effect handles redirection for standard users after they log in.
-    // It specifically avoids interfering with the admin flow.
     useEffect(() => {
-        if (isAuthCheckComplete && user && !isAdmin) {
+        if (isAuthCheckComplete && user) {
+            // This is a standard user login page, so we always redirect to the homepage.
             router.push('/');
         }
-    }, [user, isAdmin, isAuthCheckComplete, router]);
+    }, [user, isAuthCheckComplete, router]);
 
 
     const handleLogin = async (values: z.infer<typeof loginSchema>) => {
