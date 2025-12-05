@@ -38,6 +38,7 @@ export default function AdminLoginPage() {
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
         if (!auth) return;
         
+        // This email is hardcoded as the primary super admin.
         const hardcodedAdminEmail = 'mmavir89@gmail.com';
         if (values.email.toLowerCase() !== hardcodedAdminEmail) {
             toast({
@@ -51,10 +52,10 @@ export default function AdminLoginPage() {
         setIsLoading(true);
 
         try {
-            // 1. Attempt to sign in the user
+            // Attempt to sign in.
             await signInWithEmailAndPassword(auth, values.email, values.password);
         } catch (error: any) {
-            // 2. If sign-in fails because the user doesn't exist, create them
+            // If sign-in fails because the user doesn't exist, create the account.
             if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
                 try {
                     await createUserWithEmailAndPassword(auth, values.email, values.password);
@@ -79,7 +80,7 @@ export default function AdminLoginPage() {
             }
         }
         
-        // 3. On success (either login or creation), redirect to the admin dashboard.
+        // On success (either login or creation), redirect to the admin dashboard.
         // The AdminLayout will handle the final authorization check.
         toast({
             title: 'Login Successful',

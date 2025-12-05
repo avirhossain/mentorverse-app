@@ -62,14 +62,18 @@ export default function LoginPage() {
 
     const handleRedirect = async (user: User) => {
         const { isNewUser } = await createUserProfile(user);
-
-        // Force a token refresh to get the latest custom claims
-        const idTokenResult = await user.getIdTokenResult(true); 
         
-        // Check for admin claim and redirect accordingly
-        if (idTokenResult.claims.admin) {
-            router.push('/admin');
-        } else if (isNewUser) {
+        // Check if the user is an admin by querying the 'admins' collection
+        if (firestore && user.email) {
+            const adminDocRef = doc(firestore, 'admins', user.email);
+            const adminDocSnap = await getDoc(adminDocRef);
+            if (adminDocSnap.exists()) {
+                router.push('/admin');
+                return;
+            }
+        }
+        
+        if (isNewUser) {
             // New regular users go to their account page
             router.push('/account');
         } else {

@@ -61,6 +61,17 @@ export default function SignUpPage() {
 
     const handleRedirect = async (user: User) => {
         await createUserProfile(user);
+
+        // Check if the user is an admin by querying the 'admins' collection
+        if (firestore && user.email) {
+            const adminDocRef = doc(firestore, 'admins', user.email);
+            const adminDocSnap = await getDoc(adminDocRef);
+            if (adminDocSnap.exists()) {
+                router.push('/admin');
+                return;
+            }
+        }
+
         // All users from sign-up are new, so redirect to account page
         router.push('/account');
     }
