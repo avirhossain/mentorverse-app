@@ -176,6 +176,19 @@
         "notes": {
           "type": "string",
           "description": "Any notes related to the session."
+        },
+        "learningObjectives": {
+            "type": "array",
+            "description": "List of things a mentee will learn.",
+            "items": { "type": "string" }
+        },
+        "whoIsItFor": {
+            "type": "string",
+            "description": "Description of the ideal mentee for this session."
+        },
+        "setupRequirements": {
+            "type": "string",
+            "description": "Any technical or other setup requirements."
         }
       },
       "required": [
@@ -585,5 +598,3 @@
     "reasoning": "The Firestore structure is designed to securely manage mentors, mentees, sessions, unique session offerings, and personalized recommendations within the MentorVerse application. The structure emphasizes authorization independence, clarity, and scalability.\n\nAuthorization Independence (CRITICAL): To avoid hierarchical authorization dependencies (`get()`), the design denormalizes authorization context where necessary. For example, access to sessions within a mentee's profile does not require fetching the mentee's profile to verify ownership. Instead, the session document itself contains the `menteeId`. Similarly, global roles (admin) are managed via the existence of a document in dedicated collections, rather than relying on custom claims.\n\nStructural Segregation (Homogeneous Security Posture): The structure segregates data based on access needs.  User-owned data is stored under the `/users/{userId}` path, allowing for simple path-based ownership rules.  Admin-created unique sessions are stored in a separate collection, `/unique_sessions`, to distinguish them from user-created sessions.\n\nAccess Modeling (Standardization and Consistency): The structure uses consistent patterns for authorization:\n*   Private Data: Path-Based ownership is enforced for mentee-specific data (e.g., recommendations under `/users/{menteeId}/recommendations/{recommendationId}`).\n*   Collaborative Data:  Not explicitly needed in this design, as no entities require collaborative access.\n*   Global Roles (DBAC): Admin privileges are checked by existence in `/roles_admin/{uid}`.\n\nQAPs (Rules are not Filters): The structure supports secure `list` operations by ensuring that collections contain documents with homogeneous security requirements. For example, listing sessions is secure because access to each session is determined by the path (user-owned) and/or role, not by filtering based on document content.\n\nInvariants: The structure enforces data integrity by leveraging path-based ownership to ensure that mentees can only access their own sessions and recommendations. Timestamps are used to maintain the order and history of recommendations."
   }
 }
-
-    

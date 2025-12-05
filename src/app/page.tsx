@@ -1,7 +1,7 @@
 
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Star, CheckCircle, Zap, User, Calendar, Clock, Users, X } from 'lucide-react';
+import { Star, CheckCircle, Zap, User, Calendar, Clock, Users, X, Info } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -114,21 +114,28 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
                 </p>
             </div>
         </div>
-        <Button 
-            onClick={() => onBook(session)} 
-            disabled={isBooked || isFull} 
-            className="w-full font-bold text-lg mt-6"
-        >
-             {isBooked ? (
-                <>
-                    <CheckCircle className="mr-2" /> Session Booked
-                </>
-            ) : isFull ? (
-                'Session Full'
-            ) : (
-                'Book Session'
-            )}
-        </Button>
+        <div className="flex items-center gap-2 mt-6">
+            <Button 
+                onClick={() => onBook(session)} 
+                disabled={isBooked || isFull} 
+                className="w-full font-bold text-lg"
+            >
+                 {isBooked ? (
+                    <>
+                        <CheckCircle className="mr-2" /> Session Booked
+                    </>
+                ) : isFull ? (
+                    'Session Full'
+                ) : (
+                    'Book Session'
+                )}
+            </Button>
+            <Button asChild variant="outline" size="icon">
+                <Link href={`/sessions/${session.id}`}>
+                    <Info className="w-5 h-5"/>
+                </Link>
+            </Button>
+        </div>
     </div>
     )
 };

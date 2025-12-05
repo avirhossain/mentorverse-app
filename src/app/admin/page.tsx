@@ -525,7 +525,11 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
         type: 'Free',
         price: 0,
         maxParticipants: 10,
+        learningObjectives: '',
+        whoIsItFor: '',
+        setupRequirements: '',
         ...session,
+        learningObjectives: Array.isArray(session?.learningObjectives) ? session.learningObjectives.join(', ') : '',
     });
 
     const handleChange = (e) => {
@@ -555,26 +559,24 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
         }
 
         try {
+            const commonData = {
+                ...formData,
+                mentorName: selectedMentor.name,
+                isFree: formData.type === 'Free',
+                price: Number(formData.price),
+                maxParticipants: Number(formData.maxParticipants),
+                durationMinutes: Number(formData.durationMinutes),
+                learningObjectives: formData.learningObjectives.split(',').map(s => s.trim()).filter(s => s),
+            };
+
             let sessionData;
             if (isEditing) {
-                sessionData = {
-                    ...formData,
-                    mentorName: selectedMentor.name,
-                    isFree: formData.type === 'Free',
-                    price: Number(formData.price),
-                    maxParticipants: Number(formData.maxParticipants),
-                    durationMinutes: Number(formData.durationMinutes),
-                };
+                sessionData = commonData;
             } else {
                 const jitsiRoomName = `GuidelabSession-${uuidv4()}`;
                 const jitsiLink = `https://meet.jit.si/${jitsiRoomName}`;
                 sessionData = {
-                    ...formData,
-                    mentorName: selectedMentor.name,
-                    isFree: formData.type === 'Free',
-                    price: Number(formData.price),
-                    maxParticipants: Number(formData.maxParticipants),
-                    durationMinutes: Number(formData.durationMinutes),
+                    ...commonData,
                     jitsiLink: jitsiLink,
                     bookedBy: [],
                     status: 'scheduled',
@@ -632,6 +634,11 @@ const SessionForm = ({ session, mentors, onSave, onClose }) => {
             )}
 
             <Input name="maxParticipants" type="number" placeholder="Max Participants" value={formData.maxParticipants} onChange={handleChange} required />
+            
+            <Textarea name="learningObjectives" placeholder="What will they learn? (comma-separated)" value={formData.learningObjectives} onChange={handleChange} />
+            <Textarea name="whoIsItFor" placeholder="Who is this session for?" value={formData.whoIsItFor} onChange={handleChange} />
+            <Textarea name="setupRequirements" placeholder="Setup requirements (e.g., Laptop, Specific software)" value={formData.setupRequirements} onChange={handleChange} />
+
 
             <div className="flex justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
@@ -740,7 +747,7 @@ const DataListView = ({ title, data, isLoading, icon: Icon, columns, emptyMessag
                                 <div className="col-span-12 md:col-span-1 font-semibold">{index + 1}</div>
                                 <div className="col-span-6 md:col-span-2 text-sm text-gray-500">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}</div>
                                 <div className="col-span-6 md:col-span-2 font-mono text-primary">{idPrefix}{index + 1}</div>
-                                <div className="col-span-12 md:col-span-5 font-semibold text-gray-800 dark:text-white">{item.name || item.title || item.phone || item.transactionId}</div>
+                                <div className="col-span-12 md:col-span-5 font-semibold text-gray-800 dark:text-white">{item.name || item.title || item.phone || item.transactionId || item.id}</div>
                                 <div className="col-span-12 md:col-span-2 flex justify-end items-center gap-2">
                                     {renderActions(item)}
                                 </div>
@@ -835,25 +842,28 @@ export default function AdminPage() {
 
     const handleSaveMentor = async (mentorData: Omit<Mentor, 'id'> & { id?: string }, isEditing: boolean) => {
         if (!firestore) return;
-        
-        let finalId = mentorData.id;
+
+        let mentorId = mentorData.id;
         if (!isEditing) {
-            finalId = uuidv4();
+            // For new mentors, generate a new ID
+            mentorId = uuidv4();
         }
 
-        if (!finalId) {
-             toast({
+        if (!mentorId) {
+            toast({
                 variant: "destructive",
                 title: "Save Failed",
-                description: "Mentor ID is missing for an update operation.",
+                description: "Mentor ID is missing.",
             });
             return;
         }
 
-        const mentorRef = doc(firestore, 'mentors', finalId);
-        const dataToSave = { ...mentorData, id: finalId };
+        const mentorRef = doc(firestore, 'mentors', mentorId);
+        // Ensure the id is part of the data being saved
+        const dataToSave = { ...mentorData, id: mentorId };
         
         try {
+            // Use setDoc with merge to both create new and update existing docs
             await setDoc(mentorRef, dataToSave, { merge: true });
             fetchData();
         } catch (error) {

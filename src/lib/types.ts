@@ -1,4 +1,5 @@
 
+
 export interface Mentor {
   id: string; // Changed from number to string to align with Firestore document IDs
   name: string;
@@ -72,6 +73,9 @@ export interface Session {
     bookedBy: string[]; // Array of user IDs who have booked
     status: 'scheduled' | 'active' | 'completed';
     createdAt?: string; // Added for sorting
+    learningObjectives?: string[];
+    whoIsItFor?: string;
+    setupRequirements?: string;
 }
 
 export interface Tip {
