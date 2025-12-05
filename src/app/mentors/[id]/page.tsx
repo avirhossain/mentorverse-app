@@ -360,11 +360,15 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
                         </div>
                         <h2 className="text-lg sm:text-xl text-primary font-medium mb-2">{mentor.title} at {mentor.company}</h2>
                         
-                        <div className="flex items-center justify-center text-base font-medium text-yellow-500 mb-4">
-                            <Star className="w-5 h-5 mr-1 fill-current" />
-                            <span className="text-gray-800 font-bold mr-2">{mentor.rating.toFixed(1)}</span>
-                            <span className="text-gray-500">({mentor.ratingsCount} ratings)</span>
-                        </div>
+                        {mentor.rating > 0 && (
+                            <div className="flex items-center justify-center text-base font-medium text-yellow-500 mb-4">
+                                <Star className="w-5 h-5 mr-1 fill-current" />
+                                <span className="text-gray-800 font-bold mr-2">{mentor.rating.toFixed(1)}</span>
+                                {mentor.ratingsCount >= 30 && (
+                                    <span className="text-gray-500">({mentor.ratingsCount} ratings)</span>
+                                )}
+                            </div>
+                        )}
                         
                         <div className="flex flex-wrap gap-2 justify-center">
                             {mentor.skills.map(skill => (

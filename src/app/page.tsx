@@ -43,20 +43,27 @@ const MentorCard = ({ mentor }: { mentor: Mentor }) => (
                     <h3 className="text-xl font-bold text-gray-800 mr-2">{mentor.name}</h3>
                     <CheckCircle className="w-5 h-5 text-green-500 fill-green-100" />
                 </div>
-                <p className="text-sm text-primary font-medium mb-1">{mentor.title} at {mentor.company}</p>
-                <div className="flex items-center justify-center text-sm font-medium text-yellow-500 mb-3">
-                    <Star className="w-4 h-4 mr-1 fill-current" />
-                    <span className="text-gray-800 font-bold mr-1">{mentor.rating.toFixed(1)}</span>
-                    <span className="text-gray-500">({mentor.ratingsCount} ratings)</span>
+                <p className="text-sm text-primary font-medium mb-2">{mentor.title} at {mentor.company}</p>
+                
+                {mentor.rating > 0 && (
+                    <div className="flex items-center justify-center text-sm font-medium text-yellow-500 mb-3">
+                        <Star className="w-4 h-4 mr-1 fill-current" />
+                        <span className="text-gray-800 font-bold mr-1">{mentor.rating.toFixed(1)}</span>
+                        {mentor.ratingsCount >= 30 && (
+                            <span className="text-gray-500">({mentor.ratingsCount} ratings)</span>
+                        )}
+                    </div>
+                )}
+                
+                <div className="flex flex-wrap gap-2 justify-center">
+                    {mentor.skills.slice(0, 3).map(skill => (
+                        <span key={skill} className="px-3 py-1 text-xs font-medium text-primary bg-primary/10 rounded-full">
+                            {skill}
+                        </span>
+                    ))}
                 </div>
-                <p className="text-xs text-gray-600 italic line-clamp-2 mb-4">"{mentor.intro}"</p>
-            </div>
-            <div className="flex flex-wrap gap-2 justify-center mt-auto">
-                {mentor.skills.slice(0, 3).map(skill => (
-                    <span key={skill} className="px-3 py-1 text-xs font-medium text-primary bg-primary/10 rounded-full">
-                        {skill}
-                    </span>
-                ))}
+                
+                <p className="text-xs text-gray-600 italic line-clamp-2 mt-4">"{mentor.intro}"</p>
             </div>
         </div>
     </Link>
