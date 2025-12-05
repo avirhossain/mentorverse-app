@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, User } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,14 +36,36 @@ export default function AdminLoginPage() {
         },
     });
 
+    const setAdminClaim = async (user: User) => {
+        // This function calls our API route to set the custom claim.
+        try {
+            const response = await fetch('/api/set-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid: user.uid }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to set admin claim.');
+            }
+        } catch (error) {
+            console.error('Error setting admin claim:', error);
+            // Optionally, handle this error in the UI
+        }
+    };
+
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
         if (!auth) return;
         setIsLoading(true);
         try {
-            await signInWithEmailAndPassword(auth, values.email, values.password);
-            // The redirection logic is handled by the main `useUser` hook now
-            // We just need to successfully log in.
+            const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+            
+            // Set the custom claim and then force a token refresh.
+            await setAdminClaim(userCredential.user);
+            await userCredential.user.getIdTokenResult(true); 
+
             router.push('/admin');
+
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -54,11 +76,6 @@ export default function AdminLoginPage() {
         }
     };
     
-    // For now, let's keep a direct entry button as requested
-    const handleDirectEntry = () => {
-        router.push('/admin');
-    }
-
     return (
         <div className="min-h-screen bg-background">
             <Header currentView="admin" />

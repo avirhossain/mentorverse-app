@@ -63,13 +63,17 @@ export default function LoginPage() {
     const handleRedirect = async (user: User) => {
         const { isNewUser } = await createUserProfile(user);
 
+        // Force a token refresh to get the latest custom claims
         const idTokenResult = await user.getIdTokenResult(true); 
         
+        // Check for admin claim and redirect accordingly
         if (idTokenResult.claims.admin) {
             router.push('/admin');
         } else if (isNewUser) {
+            // New regular users go to their account page
             router.push('/account');
         } else {
+            // Existing regular users go to the homepage
             router.push('/');
         }
     }
@@ -88,7 +92,7 @@ export default function LoginPage() {
         
         try {
             const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
-            await handleRedirect(userCredential.user);
+            // handleRedirect is now called by the useEffect hook
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -107,7 +111,7 @@ export default function LoginPage() {
         const provider = new GoogleAuthProvider();
         try {
             const result = await signInWithPopup(auth, provider);
-            await handleRedirect(result.user);
+            // handleRedirect is now called by the useEffect hook
         } catch (error: any) {
              toast({
                 variant: 'destructive',
