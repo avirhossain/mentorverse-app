@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword, User } from 'firebase/auth';
+import { signInWithEmailAndPassword, User, createUserWithEmailAndPassword } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,6 @@ import { Shield } from 'lucide-react';
 
 const adminLoginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
-  password: z.string().min(1, { message: 'Password is required.' }),
 });
 
 export default function AdminLoginPage() {
@@ -32,12 +31,10 @@ export default function AdminLoginPage() {
         resolver: zodResolver(adminLoginSchema),
         defaultValues: {
             email: '',
-            password: '',
         },
     });
 
     const setAdminClaim = async (user: User) => {
-        // This function calls our API route to set the custom claim.
         try {
             const response = await fetch('/api/set-admin', {
                 method: 'POST',
@@ -50,15 +47,49 @@ export default function AdminLoginPage() {
             }
         } catch (error) {
             console.error('Error setting admin claim:', error);
-            // Optionally, handle this error in the UI
+            throw error; // re-throw to be caught by the caller
         }
     };
 
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
         if (!auth) return;
+        
+        const hardcodedAdminEmail = 'mmavir89@gmail.com';
+        if (values.email.toLowerCase() !== hardcodedAdminEmail) {
+            toast({
+                variant: 'destructive',
+                title: 'Access Denied',
+                description: 'This email is not authorized for admin access.',
+            });
+            return;
+        }
+
         setIsLoading(true);
+
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+            let userCredential;
+            const tempPassword = 'password123'; // A temporary, known password for this process
+
+            try {
+                // Try to sign in first
+                userCredential = await signInWithEmailAndPassword(auth, values.email, tempPassword);
+            } catch (error: any) {
+                // If the user does not exist or password is wrong, create/reset the user.
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                     try {
+                        // Attempt to create the user. If it fails because user exists, it means password is wrong, but we can't reset it without user interaction.
+                        // For this direct entry, we will just create the user if they don't exist.
+                        userCredential = await createUserWithEmailAndPassword(auth, values.email, tempPassword);
+                    } catch (creationError: any) {
+                        // If user already exists, it implies a password mismatch.
+                        // Since we can't reset it here, we will just sign them in again with the known temp password
+                        // This might fail if the user changed their password, but it fulfills the "direct entry" goal for a known state.
+                         userCredential = await signInWithEmailAndPassword(auth, values.email, tempPassword);
+                    }
+                } else {
+                    throw error; // Re-throw other sign-in errors
+                }
+            }
             
             // Set the custom claim and then force a token refresh.
             await setAdminClaim(userCredential.user);
@@ -70,7 +101,7 @@ export default function AdminLoginPage() {
             toast({
                 variant: 'destructive',
                 title: 'Admin Login Failed',
-                description: 'Invalid credentials or you are not authorized as an admin.',
+                description: 'Could not grant admin access. Please check server logs.',
             });
             setIsLoading(false);
         }
@@ -87,7 +118,7 @@ export default function AdminLoginPage() {
                             Admin Access
                         </h1>
                         <p className="mt-2 text-gray-500">
-                            Please sign in with your administrator credentials.
+                            Enter the admin email for direct access.
                         </p>
                     </div>
 
@@ -101,19 +132,6 @@ export default function AdminLoginPage() {
                                         <FormLabel>Admin Email</FormLabel>
                                         <FormControl>
                                             <Input placeholder="admin@example.com" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="password"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Password</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" placeholder="••••••••" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
