@@ -137,9 +137,9 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
             </div>
         </div>
         <div className="mt-6">
-            <div className="flex items-center gap-2">
+             <div className="flex items-start gap-2">
                 {isBooked ? (
-                     <div className="text-center w-full">
+                    <div className="flex-grow text-center">
                         <Button asChild variant={canJoin ? 'default' : 'outline'} disabled={!canJoin}>
                             <a href={canJoin ? session.jitsiLink : undefined} target="_blank" rel="noopener noreferrer" className="w-full font-bold">
                                 <Video className="mr-2" /> Join Session
