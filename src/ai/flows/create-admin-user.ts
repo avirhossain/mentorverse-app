@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -7,7 +8,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import { getAuth } from 'firebase-admin/auth';
 import { initFirebaseAdmin } from './firebase-admin';
 
