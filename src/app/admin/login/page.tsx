@@ -56,13 +56,14 @@ export default function AdminLoginPage() {
 
         try {
             await signInWithEmailAndPassword(auth, values.email, values.password);
-            // On successful sign-in, the useUser hook will update, and the useEffect above
-            // will catch the isAdmin status and redirect. We can also push directly for faster UX.
+            // On successful sign-in, the onAuthStateChanged listener will fire,
+            // the useUser hook will update with isAdmin status, and the useEffect above
+            // will handle the redirection. We don't redirect here to ensure
+            // the isAdmin status is confirmed before moving.
             toast({
                 title: 'Login Successful',
                 description: 'Redirecting to the admin dashboard...',
             });
-            router.push('/admin');
 
         } catch (error: any) {
              toast({
@@ -76,7 +77,7 @@ export default function AdminLoginPage() {
     };
     
     // While checking auth or if user is an admin already (and redirecting), show a loading state.
-    if (!isAuthCheckComplete || isAdmin) {
+    if (!isAuthCheckComplete || (isAuthCheckComplete && isAdmin)) {
         return (
              <div className="flex items-center justify-center min-h-screen">
                 <p>Loading...</p>
