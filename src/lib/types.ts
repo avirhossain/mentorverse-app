@@ -3,6 +3,7 @@
 
 
 
+
 export interface Mentor {
   id: string; // Changed from number to string to align with Firestore document IDs
   name: string;
@@ -55,6 +56,7 @@ export interface Mentee {
   balance: number;
   status: 'active' | 'suspended';
   isAdmin?: boolean;
+  role?: 'admin' | 'user';
 }
 
 
@@ -128,5 +130,7 @@ export interface SupportRequest {
     status: 'new' | 'in-progress' | 'resolved';
     createdAt: string; // ISO Date string
 }
+
+    
 
     

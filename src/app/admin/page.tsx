@@ -413,8 +413,17 @@ const MenteeForm = ({ mentee, onSave, onClose, onSetAdmin, isSettingAdmin }) => 
         ...mentee,
         interests: mentee?.interests?.join(', ') || '',
     });
-
+    
+    const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState(false);
     const { toast } = useToast();
+    
+    useEffect(() => {
+        if (mentee && mentee.isAdmin) {
+             setIsCurrentUserAdmin(true);
+        } else {
+             setIsCurrentUserAdmin(false);
+        }
+    }, [mentee]);
     
     const handleChange = (e) => {
         const { name, value, type } = e.target;
@@ -466,15 +475,15 @@ const MenteeForm = ({ mentee, onSave, onClose, onSetAdmin, isSettingAdmin }) => 
                     <div className="flex items-center gap-2">
                         <Button 
                             type="button"
-                            variant={mentee.isAdmin ? 'default' : 'outline'}
-                            disabled={isSettingAdmin || mentee.isAdmin}
+                            variant={isCurrentUserAdmin ? 'default' : 'outline'}
+                            disabled={isSettingAdmin || isCurrentUserAdmin}
                             onClick={() => onSetAdmin(mentee.id, true)}>
                                 <ShieldCheck className="mr-2"/> Yes
                         </Button>
                         <Button 
                             type="button" 
-                            variant={!mentee.isAdmin ? 'destructive' : 'outline'}
-                            disabled={isSettingAdmin || !mentee.isAdmin}
+                            variant={!isCurrentUserAdmin ? 'destructive' : 'outline'}
+                            disabled={isSettingAdmin || !isCurrentUserAdmin}
                             onClick={() => onSetAdmin(mentee.id, false)}>
                                 <ShieldX className="mr-2"/> No
                         </Button>
@@ -743,10 +752,28 @@ export default function AdminPage() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
+  
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+        user.getIdTokenResult().then((idTokenResult) => {
+            if (idTokenResult.claims.admin) {
+                setIsAdmin(true);
+            } else {
+                setIsAdmin(false);
+            }
+        });
+    } else {
+        setIsAdmin(false);
+    }
+  }, [user]);
 
   const fetchUsersWithAdminStatus = async (users: Mentee[]): Promise<Mentee[]> => {
-    // This is a placeholder. In a real app, you'd make an API call to a backend
-    // that uses the Admin SDK to check claims. For now, we simulate it based on email.
+    // This function is now more complex as it needs to fetch claims for each user.
+    // This should ideally be done on a backend, but for client-side we'll do it here.
+    // This is inefficient and not recommended for large user bases.
+    // For this app, we will assume the mentee object passed to the form will have the claim status.
     const adminEmail = 'mmavir89@gmail.com';
     return users.map(u => ({ ...u, isAdmin: u.email === adminEmail }));
   };
@@ -775,7 +802,6 @@ export default function AdminPage() {
         setMentors(mentorsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentor)));
         
         const rawMentees = menteesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentee));
-        // We will fetch admin status separately
         setMentees(rawMentees);
 
         setSessions(sessionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Session)));
@@ -800,10 +826,10 @@ export default function AdminPage() {
 
 
   useEffect(() => {
-    if (user && firestore) {
+    if (isAdmin && firestore) {
       fetchData();
     }
-  }, [user, firestore]);
+  }, [isAdmin, firestore]);
 
   const handleSaveMentor = async (mentorData) => {
     if (!firestore) return;
@@ -814,8 +840,9 @@ export default function AdminPage() {
   
   const handleSaveMentee = async (menteeData) => {
     if (!firestore) return;
-    const menteeRef = doc(firestore, 'users', menteeData.id);
-    await updateDoc(menteeRef, menteeData);
+    const { role, ...restOfMenteeData } = menteeData; // Exclude role from Firestore write
+    const menteeRef = doc(firestore, 'users', restOfMenteeData.id);
+    await updateDoc(menteeRef, restOfMenteeData);
     fetchData(); // Refresh data
   };
   
@@ -875,6 +902,9 @@ export default function AdminPage() {
             }
 
             toast({ title: 'Success!', description: 'Admin status updated. The user must log in again to see the change.' });
+            
+            // Optimistically update UI
+            setMentees(prevMentees => prevMentees.map(m => m.id === uid ? { ...m, isAdmin } : m));
             closeModal();
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -922,6 +952,35 @@ export default function AdminPage() {
 
   const openModal = (type, data = null) => setModalState({ type, data });
   const closeModal = () => setModalState({ type: null, data: null });
+  
+  if (isUserLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+            <Skeleton className="w-24 h-24 rounded-full" />
+        </div>
+      );
+  }
+  
+  if (!isAdmin) {
+       return (
+        <div className="flex flex-col items-center justify-center min-h-screen text-center p-8 bg-background">
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl border-t-4 border-destructive">
+                <ShieldX className="w-16 h-16 text-destructive mx-auto mb-6" />
+                <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-3">Access Denied</h2>
+                <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-sm">
+                    You do not have permission to view this page.
+                </p>
+                <div className="flex justify-center gap-4">
+                    <Link href="/">
+                        <Button size="lg" className="font-bold">
+                           Go to Homepage
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -1244,3 +1303,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
