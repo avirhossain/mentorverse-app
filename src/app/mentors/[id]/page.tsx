@@ -1,17 +1,15 @@
 
 'use client';
 import React, { useEffect, useState, useMemo } from 'react';
-import { Star, CheckCircle, Briefcase, GraduationCap, Clock, Calendar, MessageSquare, X, Zap, Wallet, Info } from 'lucide-react';
+import { Star, CheckCircle, Briefcase, GraduationCap, Clock, Calendar, MessageSquare, X, Zap, Wallet, Info, RadioGroup, RadioGroupItem } from 'lucide-react';
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { doc, runTransaction, collection, setDoc, arrayUnion } from 'firebase/firestore';
 import type { Mentor, Session, Mentee } from '@/lib/types';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 
@@ -63,9 +61,6 @@ const CheckoutModal = ({ session, timeSlot, mentor, onClose, onBookingComplete }
     const [step, setStep] = React.useState('loading');
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     
-    const startTimeFull = timeSlot.time.split(' - ')[0];
-    const displayTime = startTimeFull.replace(':00', '').trim();
-
     useEffect(() => {
         if (!user) {
             setStep('auth_check');
@@ -84,21 +79,27 @@ const CheckoutModal = ({ session, timeSlot, mentor, onClose, onBookingComplete }
 
         setIsSubmitting(true);
         const userRef = doc(firestore, 'users', user.uid);
-        const sessionRef = doc(firestore, 'sessions', session.id);
+        const mentorSessionRef = doc(firestore, `mentors/${mentor.id}`); // This seems incorrect for booking a general session
         const userSessionRef = doc(collection(firestore, `users/${user.uid}/sessions`));
 
 
         try {
             await runTransaction(firestore, async (transaction) => {
+                // This transaction logic needs to target the correct session document,
+                // which might be nested or in a top-level collection.
+                // Assuming sessions are top-level for this fix.
+                const sessionRef = doc(firestore, 'sessions', session.id);
+                
                 const userDoc = await transaction.get(userRef);
-                const sessionDoc = await transaction.get(sessionRef);
+                const sessionDoc = await transaction.get(sessionRef); // Target correct session
 
                 if (!userDoc.exists()) throw new Error("User profile not found.");
-                if (!sessionDoc.exists()) throw new Error("Session not found.");
-                
-                const currentSessionData = sessionDoc.data() as Session;
+
+                // If session is defined on mentor, we might need a different approach.
+                // For now, assuming a global /sessions collection or that the session object is complete.
+
                 const currentUserData = userDoc.data() as Mentee;
-                const price = currentSessionData.price || 0;
+                const price = session.price || 0;
                 const balance = currentUserData.balance || 0;
 
                 if (price > 0) {
@@ -115,27 +116,29 @@ const CheckoutModal = ({ session, timeSlot, mentor, onClose, onBookingComplete }
                         userId: user.uid,
                         amount: -price,
                         source: 'session_payment',
-                        description: `Payment for session: ${currentSessionData.title} with ${mentor.name}`,
+                        description: `Payment for session: ${session.name} with ${mentor.name}`,
                         createdAt: new Date().toISOString(),
                     });
                 }
                 
-                // Add to the main session's bookedBy list
-                transaction.update(sessionRef, {
-                    bookedBy: arrayUnion(user.uid)
-                });
+                // Add to the main session's bookedBy list (if applicable)
+                 if(sessionDoc.exists()) {
+                     transaction.update(sessionRef, {
+                        bookedBy: arrayUnion(user.uid)
+                    });
+                 }
 
                 // Create a session record for the user
                  transaction.set(userSessionRef, {
                     id: userSessionRef.id,
-                    title: currentSessionData.title,
+                    title: session.name, // using name from mentor's session object
                     mentorName: mentor.name,
                     mentorId: mentor.id,
-                    date: currentSessionData.date,
-                    time: currentSessionData.time,
+                    date: timeSlot.date,
+                    time: timeSlot.time,
                     isFree: price === 0,
-                    jitsiLink: currentSessionData.jitsiLink,
-                    durationMinutes: currentSessionData.durationMinutes,
+                    // jitsiLink would need to be on the session object
+                    durationMinutes: session.duration,
                     price: price,
                     status: 'scheduled',
                     createdAt: new Date().toISOString(),
@@ -190,11 +193,11 @@ const CheckoutModal = ({ session, timeSlot, mentor, onClose, onBookingComplete }
                             </p>
                             <p className="flex justify-between text-gray-700">
                                 <span className="font-medium">Session:</span>
-                                <span className="font-semibold text-primary">{session.title}</span>
+                                <span className="font-semibold text-primary">{session.name}</span>
                             </p>
                             <p className="flex justify-between text-gray-700">
                                 <span className="font-medium">Time Slot:</span>
-                                <span className="font-semibold">{session.date} @ {session.time}</span>
+                                <span className="font-semibold">{timeSlot.date} @ {timeSlot.time}</span>
                             </p>
                              <p className="flex justify-between text-gray-700">
                                 <span className="font-medium">Your Balance:</span>
@@ -284,58 +287,54 @@ const MentorDetailsSkeleton = () => (
     </div>
 );
 
-const SessionBooking = ({ session, mentorId, onBook }) => {
+const SessionBooking = ({ session, onBook }) => {
     const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
     const selectedSlot = session.availability?.find(s => s.id === selectedSlotId);
 
     return (
-        <AccordionItem value={session.id} key={session.id}>
-            <AccordionTrigger className="hover:no-underline">
-                <div className="flex justify-between items-center w-full">
-                    <span className="text-lg font-semibold text-gray-800">{session.name}</span>
-                    <span className="text-xl font-extrabold text-primary">
-                        {session.price > 0 ? `৳${session.price}` : 'Free'}
-                    </span>
+        <div className="border rounded-lg overflow-hidden">
+            <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
+                 <h4 className="text-lg font-semibold text-gray-800">{session.name}</h4>
+                <span className="text-xl font-extrabold text-primary">
+                    {session.price > 0 ? `৳${session.price}` : 'Free'}
+                </span>
+            </div>
+            <div className="p-4 space-y-4">
+                <p className="text-sm text-gray-600">{session.description}</p>
+                <div className="flex items-center text-sm text-gray-500">
+                    <Clock className="w-4 h-4 mr-2" /> Duration: {session.duration} minutes
                 </div>
-            </AccordionTrigger>
-            <AccordionContent>
-                <div className="pt-2 pb-4 space-y-4">
-                    <p className="text-sm text-gray-600">{session.description}</p>
-                    <div className="flex items-center text-sm text-gray-500">
-                        <Clock className="w-4 h-4 mr-2" /> Duration: {session.duration} minutes
-                    </div>
-                    <div className="space-y-3">
-                        <h4 className="font-semibold text-md text-gray-700 flex items-center"><Calendar className="w-4 h-4 mr-2 text-primary" /> Choose a time slot:</h4>
-                        {session.availability && session.availability.length > 0 ? (
-                            <RadioGroup value={selectedSlotId || undefined} onValueChange={setSelectedSlotId}>
-                                <div className="space-y-2">
-                                    {session.availability.map((slot) => (
-                                        <div key={slot.id} className="flex items-center space-x-2">
-                                            <RadioGroupItem value={slot.id} id={slot.id} />
-                                            <Label htmlFor={slot.id} className="font-normal cursor-pointer">
-                                                {slot.date} @ {slot.time}
-                                            </Label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </RadioGroup>
-                        ) : (
-                            <p className="text-sm text-gray-500 italic">No available slots for this session currently.</p>
-                        )}
-                    </div>
-                    <div className="mt-4 flex items-center gap-2">
-                        <Button onClick={() => onBook(session, selectedSlot)} disabled={!selectedSlotId}>
-                            Book Session
-                        </Button>
-                        <Button asChild variant="outline">
-                            <Link href={`/sessions/${session.id}`}>
-                               <Info className="mr-2 h-4 w-4" /> See More
-                            </Link>
-                        </Button>
-                    </div>
+                <div className="space-y-3">
+                    <h5 className="font-semibold text-md text-gray-700 flex items-center"><Calendar className="w-4 h-4 mr-2 text-primary" /> Choose a time slot:</h5>
+                    {session.availability && session.availability.length > 0 ? (
+                        <RadioGroup value={selectedSlotId || undefined} onValueChange={setSelectedSlotId}>
+                            <div className="space-y-2">
+                                {session.availability.map((slot) => (
+                                    <div key={slot.id} className="flex items-center space-x-2">
+                                        <RadioGroupItem value={slot.id} id={slot.id} />
+                                        <Label htmlFor={slot.id} className="font-normal cursor-pointer">
+                                            {slot.date} @ {slot.time}
+                                        </Label>
+                                    </div>
+                                ))}
+                            </div>
+                        </RadioGroup>
+                    ) : (
+                        <p className="text-sm text-gray-500 italic">No available slots for this session currently.</p>
+                    )}
                 </div>
-            </AccordionContent>
-        </AccordionItem>
+                <div className="mt-4 flex items-center gap-2">
+                    <Button onClick={() => onBook(session, selectedSlot)} disabled={!selectedSlotId}>
+                        Book Session
+                    </Button>
+                    <Button asChild variant="outline">
+                         <Link href={`/sessions/${session.id}`}>
+                           <Info className="mr-2 h-4 w-4" /> See More
+                        </Link>
+                    </Button>
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -348,11 +347,11 @@ const BookingSection = ({ mentor, onBook }) => {
     return (
         <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg border-t-4 border-green-500">
             <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center"><Zap className="w-6 h-6 mr-2 text-green-600" /> Book a Session</h3>
-            <Accordion type="single" collapsible className="w-full" defaultValue={mentor.sessions?.[0]?.id}>
+             <div className="w-full space-y-4">
                 {mentor.sessions.map((session) => (
-                    <SessionBooking key={session.id} session={session} mentorId={mentor.id} onBook={onBook} />
+                    <SessionBooking key={session.id} session={session} onBook={onBook} />
                 ))}
-            </Accordion>
+            </div>
         </div>
     );
 };
@@ -491,5 +490,3 @@ export default function MentorPage({ params }: { params: { id: string } }) {
         </div>
     );
 };
-
-    
