@@ -51,9 +51,9 @@ export default function LoginPage() {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to set admin claim.');
             }
-             toast({ title: 'Success', description: 'Admin claim set successfully.' });
         } catch (error) {
             console.error("Failed to set admin claim:", error);
+            // Non-blocking, but shows an error to the user
             toast({ variant: 'destructive', title: 'Admin Grant Failed', description: error.message });
         }
     };
@@ -104,7 +104,7 @@ export default function LoginPage() {
         }
     }, [user, isUserLoading]);
 
-    const handleLogin = async (values: z.infer<typeof loginSchema>>({
+    const handleLogin = async (values: z.infer<typeof loginSchema>) => {
         if (!auth) return;
         setIsLoading(true);
 
@@ -233,5 +233,3 @@ export default function LoginPage() {
         </div>
     );
 }
-
-    
