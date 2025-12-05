@@ -152,116 +152,35 @@ const RatingStars = ({ count }) => (
     </div>
 );
 
-const ProfileInputField = ({ label, value, onChange, icon: Icon, type = 'text', readOnly = false }) => (
+const ProfileInfoField = ({ label, value, icon: Icon }) => (
     <div className="flex flex-col space-y-1">
         <label className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">{label}</label>
-        <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary transition duration-150">
-            <div className="p-3 bg-gray-50 dark:bg-gray-700 text-primary">
+        <div className="flex items-center">
+            <div className="text-primary mr-3">
                 <Icon className="w-5 h-5" />
             </div>
-            <input
-                type={type}
-                value={value || ''}
-                onChange={onChange}
-                readOnly={readOnly}
-                className={`w-full p-3 text-gray-800 dark:text-white dark:bg-gray-800 focus:outline-none ${readOnly ? 'bg-gray-100 cursor-not-allowed dark:bg-gray-900' : ''}`}
+            <p className="w-full p-3 text-gray-800 dark:text-white">
+                {value || <span className="text-gray-400 dark:text-gray-500">Not set</span>}
+            </p>
+        </div>
+    </div>
+);
+
+const ProfilePicture = ({ imageUrl }) => (
+    <div className="flex flex-col items-center justify-center mb-8">
+        <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-primary shadow-xl">
+            <img
+                src={imageUrl}
+                alt="Profile"
+                className="w-full h-full object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = 'https://placehold.co/150x150/7c3aed/ffffff?text=AR' }}
             />
         </div>
     </div>
 );
 
-const ProfilePictureUploader = ({ currentImage, onImageChange }) => {
-    const [preview, setPreview] = useState(currentImage);
 
-    useEffect(() => {
-        setPreview(currentImage);
-    }, [currentImage]);
-
-    const handleFileChange = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPreview(reader.result as string);
-                onImageChange(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const inputId = "profile-picture-input";
-
-    return (
-        <div className="flex flex-col items-center justify-center mb-8">
-            <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-primary shadow-xl transition duration-300 hover:scale-[1.03]">
-                <img
-                    src={preview}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).onerror = null; (e.target as HTMLImageElement).src = 'https://placehold.co/150x150/7c3aed/ffffff?text=AR' }}
-                />
-                <label
-                    htmlFor={inputId}
-                    className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 hover:opacity-100 cursor-pointer transition-opacity duration-300"
-                    title="Upload new image"
-                >
-                    <UploadCloud className="w-6 h-6 text-white" />
-                </label>
-            </div>
-            <input
-                id={inputId}
-                type="file"
-                accept="image/*"
-                capture="user"
-                onChange={handleFileChange}
-                className="hidden"
-            />
-        </div>
-    );
-};
-
-
-const ProfileDetails = ({ user, onSave }) => {
-    const initialFormData = useMemo(() => ({
-        name: user?.name || '',
-        email: user?.email || '',
-        phone: user?.phone || '',
-        sex: user?.sex || '',
-        institution: user?.institution || '',
-        job: user?.job || '',
-        birthDate: user?.birthDate || '',
-        profileImageUrl: user?.profileImageUrl || 'https://placehold.co/150x150/7c3aed/ffffff?text=AR',
-    }), [user]);
-
-    const [formData, setFormData] = useState(initialFormData);
-
-    useEffect(() => {
-        setFormData(initialFormData);
-    }, [initialFormData]);
-
-    const hasChanges = useMemo(() => {
-        return ['name', 'phone', 'sex', 'institution', 'job', 'birthDate', 'profileImageUrl'].some(key => initialFormData[key] !== formData[key]);
-    }, [formData, initialFormData]);
-
-    const handleChange = useCallback((key, value) => {
-        setFormData(prev => ({ ...prev, [key]: value }));
-    }, []);
-
-    const handleImageChange = useCallback((newImageUrl) => {
-        setFormData(prev => ({ ...prev, profileImageUrl: newImageUrl }));
-    }, []);
-
-    const { toast } = useToast();
-
-    const handleSubmit = async () => {
-        try {
-            await onSave(formData);
-            toast({ title: "Success!", description: "Profile saved successfully!" });
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message });
-        }
-    };
-    
+const ProfileDetails = ({ user }) => {
     if (!user) {
         return (
             <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl border-t-4 border-primary h-full">
@@ -280,68 +199,18 @@ const ProfileDetails = ({ user, onSave }) => {
                 Your Profile Details
             </h2>
 
-            <ProfilePictureUploader
-                currentImage={formData.profileImageUrl}
-                onImageChange={handleImageChange}
+            <ProfilePicture
+                imageUrl={user?.profileImageUrl || 'https://placehold.co/150x150/7c3aed/ffffff?text=AR'}
             />
 
             <div className="space-y-4">
-                <ProfileInputField
-                    label="Full Name"
-                    value={formData.name}
-                    onChange={(e) => handleChange('name', e.target.value)}
-                    icon={User}
-                />
-                <ProfileInputField
-                    label="Email"
-                    value={formData.email}
-                    readOnly={true}
-                    icon={Mail}
-                />
-                <ProfileInputField
-                    label="Phone Number"
-                    value={formData.phone}
-                    onChange={(e) => handleChange('phone', e.target.value)}
-                    icon={Phone}
-                    type="tel"
-                />
-                <ProfileInputField
-                    label="Sex/Gender"
-                    value={formData.sex}
-                    onChange={(e) => handleChange('sex', e.target.value)}
-                    icon={User}
-                />
-                <ProfileInputField
-                    label="Date of Birth"
-                    value={formData.birthDate}
-                    onChange={(e) => handleChange('birthDate', e.target.value)}
-                    icon={Cake}
-                    type="date"
-                />
-                <ProfileInputField
-                    label="Institution"
-                    value={formData.institution}
-                    onChange={(e) => handleChange('institution', e.target.value)}
-                    icon={Building}
-                />
-                <ProfileInputField
-                    label="Job Title"
-                    value={formData.job}
-                    onChange={(e) => handleChange('job', e.target.value)}
-                    icon={Briefcase}
-                />
-
-                {hasChanges && (
-                    <div className="pt-4">
-                        <button
-                            onClick={handleSubmit}
-                            className="w-full flex items-center justify-center py-3 px-4 text-lg font-semibold rounded-xl text-white bg-primary hover:bg-primary/90 transition duration-150 shadow-lg"
-                        >
-                            <Save className="w-5 h-5 mr-2" />
-                            Submit Changes
-                        </button>
-                    </div>
-                )}
+                <ProfileInfoField label="Full Name" value={user.name} icon={User} />
+                <ProfileInfoField label="Email" value={user.email} icon={Mail} />
+                <ProfileInfoField label="Phone Number" value={user.phone} icon={Phone} />
+                <ProfileInfoField label="Sex/Gender" value={user.sex} icon={User} />
+                <ProfileInfoField label="Date of Birth" value={user.birthDate} icon={Cake} />
+                <ProfileInfoField label="Institution" value={user.institution} icon={Building} />
+                <ProfileInfoField label="Job Title" value={user.job} icon={Briefcase} />
             </div>
         </div>
     );
@@ -716,11 +585,6 @@ export default function AccountPage() {
 
     const [showAddBalanceModal, setShowAddBalanceModal] = useState(false);
     const [sessionToReview, setSessionToReview] = useState(null);
-    
-    const handleSaveProfile = async (updatedData) => {
-        if (!userDocRef) throw new Error("User is not signed in.");
-        await setDoc(userDocRef, updatedData, { merge: true });
-    };
 
     const handleBalanceUpdate = () => {
         setBalanceUpdate(prev => prev + 1);
@@ -766,7 +630,7 @@ export default function AccountPage() {
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             <aside className="lg:col-span-1">
-                                <ProfileDetails user={menteeData} onSave={handleSaveProfile} />
+                                <ProfileDetails user={menteeData} />
                             </aside>
 
                             <div className="lg:col-span-2 space-y-8">

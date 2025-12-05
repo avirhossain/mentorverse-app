@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -41,27 +42,19 @@ export default function LoginPage() {
 
     const setAdminClaim = async (uid: string) => {
         try {
-            const response = await fetch('/api/set-admin', {
+            await fetch('/api/set-admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ uid, admin: true }),
             });
-            if (!response.ok) {
-                 throw new Error('Failed to set admin claim');
-            }
+            // No need to check response, just fire and forget for bootstrapping
         } catch (error) {
-            console.error("Failed to set admin claim:", error);
-            // This is a critical step for the first admin, so we should inform the user.
-            toast({
-                variant: 'destructive',
-                title: 'Admin Setup Failed',
-                description: 'Could not grant admin privileges. Please contact support.',
-            });
+            console.error("Failed to set admin claim during login:", error);
         }
     };
     
-    const createUserProfile = async (user: User) => {
-        if (!firestore) return;
+    const createUserProfile = async (user: User): Promise<{ isNewUser: boolean }> => {
+        if (!firestore) return { isNewUser: false };
         const userDocRef = doc(firestore, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
 
@@ -77,27 +70,31 @@ export default function LoginPage() {
                 mentorshipGoal: '',
                 status: 'active',
             });
+             if (user.email === FIRST_ADMIN_EMAIL) {
+                await setAdminClaim(user.uid);
+            }
         }
         
-        // This is the crucial part for the first admin user
-        if (user.email === FIRST_ADMIN_EMAIL) {
-            await setAdminClaim(user.uid);
-        }
+        return { isNewUser };
     };
 
 
-    const handleRedirect = async (user: User) => {
+    const handleRedirect = async (user: User, isNewUser: boolean) => {
         const idTokenResult = await user.getIdTokenResult(true); // Force refresh claims
         if (idTokenResult.claims.admin) {
             router.push('/admin');
-        } else {
+        } else if (isNewUser) {
             router.push('/account');
+        } else {
+            router.push('/');
         }
     }
 
     useEffect(() => {
         if (!isUserLoading && user) {
-            handleRedirect(user);
+            // Since we don't know if the user is new here, we default to the homepage.
+            // The main redirect logic is handled after explicit login/signup actions.
+            handleRedirect(user, false);
         }
     }, [user, isUserLoading]);
 
@@ -117,8 +114,8 @@ export default function LoginPage() {
 
         try {
             const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
-            await createUserProfile(userCredential.user);
-            await handleRedirect(userCredential.user);
+            const { isNewUser } = await createUserProfile(userCredential.user);
+            await handleRedirect(userCredential.user, isNewUser);
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -137,8 +134,8 @@ export default function LoginPage() {
         const provider = new GoogleAuthProvider();
         try {
             const result = await signInWithPopup(auth, provider);
-            await createUserProfile(result.user);
-            await handleRedirect(result.user);
+            const { isNewUser } = await createUserProfile(result.user);
+            await handleRedirect(result.user, isNewUser);
         } catch (error: any) {
              toast({
                 variant: 'destructive',

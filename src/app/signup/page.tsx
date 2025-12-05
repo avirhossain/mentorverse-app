@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -44,14 +45,11 @@ export default function SignUpPage() {
 
     const setAdminClaim = async (uid: string) => {
         try {
-            const response = await fetch('/api/set-admin', {
+            await fetch('/api/set-admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ uid, admin: true }),
             });
-            if (!response.ok) {
-                throw new Error('Failed to set admin claim');
-            }
         } catch (error) {
             console.error("Failed to set admin claim:", error);
         }
@@ -84,6 +82,7 @@ export default function SignUpPage() {
         if (idTokenResult.claims.admin) {
             router.push('/admin');
         } else {
+            // All users from sign-up are new, so redirect to account page
             router.push('/account');
         }
     }
