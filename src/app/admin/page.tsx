@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown, Eye, Phone, PlayCircle, UserCog } from 'lucide-react';
@@ -1003,9 +1002,6 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-        router.push('/admin/login');
-    }
     if (firestore) {
       fetchData();
     }
@@ -1174,14 +1170,6 @@ export default function AdminPage() {
   const openModal = (type, data = null) => setModalState({ type, data });
   const closeModal = () => setModalState({ type: null, data: null });
   
-  if (isUserLoading || !user) {
-    return (
-        <div className="flex justify-center items-center h-screen">
-            <p>Loading admin dashboard...</p>
-        </div>
-    );
-  }
-
   const canWrite = currentAdmin?.canWrite ?? false;
   const canDelete = currentAdmin?.canDelete ?? false;
 
@@ -1388,6 +1376,7 @@ export default function AdminPage() {
                 ]}
                 renderActions={(session) => (
                      <>
+                        <Link href={`/admin/sessions/${session.id}`} className="text-sm text-primary hover:underline">View</Link>
                         {session.status === 'scheduled' && canWrite && (
                             <Button size="sm" onClick={() => handleUpdateSessionStatus(session, 'active')}>
                                 <PlayCircle className="w-4 h-4 mr-2" />
@@ -1402,24 +1391,6 @@ export default function AdminPage() {
                         {session.status === 'completed' && (
                             <span className="text-sm font-semibold text-gray-500">Completed</span>
                         )}
-                        {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('session', session)}><Edit className="w-4 h-4" /></Button>}
-                        {canDelete && <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the session: {session.title}.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete('sessions', session.id, session.title)}>Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>}
                     </>
                 )}
             />
