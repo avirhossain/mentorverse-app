@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -43,6 +44,7 @@ export default function AdminLoginPage() {
             });
             const data = await response.json();
             if (!response.ok) {
+                console.error("Server returned:", response.status, data);
                 throw new Error(data.error || 'Failed to set admin claim.');
             }
         } catch (error) {
