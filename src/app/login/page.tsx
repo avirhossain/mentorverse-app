@@ -18,11 +18,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Mail } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-
 const loginSchema = z.object({
   identifier: z.string().min(1, { message: 'Email or phone number is required.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
 });
+
+const FIRST_ADMIN_EMAIL = 'mmavir89@gmail.com';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -42,14 +43,41 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (!isUserLoading && user) {
-            router.push('/account');
+            user.getIdTokenResult().then((idTokenResult) => {
+                if (idTokenResult.claims.admin) {
+                    router.push('/admin');
+                } else {
+                    router.push('/account');
+                }
+            });
         }
     }, [user, isUserLoading, router]);
     
-    const createUserProfile = async (user) => {
+    const setAdminClaim = async (uid: string) => {
+        try {
+            await fetch('/api/set-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid, admin: true }),
+            });
+        } catch (error) {
+            console.error("Failed to set admin claim:", error);
+            // Non-critical, so we don't block the user flow
+        }
+    };
+
+    const createUserProfile = async (user: any) => {
         if (!firestore) return;
         const userDocRef = doc(firestore, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
+        
+        let isAdmin = false;
+        if (user.email === FIRST_ADMIN_EMAIL) {
+            isAdmin = true;
+            // This call can happen in the background
+            setAdminClaim(user.uid);
+        }
+
         if (!userDocSnap.exists()) {
             await setDoc(userDocRef, {
                 id: user.uid,
@@ -59,7 +87,7 @@ export default function LoginPage() {
                 interests: [],
                 mentorshipGoal: '',
                 status: 'active',
-                role: 'user',
+                isAdmin: isAdmin,
             });
         }
     };
@@ -81,8 +109,7 @@ export default function LoginPage() {
         try {
             const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
             await createUserProfile(userCredential.user);
-            toast({ title: 'Success', description: 'Logged in successfully!' });
-            router.push('/account');
+            // Let the useEffect handle redirection
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -91,8 +118,7 @@ export default function LoginPage() {
                     ? 'Invalid email or password. Please try again.'
                     : error.message || 'An unexpected error occurred.',
             });
-        } finally {
-            setIsLoading(false);
+             setIsLoading(false);
         }
     };
     
@@ -103,16 +129,14 @@ export default function LoginPage() {
         try {
             const result = await signInWithPopup(auth, provider);
             await createUserProfile(result.user);
-            toast({ title: 'Success', description: 'Logged in successfully!' });
-            router.push('/account');
+            // Let the useEffect handle redirection
         } catch (error: any) {
              toast({
                 variant: 'destructive',
                 title: 'Login Failed',
                 description: error.message || 'An unexpected error occurred.',
             });
-        } finally {
-            setIsLoading(false);
+             setIsLoading(false);
         }
     };
 

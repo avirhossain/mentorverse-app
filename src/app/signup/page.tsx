@@ -24,6 +24,8 @@ const signupSchema = z.object({
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
 });
 
+const FIRST_ADMIN_EMAIL = 'mmavir89@gmail.com';
+
 export default function SignUpPage() {
     const router = useRouter();
     const { user, isUserLoading } = useUser();
@@ -43,14 +45,44 @@ export default function SignUpPage() {
     
     useEffect(() => {
         if (!isUserLoading && user) {
-            router.push('/account');
+             user.getIdTokenResult().then((idTokenResult) => {
+                if (idTokenResult.claims.admin) {
+                    router.push('/admin');
+                } else {
+                    router.push('/account');
+                }
+            });
         }
     }, [user, isUserLoading, router]);
+
+    const setAdminClaim = async (uid: string) => {
+        // This function will be called for the first admin user.
+        // It makes a request to a serverless function that securely sets the custom claim.
+        try {
+            await fetch('/api/set-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                // Note: In a real app, this endpoint itself would need to be secured.
+                // For this bootstrapping process, we assume it can be called during the first admin's sign-up.
+                body: JSON.stringify({ uid, admin: true }),
+            });
+        } catch (error) {
+            console.error("Failed to set admin claim:", error);
+            // This is a non-critical failure for the user's sign-up flow, but should be logged.
+        }
+    };
     
-    const createUserProfile = async (user, extraData = {}) => {
+    const createUserProfile = async (user: any, extraData = {}) => {
         if (!firestore) return;
         const userDocRef = doc(firestore, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
+
+        let isAdmin = false;
+        if (user.email === FIRST_ADMIN_EMAIL) {
+            isAdmin = true;
+            await setAdminClaim(user.uid);
+        }
+        
         if (!userDocSnap.exists()) {
             await setDoc(userDocRef, {
                 id: user.uid,
@@ -60,7 +92,7 @@ export default function SignUpPage() {
                 interests: [],
                 mentorshipGoal: '',
                 status: 'active',
-                role: 'user',
+                isAdmin: isAdmin,
                 ...extraData,
             });
         }
@@ -76,22 +108,14 @@ export default function SignUpPage() {
         if (isPhoneNumber) {
             alert('Phone number sign-up is coming soon! Please use an email address.');
             setIsLoading(false);
-            // Example of how it might work in the future:
-            // const fullPhoneNumber = `+88${identifier}`;
-            // ... logic for SMS verification ...
-            // After verification, create user and profile
-            // const userCredential = await ...;
-            // await createUserProfile(userCredential.user, { phone: fullPhoneNumber });
             return;
         }
 
-        // Treat as email
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, identifier, password);
             await updateProfile(userCredential.user, { displayName: name });
             await createUserProfile(userCredential.user);
-            toast({ title: 'Success', description: 'Account created successfully!' });
-            router.push('/account');
+            // Let the useEffect handle redirection
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -100,8 +124,7 @@ export default function SignUpPage() {
                     ? 'This email is already registered. Please sign in.'
                     : error.message || 'An unexpected error occurred.',
             });
-        } finally {
-            setIsLoading(false);
+             setIsLoading(false);
         }
     };
     
@@ -112,16 +135,14 @@ export default function SignUpPage() {
         try {
             const result = await signInWithPopup(auth, provider);
             await createUserProfile(result.user);
-            toast({ title: 'Success', description: 'Account created successfully!' });
-            router.push('/account');
+            // Let the useEffect handle redirection
         } catch (error: any) {
              toast({
                 variant: 'destructive',
                 title: 'Sign Up Failed',
                 description: error.message || 'An unexpected error occurred.',
             });
-        } finally {
-            setIsLoading(false);
+             setIsLoading(false);
         }
     };
 
