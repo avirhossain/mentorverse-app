@@ -1,13 +1,12 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import { useAuth, useUser } from '@/firebase';
+import { useAuth } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Shield } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation';
 
 const adminLoginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -25,7 +24,6 @@ const adminLoginSchema = z.object({
 export default function AdminLoginPage() {
     const router = useRouter();
     const auth = useAuth();
-    const { isAdmin, isAuthCheckComplete } = useUser();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
 
@@ -36,14 +34,6 @@ export default function AdminLoginPage() {
             password: '',
         },
     });
-
-    useEffect(() => {
-        // This effect will handle redirecting an already logged-in admin.
-        // The AdminLayout handles redirecting non-admins away from other pages.
-        if (isAuthCheckComplete && isAdmin) {
-            router.push('/admin');
-        }
-    }, [isAdmin, isAuthCheckComplete, router]);
 
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
         if (!auth) {
@@ -58,14 +48,14 @@ export default function AdminLoginPage() {
 
         try {
             await signInWithEmailAndPassword(auth, values.email, values.password);
-            // On successful sign-in, the onAuthStateChanged listener will fire,
-            // the useUser hook will update with isAdmin status, and the useEffect above
-            // will handle the redirection.
+            // On successful sign-in, the AdminLayout's onAuthStateChanged listener will fire,
+            // the useUser hook will update with isAdmin status, and the layout will handle redirection.
             toast({
                 title: 'Login Successful',
                 description: 'Redirecting to the admin dashboard...',
             });
-            // We no longer need to manually push here. Let the hook do the work.
+            // Redirect is handled by the AdminLayout after auth state is confirmed.
+            router.push('/admin');
 
         } catch (error: any) {
              toast({
@@ -78,23 +68,6 @@ export default function AdminLoginPage() {
         }
     };
     
-    // While checking auth state, show a generic loading screen.
-    // If check is complete and user is admin, the useEffect will redirect.
-    if (!isAuthCheckComplete || isAdmin) {
-        return (
-             <div className="flex flex-col min-h-screen">
-                <Header currentView="admin" />
-                <div className="flex-1 flex items-center justify-center">
-                    <div className="p-8">
-                        <Skeleton className="h-8 w-48 mb-4" />
-                        <Skeleton className="h-4 w-64" />
-                    </div>
-                </div>
-            </div>
-        );
-    }
-    
-    // If auth check is complete and the user is NOT an admin, show the login form.
     return (
         <div className="min-h-screen bg-background">
             <Header currentView="admin" />

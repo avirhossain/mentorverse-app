@@ -18,34 +18,34 @@ export default function AdminLayout({
   const isLoginPage = pathname === '/admin/login';
 
   useEffect(() => {
-    // If auth check is not complete, we wait.
     if (!isAuthCheckComplete) {
+      // If the authentication check isn't complete, we don't do anything.
+      // The skeleton below will be shown for protected pages.
       return;
     }
 
-    // If auth check is complete, and the user is on the login page...
     if (isLoginPage) {
-      // ...and they are an admin, redirect them to the dashboard.
+      // If we are on the login page and the user is already an admin,
+      // redirect them to the main admin dashboard.
       if (isAdmin) {
         router.push('/admin');
       }
-      // Otherwise, they can stay on the login page.
     } else {
-      // For any other admin page, if the user is not an admin, redirect them away.
+      // If we are on any other admin page and the user is NOT an admin,
+      // redirect them to the login page.
       if (!isAdmin) {
         router.push('/admin/login');
       }
     }
-  }, [user, isAdmin, isAuthCheckComplete, router, pathname, isLoginPage]);
+  }, [isAdmin, isAuthCheckComplete, router, isLoginPage]);
   
-  // If we are on the login page, and the user isn't an admin yet, render it.
-  if (isLoginPage && !isAdmin) {
+  // CASE 1: If we are on the login page, always render it (the useEffect handles redirecting away if already logged in).
+  if (isLoginPage) {
     return <>{children}</>;
   }
 
-
-  // While checking authentication or if the user isn't an admin, show a loading state for protected pages.
-  if (!isAuthCheckComplete || !isAdmin) {
+  // CASE 2: If we are on a protected page and the user is not a verified admin yet, show a loading skeleton.
+  if (!isAdmin) {
     return (
       <div className="flex flex-col min-h-screen">
         <div className="p-8">
@@ -60,6 +60,6 @@ export default function AdminLayout({
     );
   }
 
-  // If the user is an admin and the auth check is complete, render the protected admin content.
+  // CASE 3: Auth check is complete, user is an admin, and it's not the login page. Render the protected content.
   return <>{children}</>;
 }
