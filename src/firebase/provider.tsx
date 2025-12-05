@@ -3,7 +3,7 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { Firestore, collection, query, where, getDocs, doc } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import type { AdminUser } from '@/lib/types';
@@ -15,7 +15,7 @@ interface UserAuthState {
   isAdmin: boolean;
   currentAdmin: AdminUser | null;
   isUserLoading: boolean;
-  isAuthCheckComplete: boolean;
+  isAuthCheckComplete: boolean; // New flag
   userError: Error | null;
 }
 
@@ -43,7 +43,12 @@ export const FirebaseContext = createContext<FirebaseContextState | undefined>(u
 /**
  * FirebaseProvider manages and provides Firebase services and user authentication state.
  */
-export const FirebaseProvider: React.FC<Omit<FirebaseContextState, keyof UserAuthState>> = ({
+export const FirebaseProvider: React.FC<{
+    children: ReactNode;
+    firebaseApp: FirebaseApp | null;
+    firestore: Firestore | null;
+    auth: Auth | null;
+}> = ({
   children,
   firebaseApp,
   firestore,
@@ -54,7 +59,7 @@ export const FirebaseProvider: React.FC<Omit<FirebaseContextState, keyof UserAut
     isAdmin: false,
     currentAdmin: null,
     isUserLoading: true,
-    isAuthCheckComplete: false,
+    isAuthCheckComplete: false, // Start as false
     userError: null,
   });
 
@@ -70,13 +75,13 @@ export const FirebaseProvider: React.FC<Omit<FirebaseContextState, keyof UserAut
       async (firebaseUser) => {
         if (firebaseUser) {
             try {
-                const adminsRef = collection(firestore, 'admins');
-                const q = query(adminsRef, where('email', '==', firebaseUser.email));
-                const querySnapshot = await getDocs(q);
+                // Check if the user is in the 'admins' collection
+                const adminRef = doc(firestore, 'admins', firebaseUser.email!);
+                const adminDoc = await getDocs(query(collection(firestore, 'admins'), where('email', '==', firebaseUser.email)));
 
-                if (!querySnapshot.empty) {
-                    const adminDoc = querySnapshot.docs[0];
-                    setUserAuthState({ user: firebaseUser, isAdmin: true, currentAdmin: adminDoc.data() as AdminUser, isUserLoading: false, isAuthCheckComplete: true, userError: null });
+                if (!adminDoc.empty) {
+                    const adminData = adminDoc.docs[0].data() as AdminUser;
+                    setUserAuthState({ user: firebaseUser, isAdmin: true, currentAdmin: adminData, isUserLoading: false, isAuthCheckComplete: true, userError: null });
                 } else {
                     setUserAuthState({ user: firebaseUser, isAdmin: false, currentAdmin: null, isUserLoading: false, isAuthCheckComplete: true, userError: null });
                 }
@@ -85,6 +90,7 @@ export const FirebaseProvider: React.FC<Omit<FirebaseContextState, keyof UserAut
                  setUserAuthState({ user: firebaseUser, isAdmin: false, currentAdmin: null, isUserLoading: false, isAuthCheckComplete: true, userError: error as Error });
             }
         } else {
+            // No user is logged in
             setUserAuthState({ user: null, isAdmin: false, currentAdmin: null, isUserLoading: false, isAuthCheckComplete: true, userError: null });
         }
       },
