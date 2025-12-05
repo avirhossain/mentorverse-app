@@ -26,7 +26,15 @@ export default function AdminLoginPage() {
     const auth = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    
+    const { isAdmin, isAuthCheckComplete } = useUser();
+
+    useEffect(() => {
+        // If an admin is already logged in, redirect them to the dashboard.
+        if (isAuthCheckComplete && isAdmin) {
+            router.push('/admin');
+        }
+    }, [isAdmin, isAuthCheckComplete, router]);
+
     const form = useForm<z.infer<typeof adminLoginSchema>>({
         resolver: zodResolver(adminLoginSchema),
         defaultValues: {
@@ -48,13 +56,13 @@ export default function AdminLoginPage() {
 
         try {
             await signInWithEmailAndPassword(auth, values.email, values.password);
-            // On successful sign-in, the AdminLayout's onAuthStateChanged listener will fire,
-            // the useUser hook will update with isAdmin status, and the layout will handle redirection.
+            // On successful sign-in, the useUser hook will update,
+            // and the useEffect above will handle the redirection.
             toast({
                 title: 'Login Successful',
                 description: 'Redirecting to the admin dashboard...',
             });
-            // The AdminLayout will handle the redirection.
+            // Intentionally not redirecting here to let the hook handle it.
         } catch (error: any) {
              toast({
                 variant: 'destructive',

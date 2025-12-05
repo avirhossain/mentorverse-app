@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect } from 'react';
@@ -12,9 +13,6 @@ export default function AdminLayout({
 }) {
   const { user, isAdmin, isAuthCheckComplete } = useUser();
   const router = useRouter();
-  const pathname = usePathname();
-
-  const isLoginPage = pathname === '/admin/login';
 
   useEffect(() => {
     // Wait until the initial authentication check is complete.
@@ -22,23 +20,16 @@ export default function AdminLayout({
       return;
     }
 
-    // If the user is a confirmed admin...
-    if (isAdmin) {
-      // ...and they are on the login page, redirect them to the dashboard.
-      if (isLoginPage) {
-        router.push('/admin');
-      }
-    } else {
-      // If the user is NOT an admin and they are NOT on the login page,
-      // force them to the login page.
-      if (!isLoginPage) {
-        router.push('/admin/login');
-      }
+    // If the check is complete and the user is not an admin,
+    // force them to the admin login page.
+    if (!isAdmin) {
+      router.push('/admin/login');
     }
-  }, [isAdmin, isAuthCheckComplete, router, isLoginPage, pathname]);
+  }, [isAdmin, isAuthCheckComplete, router]);
   
-  // If authentication is still loading and we are on a protected page, show a skeleton screen.
-  if (!isAuthCheckComplete && !isLoginPage) {
+  // If authentication is still loading OR if the user is not yet confirmed as an admin,
+  // show a skeleton screen to prevent flashing the admin content to non-admin users.
+  if (!isAuthCheckComplete || !isAdmin) {
     return (
       <div className="flex flex-col min-h-screen">
         <div className="p-8">
@@ -53,7 +44,6 @@ export default function AdminLayout({
     );
   }
   
-  // Render the children (either the login page for non-admins, or the dashboard for admins).
-  // The useEffect above handles all redirection logic.
+  // If the user is a confirmed admin, render the admin dashboard content.
   return <>{children}</>;
 }
