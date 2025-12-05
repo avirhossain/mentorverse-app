@@ -20,7 +20,7 @@ import { Mail } from 'lucide-react';
 
 const signupSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  email: z.string().email({ message: 'Invalid email address.' }),
+  identifier: z.string().min(1, { message: 'Email or phone number is required.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
 });
 
@@ -36,7 +36,7 @@ export default function SignUpPage() {
         resolver: zodResolver(signupSchema),
         defaultValues: {
             name: '',
-            email: '',
+            identifier: '',
             password: '',
         },
     });
@@ -47,7 +47,7 @@ export default function SignUpPage() {
         }
     }, [user, isUserLoading, router]);
     
-    const createUserProfile = async (user) => {
+    const createUserProfile = async (user, extraData = {}) => {
         if (!firestore) return;
         const userDocRef = doc(firestore, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
@@ -61,16 +61,34 @@ export default function SignUpPage() {
                 mentorshipGoal: '',
                 status: 'active',
                 role: 'user',
+                ...extraData,
             });
         }
     };
 
-    const handleEmailSignUp = async (values: z.infer<typeof signupSchema>) => {
+    const handleSignUp = async (values: z.infer<typeof signupSchema>) => {
         if (!auth) return;
         setIsLoading(true);
+
+        const { name, identifier, password } = values;
+        const isPhoneNumber = /^\d+$/.test(identifier);
+
+        if (isPhoneNumber) {
+            alert('Phone number sign-up is coming soon! Please use an email address.');
+            setIsLoading(false);
+            // Example of how it might work in the future:
+            // const fullPhoneNumber = `+88${identifier}`;
+            // ... logic for SMS verification ...
+            // After verification, create user and profile
+            // const userCredential = await ...;
+            // await createUserProfile(userCredential.user, { phone: fullPhoneNumber });
+            return;
+        }
+
+        // Treat as email
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-            await updateProfile(userCredential.user, { displayName: values.name });
+            const userCredential = await createUserWithEmailAndPassword(auth, identifier, password);
+            await updateProfile(userCredential.user, { displayName: name });
             await createUserProfile(userCredential.user);
             toast({ title: 'Success', description: 'Account created successfully!' });
             router.push('/account');
@@ -78,7 +96,9 @@ export default function SignUpPage() {
             toast({
                 variant: 'destructive',
                 title: 'Sign Up Failed',
-                description: error.message || 'An unexpected error occurred.',
+                description: error.code === 'auth/email-already-in-use' 
+                    ? 'This email is already registered. Please sign in.'
+                    : error.message || 'An unexpected error occurred.',
             });
         } finally {
             setIsLoading(false);
@@ -128,7 +148,7 @@ export default function SignUpPage() {
                     </div>
 
                      <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleEmailSignUp)} className="space-y-4">
+                        <form onSubmit={form.handleSubmit(handleSignUp)} className="space-y-4">
                              <FormField
                                 control={form.control}
                                 name="name"
@@ -144,12 +164,12 @@ export default function SignUpPage() {
                             />
                             <FormField
                                 control={form.control}
-                                name="email"
+                                name="identifier"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Email Address</FormLabel>
+                                        <FormLabel>Email or Phone</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="name@example.com" {...field} />
+                                            <Input placeholder="name@example.com or 01..." {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

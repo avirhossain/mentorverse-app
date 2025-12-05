@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -16,9 +16,11 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, Mail } from 'lucide-react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+
 
 const loginSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address.' }),
+  identifier: z.string().min(1, { message: 'Email or phone number is required.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
 });
 
@@ -26,13 +28,14 @@ export default function LoginPage() {
     const router = useRouter();
     const { user, isUserLoading } = useUser();
     const auth = useAuth();
+    const firestore = useFirestore();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm<z.infer<typeof loginSchema>>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
-            email: '',
+            identifier: '',
             password: '',
         },
     });
@@ -42,12 +45,47 @@ export default function LoginPage() {
             router.push('/account');
         }
     }, [user, isUserLoading, router]);
+    
+    const createUserProfile = async (user) => {
+        if (!firestore) return;
+        const userDocRef = doc(firestore, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (!userDocSnap.exists()) {
+            await setDoc(userDocRef, {
+                id: user.uid,
+                email: user.email,
+                name: user.displayName,
+                balance: 0,
+                interests: [],
+                mentorshipGoal: '',
+                status: 'active',
+                role: 'user',
+            });
+        }
+    };
 
-    const handleEmailLogin = async (values: z.infer<typeof loginSchema>) => {
+    const handleLogin = async (values: z.infer<typeof loginSchema>) => {
         if (!auth) return;
         setIsLoading(true);
+
+        const { identifier, password } = values;
+        
+        // Basic check to see if it's a phone number (just checks for digits)
+        const isPhoneNumber = /^\d+$/.test(identifier);
+
+        if (isPhoneNumber) {
+            // For now, phone login is not fully implemented with SMS verification
+            alert('Phone number login is coming soon! Please use your email for now.');
+            setIsLoading(false);
+            // Example of how it would work:
+            // const fullPhoneNumber = `+88${identifier}`;
+            // Handle phone number login logic here (e.g. with reCAPTCHA and verification code)
+            return;
+        }
+
+        // Treat as email
         try {
-            await signInWithEmailAndPassword(auth, values.email, values.password);
+            await signInWithEmailAndPassword(auth, identifier, password);
             toast({ title: 'Success', description: 'Logged in successfully!' });
             router.push('/account');
         } catch (error: any) {
@@ -68,7 +106,8 @@ export default function LoginPage() {
         setIsLoading(true);
         const provider = new GoogleAuthProvider();
         try {
-            await signInWithPopup(auth, provider);
+            const result = await signInWithPopup(auth, provider);
+            await createUserProfile(result.user);
             toast({ title: 'Success', description: 'Logged in successfully!' });
             router.push('/account');
         } catch (error: any) {
@@ -105,15 +144,15 @@ export default function LoginPage() {
                     </div>
 
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleEmailLogin)} className="space-y-4">
+                        <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
                             <FormField
                                 control={form.control}
-                                name="email"
+                                name="identifier"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Email Address</FormLabel>
+                                        <FormLabel>Email or Phone</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="name@example.com" {...field} />
+                                            <Input placeholder="name@example.com or 01..." {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
