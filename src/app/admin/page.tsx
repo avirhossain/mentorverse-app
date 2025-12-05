@@ -1,7 +1,7 @@
 
 'use client';
 import React, { useState, useEffect } from 'react';
-import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown, Eye, Phone } from 'lucide-react';
+import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown, Eye, Phone, PlayCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -912,6 +912,18 @@ export default function AdminPage() {
     }
     fetchData(); // Refresh data
   };
+
+  const handleUpdateSessionStatus = async (session: Session, status: 'active' | 'completed') => {
+      if (!firestore) return;
+      const sessionRef = doc(firestore, 'sessions', session.id);
+      try {
+          await updateDoc(sessionRef, { status: status });
+          toast({ title: 'Success!', description: `Session "${session.title}" is now ${status}.` });
+          fetchData();
+      } catch (error) {
+          toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+      }
+  };
   
   const handleSaveTip = async (tipData, isEditing) => {
     if (!firestore) return;
@@ -1193,6 +1205,20 @@ export default function AdminPage() {
                 ]}
                 renderActions={(session) => (
                      <>
+                        {session.status === 'scheduled' && (
+                            <Button size="sm" onClick={() => handleUpdateSessionStatus(session, 'active')}>
+                                <PlayCircle className="w-4 h-4 mr-2" />
+                                Start Session
+                            </Button>
+                        )}
+                        {session.status === 'active' && (
+                             <Button size="sm" variant="destructive" onClick={() => handleUpdateSessionStatus(session, 'completed')}>
+                                End Session
+                            </Button>
+                        )}
+                        {session.status === 'completed' && (
+                            <span className="text-sm font-semibold text-gray-500">Completed</span>
+                        )}
                         <Button variant="ghost" size="sm" onClick={() => openModal('session', session)}><Edit className="w-4 h-4" /></Button>
                          <AlertDialog>
                             <AlertDialogTrigger asChild>

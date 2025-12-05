@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -132,6 +132,27 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
         setBookingUpdate(prev => prev + 1);
     };
 
+    const [canJoin, setCanJoin] = useState(false);
+
+    useEffect(() => {
+        if (!session) return;
+
+        const checkTime = () => {
+            const sessionDateTime = new Date(`${session.date} ${session.time}`);
+            const now = new Date();
+            const tenMinutes = 10 * 60 * 1000;
+            
+            const isTimeCorrect = sessionDateTime.getTime() - now.getTime() < tenMinutes;
+            const isSessionActive = session.status === 'active';
+            
+            setCanJoin(isSessionActive && isTimeCorrect);
+        };
+
+        checkTime();
+        const interval = setInterval(checkTime, 60000);
+        return () => clearInterval(interval);
+    }, [session]);
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-background">
@@ -197,10 +218,12 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
                             </div>
                             {isBooked ? (
                                 <div className="text-center mt-6">
-                                    <Button variant="outline" disabled className="w-full font-bold">
-                                        <Video className="mr-2" /> Join Session
+                                    <Button asChild variant={canJoin ? 'default' : 'outline'} disabled={!canJoin} className="w-full font-bold">
+                                        <a href={canJoin ? session.jitsiLink : undefined} target="_blank" rel="noopener noreferrer">
+                                            <Video className="mr-2" /> Join Session
+                                        </a>
                                     </Button>
-                                    <p className="text-xs text-gray-500 mt-2">Link will be active 10m before the session.</p>
+                                    <p className="text-xs text-gray-500 mt-2">Link will be active 10m before the session starts.</p>
                                 </div>
                             ) : (
                                  <Button 

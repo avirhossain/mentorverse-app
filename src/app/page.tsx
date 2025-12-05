@@ -85,6 +85,28 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
     const availableSeats = session.maxParticipants - (session.bookedBy?.length || 0);
     const isFull = availableSeats <= 0;
 
+    const [canJoin, setCanJoin] = useState(false);
+
+    useEffect(() => {
+        if (!isBooked) return;
+
+        const checkTime = () => {
+            const sessionDateTime = new Date(`${session.date} ${session.time}`);
+            const now = new Date();
+            const tenMinutes = 10 * 60 * 1000;
+            
+            // This comparison is naive and should be improved with a proper date library in a real app
+            const isTimeCorrect = sessionDateTime.getTime() - now.getTime() < tenMinutes;
+            const isSessionActive = session.status === 'active';
+            
+            setCanJoin(isSessionActive && isTimeCorrect);
+        };
+
+        checkTime();
+        const interval = setInterval(checkTime, 60000); // Check every minute
+        return () => clearInterval(interval);
+    }, [session.date, session.time, session.status, isBooked]);
+
     return (
     <div className="bg-white p-6 rounded-xl shadow-xl border-l-8 border-primary flex flex-col justify-between transition duration-300 hover:shadow-2xl hover:scale-[1.01] transform relative">
          <div className={`absolute top-4 right-4 px-3 py-1 text-xs font-bold text-white rounded-full ${session.isFree ? 'bg-accent' : 'bg-primary'}`}>
@@ -117,10 +139,12 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
         <div className="mt-6">
             {isBooked ? (
                  <div className="text-center">
-                    <Button variant="outline" disabled className="w-full font-bold">
-                        <Video className="mr-2" /> Join Session
+                    <Button asChild variant={canJoin ? 'default' : 'outline'} disabled={!canJoin}>
+                        <a href={canJoin ? session.jitsiLink : undefined} target="_blank" rel="noopener noreferrer" className="w-full font-bold">
+                            <Video className="mr-2" /> Join Session
+                        </a>
                     </Button>
-                    <p className="text-xs text-gray-500 mt-2">Link will be active 10m before the session.</p>
+                    <p className="text-xs text-gray-500 mt-2">Link will be active 10m before the session starts.</p>
                 </div>
             ) : (
                 <div className="flex items-center gap-2">

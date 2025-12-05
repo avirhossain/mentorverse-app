@@ -450,39 +450,32 @@ const JoinButton = ({ session }) => {
         // This is a simplified check. A robust implementation would use a library like date-fns
         // and a proper date/time string format (e.g., ISO 8601) in the Session object.
         const checkTime = () => {
-            // Placeholder: Assume session.date is "YYYY-MM-DD" and session.time is "HH:MM AM/PM"
-            // This logic is for demonstration and will likely need to be adapted
             const sessionDateTime = new Date(`${session.date} ${session.time}`);
             const now = new Date();
             const tenMinutes = 10 * 60 * 1000;
             
             // This comparison is naive and should be improved
-            if (sessionDateTime.getTime() - now.getTime() < tenMinutes) {
-                setCanJoin(true);
-            }
+            const isTimeCorrect = sessionDateTime.getTime() - now.getTime() < tenMinutes;
+            const isSessionActive = session.status === 'active';
+            
+            setCanJoin(isSessionActive && isTimeCorrect);
         };
 
         checkTime();
         const interval = setInterval(checkTime, 60000); // Check every minute
         return () => clearInterval(interval);
-    }, [session]);
+    }, [session.date, session.time, session.status]);
 
-    if (canJoin) {
-        return (
-            <Button asChild>
-                <a href={session.jitsiLink} target="_blank" rel="noopener noreferrer">
+    return (
+        <div className="text-center">
+            <Button asChild variant={canJoin ? 'default' : 'outline'} disabled={!canJoin}>
+                <a href={canJoin ? session.jitsiLink : undefined} target="_blank" rel="noopener noreferrer" className="w-full">
                     <Video className="w-4 h-4 mr-2" />
                     Join Session
                 </a>
             </Button>
-        );
-    }
-
-    return (
-        <Button variant="outline" disabled>
-            <Clock className="w-4 h-4 mr-2" />
-            Join link active 10m before
-        </Button>
+            <p className="text-xs text-gray-500 mt-2">Link active 10m before start</p>
+        </div>
     );
 };
 

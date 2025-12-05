@@ -189,6 +189,11 @@
         "setupRequirements": {
             "type": "string",
             "description": "Any technical or other setup requirements."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["scheduled", "active", "completed"],
+          "description": "The current status of the session, controlled by the admin."
         }
       },
       "required": [
