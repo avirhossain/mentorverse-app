@@ -5,7 +5,7 @@ import { Star, CheckCircle, Briefcase, GraduationCap, Clock, Calendar, MessageSq
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { doc, runTransaction, collection, setDoc } from 'firebase/firestore';
+import { doc, runTransaction, collection, setDoc, arrayUnion } from 'firebase/firestore';
 import type { Mentor, Session, Mentee } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from '@/components/ui/button';
@@ -84,14 +84,21 @@ const CheckoutModal = ({ session, timeSlot, mentor, onClose, onBookingComplete }
 
         setIsSubmitting(true);
         const userRef = doc(firestore, 'users', user.uid);
+        const sessionRef = doc(firestore, 'sessions', session.id);
+        const userSessionRef = doc(collection(firestore, `users/${user.uid}/sessions`));
+
 
         try {
             await runTransaction(firestore, async (transaction) => {
                 const userDoc = await transaction.get(userRef);
+                const sessionDoc = await transaction.get(sessionRef);
+
                 if (!userDoc.exists()) throw new Error("User profile not found.");
+                if (!sessionDoc.exists()) throw new Error("Session not found.");
                 
+                const currentSessionData = sessionDoc.data() as Session;
                 const currentUserData = userDoc.data() as Mentee;
-                const price = session.price || 0;
+                const price = currentSessionData.price || 0;
                 const balance = currentUserData.balance || 0;
 
                 if (price > 0) {
@@ -108,21 +115,27 @@ const CheckoutModal = ({ session, timeSlot, mentor, onClose, onBookingComplete }
                         userId: user.uid,
                         amount: -price,
                         source: 'session_payment',
-                        description: `Payment for session: ${session.name} with ${mentor.name}`,
+                        description: `Payment for session: ${currentSessionData.title} with ${mentor.name}`,
                         createdAt: new Date().toISOString(),
                     });
                 }
                 
-                const newSessionRef = doc(collection(firestore, 'users', user.uid, 'sessions'));
-                 transaction.set(newSessionRef, {
-                    id: newSessionRef.id,
-                    title: session.name,
+                // Add to the main session's bookedBy list
+                transaction.update(sessionRef, {
+                    bookedBy: arrayUnion(user.uid)
+                });
+
+                // Create a session record for the user
+                 transaction.set(userSessionRef, {
+                    id: userSessionRef.id,
+                    title: currentSessionData.title,
                     mentorName: mentor.name,
                     mentorId: mentor.id,
-                    date: timeSlot.date,
-                    time: timeSlot.time,
+                    date: currentSessionData.date,
+                    time: currentSessionData.time,
                     isFree: price === 0,
-                    durationMinutes: session.duration,
+                    jitsiLink: currentSessionData.jitsiLink,
+                    durationMinutes: currentSessionData.durationMinutes,
                     price: price,
                     status: 'scheduled',
                     createdAt: new Date().toISOString(),
@@ -177,11 +190,11 @@ const CheckoutModal = ({ session, timeSlot, mentor, onClose, onBookingComplete }
                             </p>
                             <p className="flex justify-between text-gray-700">
                                 <span className="font-medium">Session:</span>
-                                <span className="font-semibold text-primary">{session.name}</span>
+                                <span className="font-semibold text-primary">{session.title}</span>
                             </p>
                             <p className="flex justify-between text-gray-700">
                                 <span className="font-medium">Time Slot:</span>
-                                <span className="font-semibold">{timeSlot.date} @ {displayTime}</span>
+                                <span className="font-semibold">{session.date} @ {session.time}</span>
                             </p>
                              <p className="flex justify-between text-gray-700">
                                 <span className="font-medium">Your Balance:</span>
@@ -315,7 +328,7 @@ const SessionBooking = ({ session, mentorId, onBook }) => {
                             Book Session
                         </Button>
                         <Button asChild variant="outline">
-                            <Link href={`/mentors/${mentorId}/sessions/${session.id}`}>
+                            <Link href={`/sessions/${session.id}`}>
                                <Info className="mr-2 h-4 w-4" /> See More
                             </Link>
                         </Button>
@@ -465,7 +478,7 @@ export default function MentorPage({ params }: { params: { id: string } }) {
     const mentorRef = useMemoFirebase(() => {
         if (!firestore) return null;
         return doc(firestore, 'mentors', resolvedParams.id);
-    }, [firestore, resolvedParams]);
+    }, [firestore, resolvedParams.id]);
 
     const { data: mentor, isLoading } = useDoc<Mentor>(mentorRef);
 
@@ -478,3 +491,5 @@ export default function MentorPage({ params }: { params: { id: string } }) {
         </div>
     );
 };
+
+    
