@@ -86,8 +86,6 @@ export default function AdminLoginPage() {
             description: 'Redirecting to the dashboard...',
         });
         router.push('/admin');
-
-        // No longer calling the faulty setAdminClaim API
         
         setIsLoading(false);
     };
@@ -123,31 +121,3 @@ export default function AdminLoginPage() {
                                 )}
                             />
                              <FormField
-                                control={form.control}
-                                name="password"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Password</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" placeholder="••••••••" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button type="submit" className="w-full" disabled={isLoading}>
-                                {isLoading ? 'Signing In...' : 'Sign In as Admin'}
-                            </Button>
-                        </form>
-                    </Form>
-
-                    <div className="mt-6 pt-6 border-t">
-                         <Button variant="secondary" className="w-full" onClick={() => router.push('/')}>
-                            Go to Homepage
-                        </Button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
