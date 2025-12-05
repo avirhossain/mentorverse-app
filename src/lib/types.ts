@@ -48,7 +48,6 @@ export interface Mentee {
   balance: number;
   status: 'active' | 'suspended';
   createdAt?: string; // Added for sorting
-  isAdmin?: boolean;
   phone?: string;
   sex?: string;
   birthDate?: string;
