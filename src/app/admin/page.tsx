@@ -163,24 +163,32 @@ const PaymentApprovalList = ({ payments, onApprove, isLoading }) => (
 
 
 const MentorForm = ({ mentor, onSave, onClose }) => {
-    const [formData, setFormData] = useState({
-        name: '',
-        title: '',
-        company: '',
-        intro: '',
-        skills: '',
-        avatar: 'https://placehold.co/150x150/4F46E5/FFFFFF?text=New',
-        status: 'active',
-        professionalExperience: [],
-        education: [],
-        sessions: [],
-        reviews: [],
-        rating: 0,
-        ratingsCount: 0,
-        ...mentor,
-        skills: mentor?.skills?.join(', ') || '',
-    });
+    const getInitialFormData = () => {
+        if (mentor) {
+            return {
+                ...mentor,
+                skills: mentor.skills?.join(', ') || '',
+            };
+        }
+        return {
+            id: '',
+            name: '',
+            title: '',
+            company: '',
+            intro: '',
+            skills: '',
+            avatar: 'https://placehold.co/150x150/4F46E5/FFFFFF?text=New',
+            status: 'active',
+            professionalExperience: [],
+            education: [],
+            sessions: [],
+            reviews: [],
+            rating: 0,
+            ratingsCount: 0,
+        };
+    };
 
+    const [formData, setFormData] = useState(getInitialFormData());
     const { toast } = useToast();
     const isEditing = !!mentor;
 
@@ -212,13 +220,13 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
     const addDynamicItem = (section, item) => {
         setFormData(prev => ({
             ...prev,
-            [section]: [...prev[section], item]
+            [section]: [...(prev[section] || []), item]
         }));
     };
     
     const addNestedDynamicItem = (section, parentIndex, nestedSection, item) => {
         const list = [...formData[section]];
-        list[parentIndex][nestedSection] = [...list[parentIndex][nestedSection], item];
+        list[parentIndex][nestedSection] = [...(list[parentIndex][nestedSection] || []), item];
         setFormData(prev => ({ ...prev, [section]: list }));
     };
 
@@ -247,9 +255,9 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                     ...s, 
                     price: Number(s.price), 
                     duration: Number(s.duration),
-                    availability: s.availability.map(a => ({...a, id: a.id || uuidv4() }))
+                    availability: (s.availability || []).map(a => ({...a, id: a.id || uuidv4() }))
                 })),
-                reviews: formData.reviews.map(r => ({...r, rating: Number(r.rating)})),
+                reviews: (formData.reviews || []).map(r => ({...r, rating: Number(r.rating)})),
             };
 
             const rating = processedData.reviews.length > 0 ? processedData.reviews.reduce((acc, r) => acc + Number(r.rating), 0) / processedData.reviews.length : 0;
@@ -277,7 +285,7 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
     const renderDynamicSection = (sectionTitle, sectionKey, fields, newItem) => (
         <div className="space-y-3 p-4 border rounded-lg">
             <h4 className="font-semibold text-lg">{sectionTitle}</h4>
-            {formData[sectionKey].map((item, index) => (
+            {(formData[sectionKey] || []).map((item, index) => (
                 <div key={index} className="p-3 border rounded-md space-y-2 relative bg-gray-50 dark:bg-gray-700/50">
                      <Button type="button" size="sm" variant="ghost" className="absolute top-2 right-2 p-1 h-auto" onClick={() => removeDynamicItem(sectionKey, index)}><Trash2 className="w-4 h-4 text-red-500"/></Button>
                     {fields.map(field => (
@@ -293,7 +301,7 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                     {sectionKey === 'sessions' && (
                         <div className="pl-4 mt-2 space-y-2 border-l-2 border-primary">
                             <h5 className="text-sm font-semibold">Available Slots for this Session</h5>
-                             {item.availability.map((avail, availIndex) => (
+                             {(item.availability || []).map((avail, availIndex) => (
                                 <div key={avail.id || availIndex} className="flex items-center gap-2">
                                     <Input name="date" placeholder="Date (e.g., 18th November)" value={avail.date} onChange={(e) => handleNestedDynamicChange(sectionKey, index, 'availability', availIndex, e)} />
                                     <Input name="time" placeholder="Time (e.g., 7:00 PM - 8:00 PM)" value={avail.time} onChange={(e) => handleNestedDynamicChange(sectionKey, index, 'availability', availIndex, e)} />
@@ -758,12 +766,10 @@ export default function AdminPage() {
     let finalData = { ...mentorData };
 
     if (isEditing) {
-        // We are editing, so we use the existing ID
         const mentorRef = doc(firestore, 'mentors', finalData.id);
         await setDoc(mentorRef, finalData, { merge: true });
     } else {
-        // We are creating, so we generate a new ID
-        const newId = uuidv4();
+        const newId = finalData.id || uuidv4();
         finalData.id = newId;
         const mentorRef = doc(firestore, 'mentors', newId);
         await setDoc(mentorRef, finalData);
@@ -1224,6 +1230,4 @@ export default function AdminPage() {
     </div>
   );
 }
-    
-
     
