@@ -1,12 +1,12 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Home, Lightbulb, User, LogIn, LogOut, Shield } from 'lucide-react';
-import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
-import { doc } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import type { AdminUser } from '@/lib/types';
 
 export const Header = ({ currentView }) => {
@@ -15,37 +15,33 @@ export const Header = ({ currentView }) => {
     const auth = useAuth();
     const firestore = useFirestore();
     const router = useRouter();
+    const pathname = usePathname();
 
-    const adminDocRef = useMemoFirebase(() => {
-        if (!firestore || !user?.email) return null;
-        return doc(firestore, 'admins', user.email);
+    const adminQuery = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return collection(firestore, 'admins');
     }, [firestore, user]);
 
-    const { data: adminData, isLoading: isAdminLoading } = useDoc<AdminUser>(adminDocRef);
+    const { data: adminData, isLoading: isAdminLoading } = useCollection<AdminUser>(adminQuery);
 
-    const isAdmin = !!adminData;
-    const isLoading = isUserLoading || (user && isAdminLoading);
+    const isAdmin = adminData?.some(admin => admin.email === user?.email) ?? false;
+    const isAuthCheckComplete = !isUserLoading && !isAdminLoading;
 
     useEffect(() => {
-        // Only perform this check if we are in an admin view
-        if (currentView === 'admin') {
-            // Wait until loading of user and admin status is complete
-            if (!isLoading) {
-                // If, after loading, there's no user OR the user is NOT an admin, redirect
-                if (!user || !isAdmin) {
-                    router.push('/admin/login');
-                }
-            }
+        const isAdminView = pathname.startsWith('/admin');
+        if (isAuthCheckComplete && isAdminView && !isAdmin) {
+            // If the auth check is complete, we are on an admin page,
+            // and we have confirmed the user is NOT an admin, then redirect.
+            router.push('/');
         }
-    }, [user, isLoading, isAdmin, currentView, router]);
+    }, [user, isAdmin, isAuthCheckComplete, pathname, router]);
 
-    const isAdminView = currentView === 'admin';
 
     const handleLogout = () => {
         if(auth) {
             signOut(auth).then(() => {
                 setIsMenuOpen(false);
-                router.push('/');
+                router.push(pathname.startsWith('/admin') ? '/admin/login' : '/');
             });
         }
     };
@@ -59,11 +55,13 @@ export const Header = ({ currentView }) => {
         </Link>
     );
 
+    const isAdminView = pathname.startsWith('/admin');
+
     return (
     <>
         <header className="sticky top-0 z-50 bg-white shadow-lg border-b border-primary/10">
             <div className="max-w-7xl mx-auto p-4 flex justify-between items-center">
-                <Link href={isAdmin && user ? "/admin" : "/"} className="text-2xl font-extrabold text-primary">Guidelab</Link>
+                <Link href={isAdminView ? "/admin" : "/"} className="text-2xl font-extrabold text-primary">Guidelab</Link>
                 
                 <nav className="hidden lg:flex space-x-2 items-center text-gray-600 font-medium">
                     {isAdminView && user ? (
@@ -75,7 +73,7 @@ export const Header = ({ currentView }) => {
                             <NavLink href="/" view="home" icon={Home} text="Home" />
                             <NavLink href="/tips" view="tips" icon={Lightbulb} text="Tips" />
 
-                            {!isLoading && (
+                            {!isUserLoading && (
                                 user ? (
                                     <>
                                     <Link href="/account" className={`flex items-center transition px-3 py-2 rounded-lg ${currentView === 'account' ? 'text-primary bg-primary/10 font-bold' : 'hover:text-primary hover:bg-gray-100'}`}>
@@ -117,7 +115,7 @@ export const Header = ({ currentView }) => {
                             <Link href="/" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Home className="w-5 h-5 mr-2" /> Home</Link>
                             <Link href="/tips" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Lightbulb className="w-5 h-5 mr-2" /> Tips & Resources</Link>
                             
-                            {!isLoading && (
+                            {!isUserLoading && (
                                 user ? (
                                     <>
                                     <Link href="/account" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}>
