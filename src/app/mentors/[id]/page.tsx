@@ -1,13 +1,16 @@
+
 'use client';
 import React, { useEffect, useState, useMemo } from 'react';
-import { Star, CheckCircle, Briefcase, GraduationCap, Clock, Calendar, MessageSquare, X, Zap } from 'lucide-react';
+import { Star, CheckCircle, Briefcase, GraduationCap, Clock, Calendar, MessageSquare, X, Zap, Wallet } from 'lucide-react';
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { Mentor } from '@/lib/types';
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { doc, runTransaction, collection } from 'firebase/firestore';
+import type { Mentor, Session, Mentee } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 // --- Helper Components ---
 
@@ -41,93 +44,200 @@ const ReviewCard = ({ review }) => (
     </div>
 );
 
-const CheckoutModal = ({ session, timeSlot, mentor, onClose }) => {
-    const [isProcessing, setIsProcessing] = React.useState(false);
-    const [showThankYou, setShowThankYou] = React.useState(false);
+const CheckoutModal = ({ session, timeSlot, mentor, onClose, onBookingComplete }) => {
+    const firestore = useFirestore();
+    const { user } = useUser();
+    const router = useRouter();
+    const { toast } = useToast();
 
+    // Fetch user's profile to check balance
+    const userDocRef = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [firestore, user]);
+    const { data: menteeData } = useDoc<Mentee>(userDocRef);
+
+    const [step, setStep] = React.useState('loading');
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    
     const startTimeFull = timeSlot.time.split(' - ')[0];
     const displayTime = startTimeFull.replace(':00', '').trim();
 
-    const handlePayment = () => {
-        setIsProcessing(true);
-        setTimeout(() => {
-            setIsProcessing(false);
-            setShowThankYou(true); 
-        }, 300); 
+    useEffect(() => {
+        if (!user) {
+            setStep('auth_check');
+        } else {
+            if (menteeData !== undefined) {
+                setStep('confirmation');
+            }
+        }
+    }, [user, menteeData]);
+
+    const handleBooking = async () => {
+         if (!user || !firestore || !menteeData) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not process booking.' });
+            return;
+        }
+
+        setIsSubmitting(true);
+        // This assumes a session from a mentor's profile is a one-off booking.
+        // A more complex system might have a global `sessions` collection.
+        // For now, we'll simulate creating a booked session for the user.
+        const userSessionsRef = collection(firestore, 'users', user.uid, 'sessions');
+        const userRef = doc(firestore, 'users', user.uid);
+
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                const userDoc = await transaction.get(userRef);
+                if (!userDoc.exists()) throw new Error("User profile not found.");
+                
+                const currentUserData = userDoc.data() as Mentee;
+                const price = session.price || 0;
+                const balance = currentUserData.balance || 0;
+
+                if (price > 0) {
+                     if (balance < price) {
+                        setStep('insufficient_balance');
+                        throw new Error("Insufficient balance.");
+                    }
+                    const newBalance = balance - price;
+                    transaction.update(userRef, { balance: newBalance });
+                    
+                    // Create a balance transaction record
+                    const transactionsRef = collection(firestore, 'balance_transactions');
+                    const newTransactionRef = doc(transactionsRef);
+                    transaction.set(newTransactionRef, {
+                        id: newTransactionRef.id,
+                        userId: user.uid,
+                        amount: -price,
+                        source: 'session_payment',
+                        description: `Payment for session: ${session.name} with ${mentor.name}`,
+                        createdAt: new Date().toISOString(),
+                    });
+                }
+                
+                // Add the session to the user's subcollection
+                const newSessionRef = doc(userSessionsRef);
+                 transaction.set(newSessionRef, {
+                    id: newSessionRef.id,
+                    title: session.name,
+                    mentorName: mentor.name,
+                    mentorId: mentor.id,
+                    date: timeSlot.date,
+                    time: timeSlot.time,
+                    isFree: price === 0,
+                    durationMinutes: session.duration,
+                    price: price,
+                    status: 'scheduled',
+                    createdAt: new Date().toISOString(),
+                 });
+            });
+            
+            onBookingComplete();
+            setStep('thank_you');
+
+        } catch (error) {
+            if (error.message !== "Insufficient balance.") {
+                toast({ variant: 'destructive', title: 'Booking Failed', description: error.message });
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
+    const renderContent = () => {
+         switch (step) {
+            case 'loading':
+                return <div className="text-center py-6"><p>Loading...</p></div>;
+
+            case 'auth_check':
+                return (
+                    <div className="text-center py-6">
+                        <h3 className="text-2xl font-bold text-gray-800 mb-3">Please Login to Book</h3>
+                        <p className="text-gray-600 mb-6">To book a spot for this exclusive session, you need to have an account.</p>
+                        <Button onClick={() => router.push('/login')} className="w-full">Login to Continue</Button>
+                    </div>
+                );
+            
+            case 'insufficient_balance':
+                return (
+                     <div className="text-center py-6">
+                        <Wallet className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                        <h3 className="text-2xl font-bold text-gray-800 mb-3">Insufficient Balance</h3>
+                        <p className="text-gray-600 mb-6">Your current balance is not enough to book this session. Please add funds and try again.</p>
+                        <Button onClick={() => router.push('/account')} className="w-full">Go to My Wallet</Button>
+                    </div>
+                );
+
+            case 'confirmation':
+                 return (
+                    <div>
+                        <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">Confirm Your Booking</h3>
+
+                        <div className="border border-primary/20 rounded-lg p-4 bg-primary/10 mb-6 space-y-2">
+                            <p className="flex justify-between text-gray-700">
+                                <span className="font-medium">Mentor:</span>
+                                <span className="font-semibold">{mentor.name}</span>
+                            </p>
+                            <p className="flex justify-between text-gray-700">
+                                <span className="font-medium">Session:</span>
+                                <span className="font-semibold text-primary">{session.name}</span>
+                            </p>
+                            <p className="flex justify-between text-gray-700">
+                                <span className="font-medium">Time Slot:</span>
+                                <span className="font-semibold">{timeSlot.date} @ {displayTime}</span>
+                            </p>
+                             <p className="flex justify-between text-gray-700">
+                                <span className="font-medium">Your Balance:</span>
+                                <span className="font-semibold">৳{menteeData?.balance || 0}</span>
+                            </p>
+                            <div className="pt-2 border-t mt-2 flex justify-between items-center text-lg font-bold">
+                                <span>Total Due:</span>
+                                <span className="text-green-600">{session.price > 0 ? `৳${session.price}` : 'Free'}</span>
+                            </div>
+                        </div>
+                        
+                        <Button 
+                            onClick={handleBooking} 
+                            className="w-full py-3 text-lg font-bold"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? 'Processing...' : `Confirm & Pay ৳${session.price}`}
+                        </Button>
+                        <Button 
+                            onClick={onClose} 
+                            variant="ghost"
+                            className="w-full mt-2"
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                );
+            case 'thank_you':
+                return (
+                    <div className="text-center py-8">
+                        <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                        <h3 className="text-2xl font-bold text-gray-800 mb-2">Booking Confirmed!</h3>
+                        <p className="text-gray-600">Thank you for booking your session with **{mentor.name}**. A confirmation email has been sent.</p>
+                        <Button onClick={onClose} className="mt-6 w-full">Finish</Button>
+                    </div>
+                );
+            default:
+                 return null;
+        }
+    };
+
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all">
-                
                 <div className="p-4 flex justify-end">
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                         <X className="w-6 h-6" />
                     </button>
                 </div>
-
                 <div className="px-6 pb-6 pt-0">
-                    {showThankYou ? (
-                        <div className="text-center py-8">
-                            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                            <h3 className="text-2xl font-bold text-gray-800 mb-2">Payment Successful!</h3>
-                            <p className="text-gray-600">
-                                Thank you for booking your session with **{mentor.name}**. 
-                                A confirmation email and calendar invite have been sent to you.
-                            </p>
-                            <button 
-                                onClick={onClose} 
-                                className="mt-6 w-full py-2 font-semibold text-white bg-primary hover:bg-primary/90 rounded-lg transition"
-                            >
-                                Finish
-                            </button>
-                        </div>
-                    ) : (
-                        <div>
-                            <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">Confirm Your Booking</h3>
-
-                            <div className="border border-primary/20 rounded-lg p-4 bg-primary/10 mb-6 space-y-2">
-                                <p className="flex justify-between text-gray-700">
-                                    <span className="font-medium">Mentor:</span>
-                                    <span className="font-semibold">{mentor.name}</span>
-                                </p>
-                                <p className="flex justify-between text-gray-700">
-                                    <span className="font-medium">Session:</span>
-                                    <span className="font-semibold text-primary">{session.name}</span>
-                                </p>
-                                <p className="flex justify-between text-gray-700">
-                                    <span className="font-medium">Time Slot:</span>
-                                    <span className="font-semibold">{timeSlot.date} @ {displayTime}</span>
-                                </p>
-                                <div className="pt-2 border-t mt-2 flex justify-between items-center text-lg font-bold">
-                                    <span>Total Due:</span>
-                                    <span className="text-green-600">{session.price} {session.currency}</span>
-                                </div>
-                            </div>
-                            
-                            <button 
-                                onClick={handlePayment} 
-                                className="w-full py-3 text-lg font-bold text-white bg-green-600 hover:bg-green-700 rounded-lg transition shadow-md flex items-center justify-center disabled:opacity-50"
-                                disabled={isProcessing}
-                            >
-                                {isProcessing ? (
-                                    <>
-                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Processing...
-                                    </>
-                                ) : `Pay Now ${session.price} ${session.currency}`}
-                            </button>
-                            <button 
-                                onClick={onClose} 
-                                className="w-full mt-2 py-2 text-gray-600 hover:text-gray-900 transition"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    )}
+                    {renderContent()}
                 </div>
             </div>
         </div>
@@ -217,10 +327,16 @@ const BookingSection = ({ mentor, onBook }) => {
 const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
     const [showCheckoutModal, setShowCheckoutModal] = React.useState(false);
     const [selectedBooking, setSelectedBooking] = React.useState<{session: any, timeSlot: any} | null>(null);
+    const [bookingUpdate, setBookingUpdate] = React.useState(0);
 
     const handleBookNow = (session, timeSlot) => {
         setSelectedBooking({ session, timeSlot });
         setShowCheckoutModal(true);
+    };
+    
+    const handleBookingComplete = () => {
+        setBookingUpdate(prev => prev + 1); // This might be used to refresh data
+        // The modal will close itself upon success.
     };
 
     if (!mentor) return <MentorDetailsSkeleton />;
@@ -309,6 +425,7 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
                     timeSlot={selectedBooking.timeSlot}
                     mentor={mentor}
                     onClose={() => setShowCheckoutModal(false)}
+                    onBookingComplete={handleBookingComplete}
                 />
             )}
         </div>

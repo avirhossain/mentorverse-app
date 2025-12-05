@@ -1,13 +1,13 @@
 
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Star, CheckCircle, Zap, User, Calendar, Clock, Users, X, Info } from 'lucide-react';
+import { Star, CheckCircle, Zap, User, Calendar, Clock, Users, X, Info, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, orderBy, doc, runTransaction } from 'firebase/firestore';
-import type { Mentor, Session } from '@/lib/types';
+import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from '@/firebase';
+import { collection, query, orderBy, doc, runTransaction, addDoc } from 'firebase/firestore';
+import type { Mentor, Session, Mentee } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -141,22 +141,34 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
 };
 
 const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete }) => {
-    const [step, setStep] = React.useState(user ? 'form' : 'auth_check');
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
-    const { toast } = useToast();
     const firestore = useFirestore();
+    const router = useRouter();
+    const { toast } = useToast();
+
+    // Fetch user's profile to check balance
+    const userDocRef = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [firestore, user]);
+    const { data: menteeData } = useDoc<Mentee>(userDocRef);
+
+    const [step, setStep] = React.useState('loading');
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
     useEffect(() => {
-        if (user) {
-            setStep('form');
-        } else {
+        if (!user) {
             setStep('auth_check');
+        } else {
+            // Wait for mentee data (with balance) to load
+            if (menteeData !== undefined) {
+                setStep('confirmation');
+            }
         }
-    }, [user]);
+    }, [user, menteeData]);
 
     const handleBooking = async () => {
-        if (!user || !firestore) {
-            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to book.' });
+        if (!user || !firestore || !menteeData) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not process booking.' });
             return;
         }
 
@@ -173,7 +185,10 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
                 if (!userDoc.exists()) throw new Error("User profile not found.");
 
                 const currentSessionData = sessionDoc.data() as Session;
-                const currentUserData = userDoc.data();
+                const currentUserData = userDoc.data() as Mentee;
+                
+                const price = currentSessionData.price || 0;
+                const balance = currentUserData.balance || 0;
 
                 if ((currentSessionData.bookedBy?.length || 0) >= currentSessionData.maxParticipants) {
                     throw new Error("This session is already full.");
@@ -182,79 +197,115 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
                     throw new Error("You have already booked this session.");
                 }
                 if (!currentSessionData.isFree) {
-                    const price = currentSessionData.price || 0;
-                    const balance = currentUserData.balance || 0;
                     if (balance < price) {
+                        setStep('insufficient_balance');
                         throw new Error("Insufficient balance.");
                     }
-                    transaction.update(userRef, { balance: balance - price });
+                    const newBalance = balance - price;
+                    transaction.update(userRef, { balance: newBalance });
+
+                    // Create a balance transaction record for auditing
+                    const transactionsRef = collection(firestore, 'balance_transactions');
+                    const newTransactionRef = doc(transactionsRef);
+                    transaction.set(newTransactionRef, {
+                        id: newTransactionRef.id,
+                        userId: user.uid,
+                        amount: -price,
+                        source: 'session_payment',
+                        description: `Payment for session: ${currentSessionData.title}`,
+                        createdAt: new Date().toISOString(),
+                    });
                 }
 
                 transaction.update(sessionRef, {
                     bookedBy: [...(currentSessionData.bookedBy || []), user.uid]
                 });
             });
+            
             onBookingComplete();
-            toast({ title: 'Success!', description: 'You have successfully booked the session.' });
             setStep('thank_you');
+
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Booking Failed', description: error.message });
+            // Don't show toast for insufficient balance, as we handle it with a UI step
+            if (error.message !== "Insufficient balance.") {
+                toast({ variant: 'destructive', title: 'Booking Failed', description: error.message });
+            }
+        } finally {
             setIsSubmitting(false);
         }
     };
     
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        handleBooking();
-    };
-
     const renderContent = () => {
         switch (step) {
+            case 'loading':
+                return <div className="text-center py-6"><p>Loading...</p></div>;
+
             case 'auth_check':
                 return (
                     <div className="text-center py-6">
                         <h3 className="text-2xl font-bold text-gray-800 mb-3">Please Login to Book</h3>
+                        <p className="text-gray-600 mb-6">To book a spot for this exclusive session, you need to have an account.</p>
+                        <Button onClick={onLogin} className="w-full">Login to Continue</Button>
+                    </div>
+                );
+            
+            case 'insufficient_balance':
+                return (
+                     <div className="text-center py-6">
+                        <Wallet className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                        <h3 className="text-2xl font-bold text-gray-800 mb-3">Insufficient Balance</h3>
                         <p className="text-gray-600 mb-6">
-                            To book a spot for this exclusive session, you need to have an account.
+                            Your current balance is not enough to book this session. Please add funds to your wallet and try again.
                         </p>
-                        <Button
-                            onClick={onLogin}
-                            className="w-full py-3 font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-md"
-                        >
-                            Login to Continue
-                        </Button>
+                        <Button onClick={() => router.push('/account')} className="w-full">Go to My Wallet</Button>
                     </div>
                 );
 
-            case 'form':
+            case 'confirmation':
                 return (
-                    <form onSubmit={handleSubmit} className="pt-2">
-                        <h3 className="text-2xl font-bold text-gray-800 mb-2">Register for the Session</h3>
+                    <div className="pt-2">
+                        <h3 className="text-2xl font-bold text-gray-800 mb-2">Confirm Your Booking</h3>
                         <p className="text-md text-primary font-semibold mb-4">{session.title}</p>
-                        <button 
-                            type="submit" 
-                            className="w-full py-3 text-lg font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition shadow-md flex items-center justify-center disabled:opacity-50"
+                        
+                        <div className="border rounded-lg p-4 bg-gray-50 mb-6 space-y-2">
+                             <p className="flex justify-between text-gray-700">
+                                <span className="font-medium">Session Cost:</span>
+                                <span className="font-semibold">{session.isFree ? 'Free' : `৳${session.price}`}</span>
+                            </p>
+                             <p className="flex justify-between text-gray-700">
+                                <span className="font-medium">Your Balance:</span>
+                                <span className="font-semibold">৳{menteeData?.balance || 0}</span>
+                            </p>
+                            {!session.isFree && (
+                                <p className="flex justify-between text-lg font-bold pt-2 border-t mt-2">
+                                    <span>New Balance:</span>
+                                    <span className="text-green-600">৳{(menteeData?.balance || 0) - session.price}</span>
+                                </p>
+                            )}
+                        </div>
+
+                        <p className="text-sm text-gray-500 mb-4">
+                            By clicking confirm, you agree to book this session. 
+                            {!session.isFree && ` ৳${session.price} will be deducted from your account balance.`}
+                        </p>
+
+                        <Button 
+                            onClick={handleBooking}
+                            className="w-full font-bold text-lg"
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? 'Processing...' : session.isFree ? 'Book for Free' : `Pay ৳${session.price} & Book`}
-                        </button>
-                    </form>
+                             {isSubmitting ? 'Processing...' : `Confirm & Book`}
+                        </Button>
+                    </div>
                 );
 
             case 'thank_you':
                 return (
                     <div className="text-center py-8">
                         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-gray-800 mb-2">Registration Submitted!</h3>
-                        <p className="text-gray-600 mb-6">
-                            Thank you! You've successfully booked **{session.title}**. We have sent a confirmation and calendar invite to your email.
-                        </p>
-                        <button 
-                            onClick={onClose} 
-                            className="mt-4 w-full py-2 font-semibold text-white bg-primary hover:bg-primary/90 rounded-lg transition"
-                        >
-                            Close
-                        </button>
+                        <h3 className="text-2xl font-bold text-gray-800 mb-2">Booking Confirmed!</h3>
+                        <p className="text-gray-600 mb-6">You've successfully booked **{session.title}**. A confirmation has been sent to your email.</p>
+                        <Button onClick={onClose} className="w-full">Close</Button>
                     </div>
                 );
 
@@ -264,8 +315,8 @@ const RegistrationModal = ({ session, user, onClose, onLogin, onBookingComplete 
     };
     
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all">
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-[100] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md transform transition-all">
                 <div className="p-4 flex justify-end">
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                         <X className="w-6 h-6" />
@@ -302,11 +353,7 @@ export default function HomePage() {
     const { data: sessions, isLoading: isLoadingSessions } = useCollection<Session>(sessionsQuery);
 
     const handleBookSession = (session: Session) => {
-        if (user) {
-            setSessionToBook(session);
-        } else {
-            router.push('/login');
-        }
+        setSessionToBook(session);
     };
 
     const handleCloseModal = () => {

@@ -24,7 +24,7 @@ const DataListView = ({ title, data, isLoading, icon: Icon, renderItem, emptyMes
         ) : (
             <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg border-t-4 border-primary/50 space-y-3">
                 {data && data.length > 0 ? (
-                    data.map((item) => renderItem(item))
+                    data.map((item, index) => renderItem(item, index))
                 ) : (
                     <p className="text-gray-500 dark:text-gray-400 text-center py-4">{emptyMessage}</p>
                 )}
@@ -117,7 +117,7 @@ export default function BalancesPage() {
                                             <p className="font-semibold text-gray-800 dark:text-white">{mentee.name}</p>
                                             <p className="text-sm text-gray-500 dark:text-gray-400">{mentee.email}</p>
                                         </div>
-                                        <p className="text-lg font-bold text-primary">৳{mentee.balance.toLocaleString()}</p>
+                                        <p className="text-lg font-bold text-primary">৳{(mentee.balance || 0).toLocaleString()}</p>
                                     </div>
                                 )}
                                 emptyMessage="No mentees found."

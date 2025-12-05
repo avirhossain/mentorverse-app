@@ -3,6 +3,9 @@
 export interface Mentor {
   id: string; // Changed from number to string to align with Firestore document IDs
   name: string;
+  email?: string;
+  bio?: string;
+  expertise?: string[];
   title: string;
   company: string;
   skills: string[];
@@ -42,6 +45,7 @@ export interface Mentor {
     rating: number;
     text: string;
   }[];
+  sessionCost?: number;
 }
 
 export interface Mentee {
@@ -54,6 +58,12 @@ export interface Mentee {
   status: 'active' | 'suspended';
   createdAt?: string; // Added for sorting
   isAdmin?: boolean;
+  phone?: string;
+  sex?: string;
+  birthDate?: string;
+  institution?: string;
+  job?: string;
+  profileImageUrl?: string;
 }
 
 
@@ -99,7 +109,7 @@ export interface Coupon {
 }
 
 export interface PendingPayment {
-    id: string;
+    id:string;
     userId: string;
     transactionId: string;
     amount: number;
