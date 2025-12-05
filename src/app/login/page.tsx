@@ -42,14 +42,18 @@ export default function LoginPage() {
 
     const setAdminClaim = async (uid: string) => {
         try {
-            await fetch('/api/set-admin', {
+            const response = await fetch('/api/set-admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ uid, admin: true }),
             });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to set admin claim.');
+            }
         } catch (error) {
-            console.error("Failed to set admin claim during login:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to set admin claim.' });
+            console.error("Failed to set admin claim:", error);
+            toast({ variant: 'destructive', title: 'Admin Grant Failed', description: error.message });
         }
     };
 
@@ -82,7 +86,8 @@ export default function LoginPage() {
             await setAdminClaim(user.uid);
         }
 
-        const idTokenResult = await user.getIdTokenResult(true); // Force refresh claims
+        // Force a refresh of the token to get the latest custom claims.
+        const idTokenResult = await user.getIdTokenResult(true); 
         
         if (idTokenResult.claims.admin) {
             router.push('/admin');
@@ -94,6 +99,7 @@ export default function LoginPage() {
     }
 
     useEffect(() => {
+        // This effect will run if the user is already logged in when visiting the page.
         if (!isUserLoading && user) {
             handleRedirect(user);
         }
@@ -105,22 +111,15 @@ export default function LoginPage() {
 
         const { identifier, password } = values;
         
-        const isPhoneNumber = /^\d+$/.test(identifier);
-
-        if (isPhoneNumber) {
-            alert('Phone number login is coming soon! Please use your email for now.');
-            setIsLoading(false);
-            return;
-        }
-
         try {
             const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
+            // After successful sign-in, call handleRedirect to manage claims and routing.
             await handleRedirect(userCredential.user);
         } catch (error: any) {
             toast({
                 variant: 'destructive',
                 title: 'Login Failed',
-                description: error.code === 'auth/invalid-credential' 
+                description: error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials'
                     ? 'Invalid email or password. Please try again.'
                     : error.message || 'An unexpected error occurred.',
             });
@@ -236,5 +235,3 @@ export default function LoginPage() {
         </div>
     );
 }
-
-    

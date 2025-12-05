@@ -45,14 +45,18 @@ export default function SignUpPage() {
 
     const setAdminClaim = async (uid: string) => {
         try {
-            await fetch('/api/set-admin', {
+            const response = await fetch('/api/set-admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ uid, admin: true }),
             });
+             if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to set admin claim.');
+            }
         } catch (error) {
             console.error("Failed to set admin claim:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to set admin claim.' });
+            toast({ variant: 'destructive', title: 'Admin Grant Failed', description: error.message });
         }
     };
     
@@ -76,13 +80,15 @@ export default function SignUpPage() {
     };
 
     const handleRedirect = async (user: User) => {
+        // Always create a profile for a new user from the sign-up page.
         await createUserProfile(user);
         
         if (user.email === FIRST_ADMIN_EMAIL) {
             await setAdminClaim(user.uid);
         }
 
-        const idTokenResult = await user.getIdTokenResult(true); // Force refresh claims
+        // Force a refresh of the token to get the latest custom claims.
+        const idTokenResult = await user.getIdTokenResult(true);
         
         if (idTokenResult.claims.admin) {
             router.push('/admin');
@@ -94,6 +100,8 @@ export default function SignUpPage() {
     
     useEffect(() => {
         if (!isUserLoading && user) {
+            // If an already logged-in user hits the sign-up page, redirect them.
+            // This re-uses the redirect logic which includes the admin check.
             handleRedirect(user);
         }
     }, [user, isUserLoading, router]);
@@ -103,17 +111,11 @@ export default function SignUpPage() {
         setIsLoading(true);
 
         const { name, identifier, password } = values;
-        const isPhoneNumber = /^\d+$/.test(identifier);
-
-        if (isPhoneNumber) {
-            alert('Phone number sign-up is coming soon! Please use an email address.');
-            setIsLoading(false);
-            return;
-        }
 
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, identifier, password);
             await updateProfile(userCredential.user, { displayName: name });
+            // After creating the user, call the redirect handler.
             await handleRedirect(userCredential.user);
         } catch (error: any) {
             toast({
@@ -241,5 +243,3 @@ export default function SignUpPage() {
         </div>
     );
 }
-
-    
