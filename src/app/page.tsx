@@ -32,38 +32,39 @@ const MentorCardSkeleton = () => (
 
 const MentorCard = ({ mentor }: { mentor: Mentor }) => (
     <Link href={`/mentors/${mentor.id}`} className="group block h-full">
-        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition duration-300 p-5 sm:p-6 flex flex-col items-center border border-gray-100 h-full text-center">
-            <img 
-                className="w-32 h-32 rounded-full object-cover border-4 border-primary/20 mb-4" 
-                src={mentor.avatar || 'https://placehold.co/150x150/7c3aed/ffffff?text=AR'} 
-                alt={mentor.name} 
-            />
-            <div className="flex-grow">
-                <div className="flex items-center justify-center">
-                    <h3 className="text-xl font-bold text-gray-800 mr-2">{mentor.name}</h3>
-                    <CheckCircle className="w-5 h-5 text-green-500 fill-green-100" />
+        <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden h-full flex flex-col">
+            <div className="relative h-56">
+                <img 
+                    className="w-full h-full object-cover" 
+                    src={mentor.avatar || 'https://placehold.co/300x300/7c3aed/ffffff?text=AR'} 
+                    alt={mentor.name} 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                <div className="absolute bottom-0 left-0 p-4">
+                    <h3 className="text-xl font-bold text-white flex items-center">{mentor.name} <CheckCircle className="w-5 h-5 text-white/80 fill-green-500/50 ml-2" /></h3>
+                    <p className="text-sm text-white/90 font-medium">{mentor.title} at {mentor.company}</p>
                 </div>
-                <p className="text-sm text-primary font-medium mb-2">{mentor.title} at {mentor.company}</p>
-                
-                {mentor.rating > 0 && (
-                    <div className="flex items-center justify-center text-sm font-medium text-yellow-500 mb-3">
-                        <Star className="w-4 h-4 mr-1 fill-current" />
-                        <span className="text-gray-800 font-bold mr-1">{mentor.rating.toFixed(1)}</span>
-                        {mentor.ratingsCount >= 30 && (
-                            <span className="text-gray-500">({mentor.ratingsCount} ratings)</span>
-                        )}
+            </div>
+            <div className="p-4 flex-grow flex flex-col justify-between">
+                <div>
+                     {mentor.rating > 0 && (
+                        <div className="flex items-center text-sm font-medium text-yellow-500 mb-3">
+                            <Star className="w-4 h-4 mr-1 fill-current" />
+                            <span className="text-gray-800 font-bold mr-1">{mentor.rating.toFixed(1)}</span>
+                            {mentor.ratingsCount >= 30 && (
+                                <span className="text-gray-500">({mentor.ratingsCount} ratings)</span>
+                            )}
+                        </div>
+                    )}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        {mentor.skills.slice(0, 3).map(skill => (
+                            <span key={skill} className="px-3 py-1 text-xs font-medium text-primary bg-primary/10 rounded-full">
+                                {skill}
+                            </span>
+                        ))}
                     </div>
-                )}
-                
-                <div className="flex flex-wrap gap-2 justify-center mb-4">
-                    {mentor.skills.slice(0, 3).map(skill => (
-                        <span key={skill} className="px-3 py-1 text-xs font-medium text-primary bg-primary/10 rounded-full">
-                            {skill}
-                        </span>
-                    ))}
+                    <p className="text-xs text-gray-600 italic line-clamp-2">"{mentor.intro}"</p>
                 </div>
-                
-                <p className="text-xs text-gray-600 italic line-clamp-2 mt-4">"{mentor.intro}"</p>
             </div>
         </div>
     </Link>
@@ -146,37 +147,28 @@ const SessionCard = ({ session, onBook, user }: { session: Session, onBook: (ses
         <div className="mt-6">
              <div className="flex items-center gap-2">
                 {isBooked ? (
-                    <>
-                    <div className="flex-grow text-center">
-                        <Button asChild variant={canJoin ? 'default' : 'outline'} disabled={!canJoin}>
-                            <a href={canJoin ? session.jitsiLink : undefined} target="_blank" rel="noopener noreferrer" className="w-full font-bold">
+                    <div className="w-full">
+                        <Button asChild variant={canJoin ? 'default' : 'outline'} disabled={!canJoin} className="w-full">
+                            <a href={canJoin ? session.jitsiLink : undefined} target="_blank" rel="noopener noreferrer">
                                 <Video className="mr-2" /> Join Session
                             </a>
                         </Button>
-                        <p className="text-xs text-gray-500 mt-2">Link will be active 10m before the session starts.</p>
+                        <p className="text-xs text-center text-gray-500 mt-2">Link active 10m before start</p>
                     </div>
-                    <Button asChild variant="outline">
-                        <Link href={`/sessions/${session.id}`}>
-                            See More
-                        </Link>
-                    </Button>
-                    </>
                 ) : (
-                    <>
-                    <Button 
+                     <Button 
                         onClick={() => onBook(session)} 
                         disabled={isFull} 
                         className="w-full font-bold"
                     >
                          {isFull ? 'Session Full' : 'Book Session'}
                     </Button>
-                    <Button asChild variant="outline">
-                        <Link href={`/sessions/${session.id}`}>
-                            See More
-                        </Link>
-                    </Button>
-                    </>
                 )}
+                 <Button asChild variant="outline" className="shrink-0">
+                    <Link href={`/sessions/${session.id}`}>
+                        See More
+                    </Link>
+                </Button>
             </div>
         </div>
     </div>
@@ -483,3 +475,5 @@ export default function HomePage() {
         </div>
     );
 };
+
+    
