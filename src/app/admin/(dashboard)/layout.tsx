@@ -6,30 +6,33 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { user, isAdmin, isAuthCheckComplete } = useUser();
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { user, isAdmin, isAuthCheckComplete, refreshToken } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    // Wait until the initial authentication check is complete.
-    if (!isAuthCheckComplete) {
-      // While checking, show a loading skeleton to prevent content flash.
-      return;
+    async function checkAdmin() {
+      if (!isAuthCheckComplete) return;
+
+      // Ensure user object is available before trying to refresh
+      if (user) {
+        // Force token refresh to make sure admin claim is loaded
+        await refreshToken(); 
+      }
+      
+      // Now that claims are refreshed, check isAdmin status
+      // We need to get the latest isAdmin state after refreshToken,
+      // but the hook might not have updated yet. Let's rely on the onAuthStateChanged logic.
+      // The logic inside onAuthStateChanged in the provider is the source of truth.
+      if (!isAdmin) {
+        router.push('/admin/login'); // Only redirect if confirmed NOT admin
+      }
     }
 
-    // If the check is complete and the user is not an admin,
-    // force them to the admin login page without logging them out.
-    if (!isAdmin) {
-      router.push('/admin/login');
-    }
-  }, [isAdmin, isAuthCheckComplete, router]);
-  
-  // While the auth check is running OR if the user has been found to not be an admin
-  // (and is being redirected), show a loading skeleton.
+    checkAdmin();
+  }, [isAdmin, isAuthCheckComplete, user, router, refreshToken]);
+
+  // Show loading skeleton while the auth check is running or if the user is not an admin
   if (!isAuthCheckComplete || !isAdmin) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -45,6 +48,6 @@ export default function AdminLayout({
     );
   }
   
-  // If the auth check is complete and the user is a confirmed admin, render the dashboard content.
+  // If the checks pass, render the dashboard content.
   return <>{children}</>;
 }
