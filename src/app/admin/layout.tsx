@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect } from 'react';
@@ -18,34 +17,28 @@ export default function AdminLayout({
   const isLoginPage = pathname === '/admin/login';
 
   useEffect(() => {
+    // Wait until the initial authentication check is complete.
     if (!isAuthCheckComplete) {
-      // If the authentication check isn't complete, we don't do anything.
-      // The skeleton below will be shown for protected pages.
       return;
     }
 
-    if (isLoginPage) {
-      // If we are on the login page and the user is already an admin,
-      // redirect them to the main admin dashboard.
-      if (isAdmin) {
+    // If the user is a confirmed admin...
+    if (isAdmin) {
+      // ...and they are on the login page, redirect them to the dashboard.
+      if (isLoginPage) {
         router.push('/admin');
       }
     } else {
-      // If we are on any other admin page and the user is NOT an admin,
-      // redirect them to the login page.
-      if (!isAdmin) {
+      // If the user is NOT an admin and they are NOT on the login page,
+      // force them to the login page.
+      if (!isLoginPage) {
         router.push('/admin/login');
       }
     }
-  }, [isAdmin, isAuthCheckComplete, router, isLoginPage]);
+  }, [isAdmin, isAuthCheckComplete, router, isLoginPage, pathname]);
   
-  // CASE 1: If we are on the login page, always render it (the useEffect handles redirecting away if already logged in).
-  if (isLoginPage) {
-    return <>{children}</>;
-  }
-
-  // CASE 2: If we are on a protected page and the user is not a verified admin yet, show a loading skeleton.
-  if (!isAdmin) {
+  // If authentication is still loading and we are on a protected page, show a skeleton screen.
+  if (!isAuthCheckComplete && !isLoginPage) {
     return (
       <div className="flex flex-col min-h-screen">
         <div className="p-8">
@@ -59,7 +52,8 @@ export default function AdminLayout({
       </div>
     );
   }
-
-  // CASE 3: Auth check is complete, user is an admin, and it's not the login page. Render the protected content.
+  
+  // Render the children (either the login page for non-admins, or the dashboard for admins).
+  // The useEffect above handles all redirection logic.
   return <>{children}</>;
 }

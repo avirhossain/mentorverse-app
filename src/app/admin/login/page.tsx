@@ -54,8 +54,8 @@ export default function AdminLoginPage() {
                 title: 'Login Successful',
                 description: 'Redirecting to the admin dashboard...',
             });
-            // Redirect is handled by the AdminLayout after auth state is confirmed.
-            router.push('/admin');
+            // The AdminLayout will handle the redirection.
+            // router.push('/admin'); // This is handled by the layout now.
 
         } catch (error: any) {
              toast({
@@ -63,8 +63,7 @@ export default function AdminLoginPage() {
                 title: 'Admin Login Failed',
                 description: 'Invalid credentials or you do not have admin access.',
             });
-        } finally {
-            setIsLoading(false);
+             setIsLoading(false);
         }
     };
     
@@ -99,25 +98,3 @@ export default function AdminLoginPage() {
                                 )}
                             />
                              <FormField
-                                control={form.control}
-                                name="password"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Password</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" placeholder="••••••••" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button type="submit" className="w-full" disabled={isLoading}>
-                                {isLoading ? 'Signing In...' : 'Sign In'}
-                            </Button>
-                        </form>
-                    </Form>
-                </div>
-            </div>
-        </div>
-    );
-}
