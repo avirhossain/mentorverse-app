@@ -305,6 +305,10 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                 rating: Number(formData.rating),
                 ratingsCount: Number(formData.ratingsCount),
                 reviews: (formData.reviews || []).map(r => ({...r, rating: Number(r.rating)})),
+                sessions: (formData.sessions || []).map(s => ({
+                    ...s,
+                    learningObjectives: typeof s.learningObjectives === 'string' ? s.learningObjectives.split('\n').map(l => l.trim()).filter(l => l) : s.learningObjectives || [],
+                })),
             };
             
             await onSave(processedData, isEditing);
@@ -331,6 +335,16 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                 <div key={index} className="p-3 border rounded-md space-y-2 relative bg-gray-50 dark:bg-gray-700/50">
                      <Button type="button" size="sm" variant="ghost" className="absolute top-2 right-2 p-1 h-auto" onClick={() => removeDynamicItem(sectionKey, index)}><Trash2 className="w-4 h-4 text-red-500"/></Button>
                     {fields.map(field => (
+                        field.type === 'textarea' ?
+                        <Textarea
+                            key={field.name}
+                            name={field.name}
+                            placeholder={field.placeholder}
+                            value={item[field.name]}
+                            onChange={(e) => handleDynamicChange(sectionKey, index, e)}
+                            rows={3}
+                        />
+                        :
                          <Input 
                             key={field.name}
                             name={field.name}
@@ -423,9 +437,12 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                     { name: 'price', placeholder: 'Price', type: 'number' },
                     { name: 'currency', placeholder: 'Currency (e.g., BDT)' },
                     { name: 'duration', placeholder: 'Duration (minutes)', type: 'number' },
-                    { name: 'description', placeholder: 'Session Description' }
+                    { name: 'description', placeholder: 'Session Description', type: 'textarea' },
+                    { name: 'learningObjectives', placeholder: 'What will they learn? (one per line)', type: 'textarea' },
+                    { name: 'whoIsItFor', placeholder: 'Who is this session for?', type: 'textarea' },
+                    { name: 'setupRequirements', placeholder: 'Setup requirements', type: 'textarea' }
                 ],
-                { id: uuidv4(), name: '', price: 0, currency: 'BDT', duration: 60, description: '', availability: [] }
+                { id: uuidv4(), name: '', price: 0, currency: 'BDT', duration: 60, description: '', learningObjectives: '', whoIsItFor: '', setupRequirements: '', availability: [] }
             )}
 
             {renderDynamicSection('Mentees Reviews', 'reviews',

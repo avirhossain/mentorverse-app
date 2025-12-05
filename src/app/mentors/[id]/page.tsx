@@ -1,7 +1,7 @@
 
 'use client';
 import React, { useEffect, useState, useMemo } from 'react';
-import { Star, CheckCircle, Briefcase, GraduationCap, Clock, Calendar, MessageSquare, X, Zap, Wallet } from 'lucide-react';
+import { Star, CheckCircle, Briefcase, GraduationCap, Clock, Calendar, MessageSquare, X, Zap, Wallet, Info } from 'lucide-react';
 import { Header } from '@/components/common/Header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import Link from 'next/link';
 
 // --- Helper Components ---
 
@@ -270,7 +271,7 @@ const MentorDetailsSkeleton = () => (
     </div>
 );
 
-const SessionBooking = ({ session, onBook }) => {
+const SessionBooking = ({ session, mentorId, onBook }) => {
     const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
     const selectedSlot = session.availability?.find(s => s.id === selectedSlotId);
 
@@ -309,9 +310,14 @@ const SessionBooking = ({ session, onBook }) => {
                             <p className="text-sm text-gray-500 italic">No available slots for this session currently.</p>
                         )}
                     </div>
-                    <div className="mt-4">
+                    <div className="mt-4 flex items-center gap-2">
                         <Button onClick={() => onBook(session, selectedSlot)} disabled={!selectedSlotId}>
                             Book Session
+                        </Button>
+                        <Button asChild variant="outline">
+                            <Link href={`/mentors/${mentorId}/sessions/${session.id}`}>
+                               <Info className="mr-2 h-4 w-4" /> See More
+                            </Link>
                         </Button>
                     </div>
                 </div>
@@ -331,7 +337,7 @@ const BookingSection = ({ mentor, onBook }) => {
             <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center"><Zap className="w-6 h-6 mr-2 text-green-600" /> Book a Session</h3>
             <Accordion type="single" collapsible className="w-full" defaultValue={mentor.sessions?.[0]?.id}>
                 {mentor.sessions.map((session) => (
-                    <SessionBooking key={session.id} session={session} onBook={onBook} />
+                    <SessionBooking key={session.id} session={session} mentorId={mentor.id} onBook={onBook} />
                 ))}
             </Accordion>
         </div>
@@ -424,7 +430,6 @@ const MentorDetailsPage = ({ mentor }: { mentor: Mentor }) => {
                     )}
                     
                     <BookingSection mentor={mentor} onBook={handleBookNow} />
-                    
 
                     {mentor.reviews && mentor.reviews.length > 0 && (
                         <div className="bg-white p-6 sm:p-8 rounded-xl shadow-md">

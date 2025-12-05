@@ -33,6 +33,9 @@ export interface Mentor {
     currency: string;
     duration: number;
     description: string;
+    learningObjectives: string[];
+    whoIsItFor: string;
+    setupRequirements: string;
     availability: {
       id: string;
       date: string;
