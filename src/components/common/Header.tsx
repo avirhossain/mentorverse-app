@@ -16,19 +16,12 @@ export const Header = ({ currentView }) => {
     const [isAdmin, setIsAdmin] = useState(false);
 
     useEffect(() => {
-        if (user) {
-            user.getIdTokenResult(true).then(idTokenResult => {
-                const isAdminClaim = !!idTokenResult.claims.admin;
-                setIsAdmin(isAdminClaim);
-                if (currentView === 'admin' && !isAdminClaim && !isUserLoading) {
-                    router.push('/admin/login');
-                }
-            });
-        } else {
-            setIsAdmin(false);
-             if (currentView === 'admin' && !isUserLoading) {
-                router.push('/admin/login');
-            }
+        const hardcodedAdminEmail = 'mmavir89@gmail.com';
+        const isAdminUser = user?.email === hardcodedAdminEmail;
+        setIsAdmin(isAdminUser);
+
+        if (currentView === 'admin' && !isUserLoading && !isAdminUser) {
+            router.push('/admin/login');
         }
     }, [user, isUserLoading, currentView, router]);
 

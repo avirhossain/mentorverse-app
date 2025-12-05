@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword, User } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,24 +35,6 @@ export default function AdminLoginPage() {
         },
     });
 
-    const setAdminClaim = async (user: User) => {
-        try {
-            const response = await fetch('/api/set-admin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: user.uid }),
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                console.error("Server returned:", response.status, data);
-                throw new Error(data.error || 'Failed to set admin claim.');
-            }
-        } catch (error) {
-            console.error('Error setting admin claim:', error);
-            throw error; // re-throw to be caught by the caller
-        }
-    };
-
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
         if (!auth) return;
         
@@ -75,10 +57,6 @@ export default function AdminLoginPage() {
                 throw new Error("Could not sign in admin user.");
             }
 
-            // Set the custom claim and then force a token refresh.
-            await setAdminClaim(userCredential.user);
-            await userCredential.user.getIdTokenResult(true); 
-
             toast({
                 title: 'Admin Access Granted',
                 description: 'Redirecting to the dashboard...',
@@ -92,6 +70,7 @@ export default function AdminLoginPage() {
                 title: 'Admin Login Failed',
                 description: error.message || 'Could not grant admin access. Please check credentials.',
             });
+        } finally {
             setIsLoading(false);
         }
     };
