@@ -8,7 +8,7 @@ import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { doc, runTransaction } from 'firebase/firestore';
 import type { Session } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Computer, HardDrive, Info, Mic, Tag, User, Users, Video, X } from 'lucide-react';
+import { CheckCircle, Clock, Computer, Users, Video, X } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 
@@ -119,14 +119,14 @@ const BookingModal = ({ session, user, onClose, onBookingComplete }) => {
 export default function SessionDetailsPage({ params }: { params: { id: string } }) {
     const firestore = useFirestore();
     const { user } = useUser();
-    const { toast } = useToast();
     const [bookingUpdate, setBookingUpdate] = useState(0);
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+    const { id } = params;
 
     const sessionRef = useMemoFirebase(() => {
-        if (!firestore || !params.id) return null;
-        return doc(firestore, 'sessions', params.id);
-    }, [firestore, params.id, bookingUpdate]);
+        if (!firestore || !id) return null;
+        return doc(firestore, 'sessions', id);
+    }, [firestore, id, bookingUpdate]);
 
     const { data: session, isLoading } = useDoc<Session>(sessionRef);
     
@@ -220,4 +220,3 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
         </div>
     );
 }
-
