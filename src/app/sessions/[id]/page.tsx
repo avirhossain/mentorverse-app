@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -125,7 +124,7 @@ export default function SessionDetailsPage({ params }: { params: { id: string } 
     const sessionRef = useMemoFirebase(() => {
         if (!firestore || !params.id) return null;
         return doc(firestore, 'sessions', params.id);
-    }, [firestore, params.id, bookingUpdate]);
+    }, [firestore, params, bookingUpdate]);
 
     const { data: session, isLoading } = useDoc<Session>(sessionRef);
     

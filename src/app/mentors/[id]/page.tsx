@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useEffect, useState, useMemo } from 'react';
 import { Star, CheckCircle, Briefcase, GraduationCap, Clock, Calendar, MessageSquare, X, Zap } from 'lucide-react';
@@ -322,7 +321,7 @@ export default function MentorPage({ params }: { params: { id: string } }) {
     const mentorRef = useMemoFirebase(() => {
         if (!firestore || !params.id) return null;
         return doc(firestore, 'mentors', params.id);
-    }, [firestore, params.id]);
+    }, [firestore, params]);
 
     const { data: mentor, isLoading } = useDoc<Mentor>(mentorRef);
 
