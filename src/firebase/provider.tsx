@@ -63,8 +63,8 @@ export const FirebaseProvider: React.FC<{
 
   // Effect to subscribe to Firebase auth state changes
   useEffect(() => {
-    if (!auth || !firestore) {
-      setUserAuthState({ user: null, isAdmin: false, isUserLoading: false, isAuthCheckComplete: true, userError: new Error("Auth or Firestore service not provided.") });
+    if (!auth) {
+      setUserAuthState({ user: null, isAdmin: false, isUserLoading: false, isAuthCheckComplete: true, userError: new Error("Auth service not provided.") });
       return;
     }
 
@@ -94,7 +94,7 @@ export const FirebaseProvider: React.FC<{
       }
     );
     return () => unsubscribe();
-  }, [auth, firestore]);
+  }, [auth]);
 
   const contextValue = useMemo((): FirebaseContextState => {
     const servicesAvailable = !!(firebaseApp && firestore && auth);

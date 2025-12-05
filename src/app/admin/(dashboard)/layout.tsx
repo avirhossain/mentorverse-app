@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -15,24 +15,18 @@ export default function AdminLayout({
   const router = useRouter();
 
   useEffect(() => {
-    // Log the state every time the effect runs
-    console.log('[AdminLayout] Auth Check:', { isAuthCheckComplete, isAdmin, user: !!user });
-
     // Wait until the initial authentication check is complete.
     if (!isAuthCheckComplete) {
-      console.log('[AdminLayout] Waiting for auth check to complete...');
+      // While checking, show a loading skeleton.
       return;
     }
 
     // If the check is complete and the user is not an admin,
     // force them to the admin login page.
     if (!isAdmin) {
-      console.log('[AdminLayout] Not an admin. Redirecting to /admin/login');
       router.push('/admin/login');
-    } else {
-      console.log('[AdminLayout] Admin access granted.');
     }
-  }, [isAdmin, isAuthCheckComplete, router, user]);
+  }, [isAdmin, isAuthCheckComplete, router]);
   
   // If authentication is still loading OR if the user is not yet confirmed as an admin,
   // show a skeleton screen to prevent flashing the admin content to non-admin users.
