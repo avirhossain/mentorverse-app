@@ -45,7 +45,7 @@ export default function LoginPage() {
             const response = await fetch('/api/set-admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid, admin: true }),
+                body: JSON.stringify({ uid }),
             });
             if (!response.ok) {
                 const errorData = await response.json();
@@ -53,6 +53,7 @@ export default function LoginPage() {
             }
         } catch (error) {
             console.error("Failed to set admin claim:", error);
+            // We show a toast here but don't re-throw, so the login can proceed for non-admins
             toast({ variant: 'destructive', title: 'Admin Grant Failed', description: error.message });
         }
     };
@@ -113,7 +114,6 @@ export default function LoginPage() {
         
         try {
             const userCredential = await signInWithEmailAndPassword(auth, identifier, password);
-            // After successful sign-in, call handleRedirect to manage claims and routing.
             await handleRedirect(userCredential.user);
         } catch (error: any) {
             toast({

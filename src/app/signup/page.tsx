@@ -48,7 +48,7 @@ export default function SignUpPage() {
             const response = await fetch('/api/set-admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid, admin: true }),
+                body: JSON.stringify({ uid }),
             });
              if (!response.ok) {
                 const errorData = await response.json();
@@ -60,7 +60,7 @@ export default function SignUpPage() {
         }
     };
     
-    const createUserProfile = async (user: User, extraData = {}) => {
+    const createUserProfile = async (user: User) => {
         if (!firestore) return;
         const userDocRef = doc(firestore, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
@@ -74,7 +74,6 @@ export default function SignUpPage() {
                 interests: [],
                 mentorshipGoal: '',
                 status: 'active',
-                ...extraData,
             });
         }
     };
@@ -101,8 +100,7 @@ export default function SignUpPage() {
     useEffect(() => {
         if (!isUserLoading && user) {
             // If an already logged-in user hits the sign-up page, redirect them.
-            // This re-uses the redirect logic which includes the admin check.
-            handleRedirect(user);
+            router.push('/');
         }
     }, [user, isUserLoading, router]);
 
@@ -115,7 +113,6 @@ export default function SignUpPage() {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, identifier, password);
             await updateProfile(userCredential.user, { displayName: name });
-            // After creating the user, call the redirect handler.
             await handleRedirect(userCredential.user);
         } catch (error: any) {
             toast({
