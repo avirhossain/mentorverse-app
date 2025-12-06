@@ -40,7 +40,9 @@ export default function AdminLoginPage() {
 
 
     useEffect(() => {
+        // This effect now controls the redirect AFTER successful admin verification.
         if (isAuthCheckComplete && user && isAdmin) {
+            console.log("[AdminLogin] useEffect detected user is admin. Redirecting to /admin");
             router.push('/admin');
         }
     }, [isAdmin, isAuthCheckComplete, user, router]);
@@ -63,12 +65,15 @@ export default function AdminLoginPage() {
             console.log("[AdminLogin] Forcing ID token refresh to get admin claims...");
             await user.getIdToken(true); 
 
+            // After login, the component will re-render, and the useEffect will handle the redirect if the user is an admin.
+            // We explicitly call refreshToken to ensure the useUser hook's state is current.
+            await refreshToken();
+
             toast({
                 title: 'Login Successful',
-                description: 'Verifying admin status and redirecting...',
+                description: 'Verifying admin status...',
             });
-            console.log("[AdminLogin] Token refreshed. Redirecting to dashboard.");
-            router.push('/admin'); 
+            
 
         } catch (error: any) {
              toast({
@@ -90,8 +95,8 @@ export default function AdminLoginPage() {
         try {
             const result = await grantAdminRights();
             if (result.status === 'SUCCESS' || result.status === 'ALREADY_ADMIN') {
-                toast({ title: 'Admin Rights Confirmed!', description: 'Please wait a moment while we refresh your session.' });
-                await refreshToken();
+                toast({ title: 'Admin Rights Confirmed!', description: 'Refreshing session... You should be redirected shortly.' });
+                await refreshToken(); // This is the key step to update the client state
             } else {
                  toast({ variant: 'destructive', title: 'Failed to Grant Admin', description: result.message || 'An unknown error occurred.' });
             }
@@ -127,23 +132,21 @@ export default function AdminLoginPage() {
                         </p>
                     </div>
                     
-                    {isAuthCheckComplete && user ? (
+                    {isAuthCheckComplete && user && !isAdmin ? (
                          <div className="space-y-4">
                             <p className="text-center text-sm">Logged in as: <br/> <span className="font-bold">{user.email}</span></p>
-                            {isAdmin ? (
-                                <p className="text-center font-semibold text-green-600">Admin status confirmed. Redirecting...</p>
-                            ) : (
-                                <div className="p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-r-lg space-y-3">
-                                    <p className="font-bold">Admin Access Not Detected</p>
-                                    <p className="text-sm">Click the button below to grant yourself admin rights. You only need to do this once.</p>
-                                     <Button onClick={handleGrantAdmin} variant="secondary" className="w-full" disabled={isGranting}>
-                                        <ShieldCheck className="mr-2 h-4 w-4" />
-                                        {isGranting ? 'Granting...' : 'Grant Admin Rights'}
-                                    </Button>
-                                </div>
-                            )}
+                           
+                            <div className="p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-r-lg space-y-3">
+                                <p className="font-bold">Admin Access Not Detected</p>
+                                <p className="text-sm">Click the button below to grant yourself admin rights. You only need to do this once.</p>
+                                 <Button onClick={handleGrantAdmin} variant="secondary" className="w-full" disabled={isGranting}>
+                                    <ShieldCheck className="mr-2 h-4 w-4" />
+                                    {isGranting ? 'Granting...' : 'Grant Admin Rights'}
+                                </Button>
+                            </div>
+                            
                              <Button onClick={handleLogout} variant="outline" className="w-full">
-                                <LogOut className="mr-2 h-4 w-4" /> Log Out
+                                <LogOut className="mr-2 h-4 w-4" /> Log Out & Try Again
                             </Button>
                         </div>
                     ) : (
@@ -186,5 +189,3 @@ export default function AdminLoginPage() {
         </div>
     );
 }
-
-    

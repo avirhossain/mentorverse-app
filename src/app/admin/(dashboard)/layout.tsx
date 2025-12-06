@@ -13,40 +13,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   console.log('[AdminLayout] Rendering with state:', { user: !!user, isAdmin, isAuthCheckComplete });
 
   useEffect(() => {
-    console.log('[AdminLayout] useEffect triggered. State:', { user: !!user, isAdmin, isAuthCheckComplete });
-
-    if (!isAuthCheckComplete) {
-      console.log('[AdminLayout] Auth check not complete. Waiting...');
-      // If auth isn't complete yet, we don't do anything.
-      return;
-    }
-
-    // Set a timer to check admin status after a delay.
-    // This gives time for the custom claim to propagate after login.
-    const verificationTimer = setTimeout(() => {
-      console.log(`[AdminLayout] 5-second timer finished. Checking admin status now. isAdmin: ${isAdmin}`);
-      // After 5 seconds, if the auth check is complete but the user is NOT an admin, redirect.
-      if (!user || !isAdmin) {
-        console.log('[AdminLayout] REDIRECTING to /admin/login. Reason:', !user ? 'User is not logged in.' : 'User is not an admin.');
+    // This effect now only handles the case where a non-admin tries to access the dashboard directly.
+    // The successful login redirect is handled by the login page itself.
+    if (isAuthCheckComplete && !user) {
+        console.log('[AdminLayout] Auth check complete, no user found. Redirecting to login.');
         router.push('/admin/login');
-      } else {
-        console.log('[AdminLayout] User is an admin. No redirect needed.');
-      }
-    }, 5000); // 5-second delay
+    }
+  }, [isAuthCheckComplete, user, router]);
 
-    // Cleanup function to clear the timer if the component unmounts
-    return () => {
-      console.log('[AdminLayout] Clearing verification timer.');
-      clearTimeout(verificationTimer);
-    };
-
-  }, [user, isAdmin, isAuthCheckComplete, router]);
 
   // Show a loading skeleton only while the initial auth check is running.
   if (!isAuthCheckComplete) {
     console.log('[AdminLayout] Showing loading skeleton because auth check is not complete.');
     return (
       <div className="flex flex-col min-h-screen">
+         <Header currentView="admin" />
         <div className="p-8">
             <Skeleton className="h-8 w-1/4 mb-4" />
             <Skeleton className="h-4 w-1/2" />
@@ -59,9 +40,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // If the auth check is complete, render the children immediately.
-  // The useEffect timer will handle the redirect if necessary after the delay.
-  console.log('[AdminLayout] Auth complete. Rendering children while timer runs.');
+  if (isAuthCheckComplete && !isAdmin && user) {
+     return (
+         <div className="flex flex-col min-h-screen bg-background">
+            <Header currentView="admin" />
+            <div className="flex-1 flex items-center justify-center text-center p-8">
+                <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl border-t-4 border-yellow-500">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Access Denied</h1>
+                    <p className="mt-2 text-gray-600 dark:text-gray-300">You do not have administrative privileges. Please log in with an admin account.</p>
+                     <Button onClick={() => router.push('/admin/login')} className="mt-6">
+                        Go to Login
+                    </Button>
+                </div>
+            </div>
+        </div>
+     )
+  }
+
+  // If the checks pass, render the dashboard content.
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header currentView="admin" />
