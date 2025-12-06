@@ -1,13 +1,14 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Users as UsersIcon, X, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, Check, ThumbsDown, Eye, Phone, PlayCircle } from 'lucide-react';
+import { Users as UsersIcon, X, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, Check, ThumbsDown, Eye, Phone, PlayCircle, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { collection, getDocs, doc, runTransaction, deleteDoc, setDoc, updateDoc, query } from 'firebase/firestore';
 import { useFirestore, useUser } from '@/firebase';
-import type { Mentor, Mentee, Session, Tip, Coupon, PendingPayment, MentorApplication, SupportRequest } from '@/lib/types';
+import type { Mentor, Mentee, Session, Tip, Coupon, PendingPayment, MentorApplication, SupportRequest, AdminUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -230,6 +231,7 @@ export default function AdminPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [mentorApps, setMentorApps] = useState<MentorApplication[]>([]);
   const [supportRequests, setSupportRequests] = useState<SupportRequest[]>([]);
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
 
   const [isLoadingMentors, setIsLoadingMentors] = useState(true);
   const [isLoadingMentees, setIsLoadingMentees] = useState(true);
@@ -239,6 +241,7 @@ export default function AdminPage() {
   const [isLoadingCoupons, setIsLoadingCoupons] = useState(true);
   const [isLoadingMentorApps, setIsLoadingMentorApps] = useState(true);
   const [isLoadingSupport, setIsLoadingSupport] = useState(true);
+  const [isLoadingAdmins, setIsLoadingAdmins] = useState(true);
   
   const canWrite = isAdmin;
   const canDelete = isAdmin;
@@ -257,17 +260,19 @@ export default function AdminPage() {
     setIsLoadingCoupons(true);
     setIsLoadingMentorApps(true);
     setIsLoadingSupport(true);
+    setIsLoadingAdmins(true);
 
     try {
-        const [mentorsSnap, menteesSnap, sessionsSnap, tipsSnap, paymentsSnap, couponsSnap, mentorAppsSnap, supportRequestsSnap] = await Promise.all([
+        const [mentorsSnap, menteesSnap, sessionsSnap, tipsSnap, paymentsSnap, couponsSnap, mentorAppsSnap, supportRequestsSnap, adminsSnap] = await Promise.all([
             getDocs(collection(firestore, 'mentors')),
             getDocs(collection(firestore, 'users')),
             getDocs(collection(firestore, 'sessions')),
             getDocs(collection(firestore, 'tips')),
-            getDocs(query(collection(firestore, 'pending_payments'), where('status', '==', 'pending'))),
+            getDocs(query(collection(firestore, 'pending_payments'))),
             getDocs(collection(firestore, 'coupons')),
             getDocs(collection(firestore, 'mentor_applications')),
             getDocs(collection(firestore, 'support_requests')),
+            getDocs(collection(firestore, 'admins')),
         ]);
 
         setMentors(mentorsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentor)));
@@ -278,6 +283,7 @@ export default function AdminPage() {
         setCoupons(couponsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon)));
         setMentorApps(mentorAppsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as MentorApplication)));
         setSupportRequests(supportRequestsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as SupportRequest)));
+        setAdmins(adminsSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as AdminUser)));
 
     } catch (error) {
         toast({ variant: 'destructive', title: 'Error fetching data', description: error.message });
@@ -291,6 +297,7 @@ export default function AdminPage() {
         setIsLoadingCoupons(false);
         setIsLoadingMentorApps(false);
         setIsLoadingSupport(false);
+        setIsLoadingAdmins(false);
     }
   };
 
@@ -637,6 +644,25 @@ export default function AdminPage() {
                     <p className={`text-sm font-semibold ${coupon.isUsed ? 'text-red-500' : 'text-green-600'}`}>
                         {coupon.isUsed ? 'Redeemed' : 'Available'}
                     </p>
+                )}
+            />
+
+            <DataListView
+                title="All Admins"
+                data={admins}
+                isLoading={isLoadingAdmins}
+                icon={Shield}
+                idPrefix="A"
+                columns={[
+                    { header: 'SL', span: 1 },
+                    { header: 'Date', span: 2 },
+                    { header: 'UID', span: 2 },
+                    { header: 'Email', span: 5 },
+                ]}
+                renderActions={(admin) => (
+                    <>
+                        {/* Future actions for admins can go here */}
+                    </>
                 )}
             />
 
