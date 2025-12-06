@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { FilePlus, Users as UsersIcon, X, PlusCircle, Trash2, User, Briefcase, Lightbulb, Ticket, Banknote, Edit, ShieldCheck, ShieldX, Calendar, CreditCard, Inbox, MessageSquare, Check, ThumbsDown, Eye, Phone, PlayCircle, UserCog } from 'lucide-react';
@@ -1005,322 +1006,323 @@ export default function AdminPage() {
   }
   
   return (
-    <main className="flex-1 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="space-y-2 mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
-          <p className="text-gray-500 dark:text-gray-400">Manage Mentees content and users.</p>
-        </div>
+    <>
+      <main className="flex-1 p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="space-y-2 mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+            <p className="text-gray-500 dark:text-gray-400">Manage Mentees content and users.</p>
+          </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg border-t-4 border-primary">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Content Management</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {canWrite && <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-              <UsersIcon className="w-8 h-8 text-primary" />
-              <h3 className="text-lg font-semibold dark:text-white">Manage Mentors</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Create, edit, and view mentor profiles.
-              </p>
-              <Button onClick={() => openModal('mentor')} className="mt-2">
-                Create New Mentor
-              </Button>
-            </div>}
-            {canWrite && <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-              <FilePlus className="w-8 h-8 text-primary" />
-              <h3 className="text-lg font-semibold dark:text-white">Manage Sessions</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Create unique, bookable sessions offered by mentors.
-              </p>
-              <Button onClick={() => openModal('session')} className="mt-2">
-                Create New Session
-              </Button>
-            </div>}
-             {canWrite && <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-              <Lightbulb className="w-8 h-8 text-primary" />
-              <h3 className="text-lg font-semibold dark:text-white">Manage Tips</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                 Create articles, and add links to videos and websites.
-              </p>
-              <Button onClick={() => openModal('tip')} className="mt-2">
-                Create New Tip
-              </Button>
-            </div>}
-             {canWrite && <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-              <Ticket className="w-8 h-8 text-primary" />
-              <h3 className="text-lg font-semibold dark:text-white">Manage Coupons</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                 Create and manage promotional coupon codes.
-              </p>
-              <Button onClick={() => openModal('coupon')} className="mt-2">
-                Create Coupons
-              </Button>
-            </div>}
-            <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-              <CreditCard className="w-8 h-8 text-primary" />
-              <h3 className="text-lg font-semibold dark:text-white">User Balances</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                 View mentee balances and transaction history.
-              </p>
-              <Button asChild className="mt-2">
-                <Link href="/admin/balances">View Balances</Link>
-              </Button>
+          <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-lg border-t-4 border-primary">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Content Management</h2>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {canWrite && <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                <UsersIcon className="w-8 h-8 text-primary" />
+                <h3 className="text-lg font-semibold dark:text-white">Manage Mentors</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Create, edit, and view mentor profiles.
+                </p>
+                <Button onClick={() => openModal('mentor')} className="mt-2">
+                  Create New Mentor
+                </Button>
+              </div>}
+              {canWrite && <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                <FilePlus className="w-8 h-8 text-primary" />
+                <h3 className="text-lg font-semibold dark:text-white">Manage Sessions</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Create unique, bookable sessions offered by mentors.
+                </p>
+                <Button onClick={() => openModal('session')} className="mt-2">
+                  Create New Session
+                </Button>
+              </div>}
+               {canWrite && <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                <Lightbulb className="w-8 h-8 text-primary" />
+                <h3 className="text-lg font-semibold dark:text-white">Manage Tips</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                   Create articles, and add links to videos and websites.
+                </p>
+                <Button onClick={() => openModal('tip')} className="mt-2">
+                  Create New Tip
+                </Button>
+              </div>}
+               {canWrite && <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                <Ticket className="w-8 h-8 text-primary" />
+                <h3 className="text-lg font-semibold dark:text-white">Manage Coupons</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                   Create and manage promotional coupon codes.
+                </p>
+                <Button onClick={() => openModal('coupon')} className="mt-2">
+                  Create Coupons
+                </Button>
+              </div>}
+              <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                <CreditCard className="w-8 h-8 text-primary" />
+                <h3 className="text-lg font-semibold dark:text-white">User Balances</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                   View mentee balances and transaction history.
+                </p>
+                <Button asChild className="mt-2">
+                  <Link href="/admin/balances">View Balances</Link>
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <PaymentApprovalList 
-          payments={pendingPayments.filter(p => p.status === 'pending')} 
-          onApprove={handleApprovePayment} 
-          isLoading={isLoadingPayments}
-          onDetails={(payment) => openModal('payment_details', payment)}
-          canWrite={canWrite}
-        />
-
-        <DataListView
-              title="Mentor Applications"
-              data={mentorApps}
-              isLoading={isLoadingMentorApps}
-              icon={Inbox}
-              idPrefix="MA"
-              columns={[
-                  { header: 'SL', span: 1 },
-                  { header: 'Date', span: 2 },
-                  { header: 'ID', span: 2 },
-                  { header: 'Name', span: 5 },
-              ]}
-              renderActions={(app) => {
-                  switch (app.status) {
-                      case 'pending':
-                          return (
-                              <>
-                                  <Button variant="ghost" size="sm" onClick={() => openModal('mentor_app_details', app)}><Eye className="w-4 h-4"/></Button>
-                                  {canWrite && <>
-                                  <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" onClick={() => handleUpdateApplicationStatus(app, 'approved')}>
-                                      <Check className="w-4 h-4" />
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => handleUpdateApplicationStatus(app, 'rejected')}>
-                                      <ThumbsDown className="w-4 h-4" />
-                                  </Button>
-                                  </>}
-                              </>
-                          );
-                      case 'approved':
-                          return <span className="text-sm font-semibold text-green-600">Approved</span>;
-                      case 'rejected':
-                          return <span className="text-sm font-semibold text-red-600">Rejected</span>;
-                      default:
-                          return null;
-                  }
-              }}
-               emptyMessage="No new mentor applications."
+          
+          <PaymentApprovalList 
+            payments={pendingPayments.filter(p => p.status === 'pending')} 
+            onApprove={handleApprovePayment} 
+            isLoading={isLoadingPayments}
+            onDetails={(payment) => openModal('payment_details', payment)}
+            canWrite={canWrite}
           />
+
+          <DataListView
+                title="Mentor Applications"
+                data={mentorApps}
+                isLoading={isLoadingMentorApps}
+                icon={Inbox}
+                idPrefix="MA"
+                columns={[
+                    { header: 'SL', span: 1 },
+                    { header: 'Date', span: 2 },
+                    { header: 'ID', span: 2 },
+                    { header: 'Name', span: 5 },
+                ]}
+                renderActions={(app) => {
+                    switch (app.status) {
+                        case 'pending':
+                            return (
+                                <>
+                                    <Button variant="ghost" size="sm" onClick={() => openModal('mentor_app_details', app)}><Eye className="w-4 h-4"/></Button>
+                                    {canWrite && <>
+                                    <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700" onClick={() => handleUpdateApplicationStatus(app, 'approved')}>
+                                        <Check className="w-4 h-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => handleUpdateApplicationStatus(app, 'rejected')}>
+                                        <ThumbsDown className="w-4 h-4" />
+                                    </Button>
+                                    </>}
+                                </>
+                            );
+                        case 'approved':
+                            return <span className="text-sm font-semibold text-green-600">Approved</span>;
+                        case 'rejected':
+                            return <span className="text-sm font-semibold text-red-600">Rejected</span>;
+                        default:
+                            return null;
+                    }
+                }}
+                 emptyMessage="No new mentor applications."
+            />
+            
+            <DataListView
+                title="Support Requests"
+                data={supportRequests}
+                isLoading={isLoadingSupport}
+                icon={MessageSquare}
+                idPrefix="SR"
+                columns={[
+                    { header: 'SL', span: 1 },
+                    { header: 'Date', span: 2 },
+                    { header: 'ID', span: 2 },
+                    { header: 'Name', span: 5 },
+                ]}
+                renderActions={(req) => (
+                     <>
+                        <Button variant="ghost" size="sm" onClick={() => openModal('support_details', req)}><Eye className="w-4 h-4"/></Button>
+                        {canDelete && <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will delete the support request from {req.name}. This action cannot be undone.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete('support_requests', req.id, `request from ${req.name}`)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>}
+                    </>
+                )}
+                emptyMessage="No new support requests."
+            />
           
           <DataListView
-              title="Support Requests"
-              data={supportRequests}
-              isLoading={isLoadingSupport}
-              icon={MessageSquare}
-              idPrefix="SR"
+            title="All Mentors"
+            data={mentors}
+            isLoading={isLoadingMentors}
+            icon={Briefcase}
+            idPrefix="M"
+            columns={[
+                { header: 'SL', span: 1 },
+                { header: 'Date', span: 2 },
+                { header: 'ID', span: 2 },
+                { header: 'Name', span: 5 },
+            ]}
+            renderActions={(mentor) => (
+                <>
+                    <Button asChild variant="ghost" size="sm">
+                        <Link href={`/mentors/${mentor.id}`}><Eye className="w-4 h-4" /></Link>
+                    </Button>
+                    {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('mentor', mentor)}><Edit className="w-4 h-4" /></Button>}
+                    {canDelete && <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the mentor profile for {mentor.name}.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete('mentors', mentor.id, mentor.name)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>}
+                </>
+            )}
+           />
+
+            <DataListView
+                title="All Sessions"
+                data={sessions}
+                isLoading={isLoadingSessions}
+                icon={Calendar}
+                idPrefix="S"
+                columns={[
+                    { header: 'SL', span: 1 },
+                    { header: 'Date', span: 2 },
+                    { header: 'ID', span: 2 },
+                    { header: 'Title', span: 5 },
+                ]}
+                renderActions={(session) => (
+                     <>
+                        <Button asChild variant="ghost" size="sm">
+                            <Link href={`/admin/sessions/${session.id}`}><Eye className="w-4 h-4" /></Link>
+                        </Button>
+                        {session.status === 'scheduled' && canWrite && (
+                            <Button size="sm" onClick={() => handleUpdateSessionStatus(session, 'active')}>
+                                <PlayCircle className="w-4 h-4 mr-2" />
+                                Start
+                            </Button>
+                        )}
+                        {session.status === 'active' && canWrite && (
+                             <Button size="sm" variant="destructive" onClick={() => handleUpdateSessionStatus(session, 'completed')}>
+                                End
+                            </Button>
+                        )}
+                        {session.status === 'completed' && (
+                            <span className="text-sm font-semibold text-gray-500">Completed</span>
+                        )}
+                    </>
+                )}
+            />
+
+            <DataListView
+              title="All Tips"
+              data={tips}
+              isLoading={isLoadingTips}
+              icon={Lightbulb}
+              idPrefix="T"
               columns={[
-                  { header: 'SL', span: 1 },
-                  { header: 'Date', span: 2 },
-                  { header: 'ID', span: 2 },
-                  { header: 'Name', span: 5 },
+                { header: 'SL', span: 1 },
+                { header: 'Date', span: 2 },
+                { header: 'ID', span: 2 },
+                { header: 'Title', span: 5 },
               ]}
-              renderActions={(req) => (
-                   <>
-                      <Button variant="ghost" size="sm" onClick={() => openModal('support_details', req)}><Eye className="w-4 h-4"/></Button>
-                      {canDelete && <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                              <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                  This will delete the support request from {req.name}. This action cannot be undone.
-                              </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete('support_requests', req.id, `request from ${req.name}`)}>Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                          </AlertDialogContent>
-                      </AlertDialog>}
-                  </>
-              )}
-              emptyMessage="No new support requests."
-          />
-        
-        <DataListView
-          title="All Mentors"
-          data={mentors}
-          isLoading={isLoadingMentors}
-          icon={Briefcase}
-          idPrefix="M"
-          columns={[
-              { header: 'SL', span: 1 },
-              { header: 'Date', span: 2 },
-              { header: 'ID', span: 2 },
-              { header: 'Name', span: 5 },
-          ]}
-          renderActions={(mentor) => (
-              <>
-                  <Button asChild variant="ghost" size="sm">
-                      <Link href={`/mentors/${mentor.id}`}><Eye className="w-4 h-4" /></Link>
-                  </Button>
-                  {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('mentor', mentor)}><Edit className="w-4 h-4" /></Button>}
-                  {canDelete && <AlertDialog>
+              renderActions={(tip) => (
+                <>
+                    {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('tip', tip)}><Edit className="w-4 h-4" /></Button>}
+                    {canDelete && <AlertDialog>
                       <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
-                          <AlertDialogHeader>
+                        <AlertDialogHeader>
                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                           <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete the mentor profile for {mentor.name}.
+                            This action cannot be undone. This will permanently delete the tip: {tip.title}.
                           </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete('mentors', mentor.id, mentor.name)}>Delete</AlertDialogAction>
-                          </AlertDialogFooter>
+                          <AlertDialogAction onClick={() => handleDelete('tips', tip.id, tip.title)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
                       </AlertDialogContent>
-                  </AlertDialog>}
-              </>
-          )}
-         />
-
-          <DataListView
-              title="All Sessions"
-              data={sessions}
-              isLoading={isLoadingSessions}
-              icon={Calendar}
-              idPrefix="S"
-              columns={[
-                  { header: 'SL', span: 1 },
-                  { header: 'Date', span: 2 },
-                  { header: 'ID', span: 2 },
-                  { header: 'Title', span: 5 },
-              ]}
-              renderActions={(session) => (
-                   <>
-                      <Button asChild variant="ghost" size="sm">
-                          <Link href={`/admin/sessions/${session.id}`}><Eye className="w-4 h-4" /></Link>
-                      </Button>
-                      {session.status === 'scheduled' && canWrite && (
-                          <Button size="sm" onClick={() => handleUpdateSessionStatus(session, 'active')}>
-                              <PlayCircle className="w-4 h-4 mr-2" />
-                              Start
-                          </Button>
-                      )}
-                      {session.status === 'active' && canWrite && (
-                           <Button size="sm" variant="destructive" onClick={() => handleUpdateSessionStatus(session, 'completed')}>
-                              End
-                          </Button>
-                      )}
-                      {session.status === 'completed' && (
-                          <span className="text-sm font-semibold text-gray-500">Completed</span>
-                      )}
-                  </>
+                    </AlertDialog>}
+                </>
               )}
-          />
+            />
+            
+            <DataListView
+                title="All Coupons"
+                data={coupons}
+                isLoading={isLoadingCoupons}
+                icon={Ticket}
+                idPrefix="C"
+                 columns={[
+                    { header: 'SL', span: 1 },
+                    { header: 'Date', span: 2 },
+                    { header: 'ID', span: 2 },
+                    { header: 'Code', span: 5 },
+                ]}
+                renderActions={(coupon) => (
+                    <p className={`text-sm font-semibold ${coupon.isUsed ? 'text-red-500' : 'text-green-600'}`}>
+                        {coupon.isUsed ? 'Redeemed' : 'Available'}
+                    </p>
+                )}
+            />
 
-          <DataListView
-            title="All Tips"
-            data={tips}
-            isLoading={isLoadingTips}
-            icon={Lightbulb}
-            idPrefix="T"
-            columns={[
-              { header: 'SL', span: 1 },
-              { header: 'Date', span: 2 },
-              { header: 'ID', span: 2 },
-              { header: 'Title', span: 5 },
-            ]}
-            renderActions={(tip) => (
-              <>
-                  {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('tip', tip)}><Edit className="w-4 h-4" /></Button>}
-                  {canDelete && <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete the tip: {tip.title}.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete('tips', tip.id, tip.title)}>Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>}
-              </>
-            )}
-          />
-          
-          <DataListView
-              title="All Coupons"
-              data={coupons}
-              isLoading={isLoadingCoupons}
-              icon={Ticket}
-              idPrefix="C"
-               columns={[
-                  { header: 'SL', span: 1 },
-                  { header: 'Date', span: 2 },
-                  { header: 'ID', span: 2 },
-                  { header: 'Code', span: 5 },
-              ]}
-              renderActions={(coupon) => (
-                  <p className={`text-sm font-semibold ${coupon.isUsed ? 'text-red-500' : 'text-green-600'}`}>
-                      {coupon.isUsed ? 'Redeemed' : 'Available'}
-                  </p>
-              )}
-          />
-
-          <DataListView
-              title="All Mentees (Users)"
-              data={mentees}
-              isLoading={isLoadingMentees}
-              icon={User}
-              idPrefix="U"
-               columns={[
-                  { header: 'SL', span: 1 },
-                  { header: 'Date', span: 2 },
-                  { header: 'ID', span: 2 },
-                  { header: 'Name', span: 5 },
-              ]}
-              renderActions={(mentee) => (
-                  <>
-                      <Button asChild variant="ghost" size="sm">
-                         <Link href={`/account?userId=${mentee.id}`}><Eye className="w-4 h-4" /></Link>
-                      </Button>
-                      {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('mentee', mentee)}><Edit className="w-4 h-4" /></Button>}
-                      {canDelete && <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                              <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete the account for {mentee.name || mentee.id}.
-                              </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete('users', mentee.id, mentee.name || mentee.id)}>Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                          </AlertDialogContent>
-                      </AlertDialog>}
-                  </>
-              )}
-          />
-      </div>
-    </main>
+            <DataListView
+                title="All Mentees (Users)"
+                data={mentees}
+                isLoading={isLoadingMentees}
+                icon={User}
+                idPrefix="U"
+                 columns={[
+                    { header: 'SL', span: 1 },
+                    { header: 'Date', span: 2 },
+                    { header: 'ID', span: 2 },
+                    { header: 'Name', span: 5 },
+                ]}
+                renderActions={(mentee) => (
+                    <>
+                        <Button asChild variant="ghost" size="sm">
+                           <Link href={`/account?userId=${mentee.id}`}><Eye className="w-4 h-4" /></Link>
+                        </Button>
+                        {canWrite && <Button variant="ghost" size="sm" onClick={() => openModal('mentee', mentee)}><Edit className="w-4 h-4" /></Button>}
+                        {canDelete && <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700"><Trash2 className="w-4 h-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the account for {mentee.name || mentee.id}.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete('users', mentee.id, mentee.name || mentee.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>}
+                    </>
+                )}
+            />
+        </div>
+      </main>
 
       {modalState.type === 'mentor' && canWrite && (
           <Modal title={modalState.data ? "Edit Mentor" : "Create New Mentor"} onClose={closeModal}>
@@ -1371,6 +1373,6 @@ export default function AdminPage() {
               <PendingPaymentDetails payment={modalState.data} />
           </Modal>
       )}
-  </div>
-);
+    </>
+  );
 }
