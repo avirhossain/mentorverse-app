@@ -11,6 +11,7 @@ export interface AdminAuthState {
   userError: Error | null;
 }
 
+// This hook is now completely standalone and dedicated to admin checks.
 export const useAdminUser = (): AdminAuthState & { refreshToken: () => Promise<void> } => {
   const auth = useFirebaseAuth(); // Get auth instance from context
   const [state, setState] = useState<AdminAuthState>({
@@ -42,9 +43,10 @@ export const useAdminUser = (): AdminAuthState & { refreshToken: () => Promise<v
 
       console.log('[AdminAuth] User found. Getting initial ID token...');
       try {
-        const tokenResult = await firebaseUser.getIdTokenResult(false); // Don't force refresh here
+        // Check for admin claim on the token.
+        const tokenResult = await firebaseUser.getIdTokenResult(false); 
         const adminStatus = !!tokenResult.claims.admin;
-        console.log(`[AdminAuth] Initial check: isAdmin is ${adminStatus}. Claims:`, tokenResult.claims);
+        console.log(`[AdminAuth] Initial check: isAdmin is ${adminStatus}.`);
         setState({
           user: firebaseUser,
           isAdmin: adminStatus,
@@ -68,14 +70,15 @@ export const useAdminUser = (): AdminAuthState & { refreshToken: () => Promise<v
     };
   }, [auth]); // Dependency on auth instance
 
+  // Function to manually force a token refresh.
   const refreshToken = async () => {
     if (!state.user) {
       console.log('[AdminAuth] refreshToken called but no user is set.');
       return;
     }
     console.log('[AdminAuth] Forcing token refresh...');
-    await state.user.getIdToken(true);
-    const tokenResult = await state.user.getIdTokenResult(true); // Forced refresh
+    await state.user.getIdToken(true); // Force refresh
+    const tokenResult = await state.user.getIdTokenResult(true);
     const newIsAdmin = !!tokenResult.claims.admin;
     console.log(`[AdminAuth] Token refreshed. New isAdmin status: ${newIsAdmin}`);
     setState((prev) => ({

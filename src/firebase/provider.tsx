@@ -7,13 +7,12 @@ import { Auth } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { UserAuthState, useUserHook } from './auth/use-user';
 
-// Combined state for the Firebase context
+// The context state now only contains regular user auth state.
 export interface FirebaseContextState extends UserAuthState {
-  areServicesAvailable: boolean; // True if core services (app, firestore, auth instance) are provided
+  areServicesAvailable: boolean; 
   firebaseApp: FirebaseApp | null;
   firestore: Firestore | null;
-  auth: Auth | null; // The Auth service instance
-  refreshToken: () => Promise<void>; // Add refreshToken to the state
+  auth: Auth | null;
 }
 
 // Return type for useFirebase() - this is what most components will use
@@ -21,7 +20,6 @@ export interface FirebaseServicesAndUser extends UserAuthState {
   firebaseApp: FirebaseApp;
   firestore: Firestore;
   auth: Auth;
-  refreshToken: () => Promise<void>;
 }
 
 // React Context
@@ -41,6 +39,7 @@ export const FirebaseProvider: React.FC<{
   firestore,
   auth,
 }) => {
+  // useUserHook now returns the simplified UserAuthState.
   const userAuthState = useUserHook(auth);
 
   const contextValue = useMemo((): FirebaseContextState => {
