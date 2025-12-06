@@ -57,12 +57,19 @@ export default function AdminLoginPage() {
         setIsLoading(true);
 
         try {
-            await signInWithEmailAndPassword(auth, values.email, values.password);
-            console.log('[AdminLogin] signInWithEmailAndPassword successful. Waiting for auth state change.');
+            const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+            const user = userCredential.user;
+
+            console.log("[AdminLogin] Forcing ID token refresh to get admin claims...");
+            await user.getIdToken(true); 
+
             toast({
                 title: 'Login Successful',
                 description: 'Verifying admin status and redirecting...',
             });
+            console.log("[AdminLogin] Token refreshed. Redirecting to dashboard.");
+            router.push('/admin'); 
+
         } catch (error: any) {
              toast({
                 variant: 'destructive',
