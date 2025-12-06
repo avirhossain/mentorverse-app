@@ -9,19 +9,20 @@ export async function initFirebaseAdmin() {
     return adminApp;
   }
 
-  // This will use the GOOGLE_APPLICATION_CREDENTIALS environment variable
-  // or the default service account of the Cloud Run/Functions environment.
+  if (getApps().length > 0) {
+    adminApp = getApps()[0];
+    return adminApp;
+  }
+
+  // This will use the GOOGLE_APPLICATION_CREDENTIALS environment variable if it exists,
+  // otherwise, it will use the default service account of the App Hosting environment.
   const credential = process.env.GOOGLE_APPLICATION_CREDENTIALS
     ? cert(JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS))
     : undefined;
 
-  if (getApps().length === 0) {
-     // If credentials are provided, use them. Otherwise, initialize without arguments
-     // to use the application's default credentials.
-     adminApp = credential ? initializeApp({ credential }) : initializeApp();
-  } else {
-    adminApp = getApps()[0];
-  }
+  // If credentials are provided, use them. Otherwise, initialize without arguments
+  // to use the application's default credentials.
+  adminApp = credential ? initializeApp({ credential }) : initializeApp();
   
   return adminApp;
 }
