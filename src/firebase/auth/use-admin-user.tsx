@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,7 +14,7 @@ export interface AdminAuthState {
 export const useAdminUser = (): AdminAuthState => {
   const auth = useFirebaseAuth();
   const [state, setState] = useState<AdminAuthState>({
-    user: null,
+    user: auth?.currentUser || null, // Initialize with current user if available
     isAdmin: false,
     isAuthCheckComplete: false,
     userError: null,
@@ -23,13 +22,10 @@ export const useAdminUser = (): AdminAuthState => {
 
   useEffect(() => {
     if (!auth) {
-      // If auth service is not ready, mark check as complete with no admin.
-      setState({
-        user: null,
-        isAdmin: false,
-        isAuthCheckComplete: true,
-        userError: null
-      });
+      // If auth service is not ready, mark check as complete with no user/admin.
+      if (!state.isAuthCheckComplete) {
+         setState(s => ({ ...s, isAuthCheckComplete: true, user: null, isAdmin: false }));
+      }
       return;
     }
 
