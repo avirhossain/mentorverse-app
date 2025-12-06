@@ -4,24 +4,32 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Home, Lightbulb, User, LogIn, LogOut, Shield } from 'lucide-react';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser, useAdminUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 
 export const Header = ({ currentView }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const { user, isUserLoading, isAdmin } = useUser();
+    const generalUserState = useUser();
+    const adminUserState = useAdminUser();
+    
     const auth = useAuth();
     const router = useRouter();
     const pathname = usePathname();
+
+    const isAdminView = pathname.startsWith('/admin');
+    const isAdminLoginPage = pathname === '/admin/login';
+
+    const { user, isUserLoading, isAdmin } = isAdminView ? 
+        { user: adminUserState.user, isUserLoading: !adminUserState.isAuthCheckComplete, isAdmin: adminUserState.isAdmin } : 
+        generalUserState;
 
 
     const handleLogout = () => {
         if(auth) {
             signOut(auth).then(() => {
                 setIsMenuOpen(false);
-                // After logout, if in admin area, go to admin login, otherwise go home.
-                router.push(pathname.startsWith('/admin') ? '/admin/login' : '/');
+                router.push(isAdminView ? '/admin/login' : '/');
             });
         }
     };
@@ -34,9 +42,6 @@ export const Header = ({ currentView }) => {
             <Icon className="w-5 h-5 mr-1" /> {text}
         </Link>
     );
-
-    const isAdminView = pathname.startsWith('/admin');
-    const isAdminLoginPage = pathname === '/admin/login';
 
     return (
     <>
@@ -139,5 +144,3 @@ export const Header = ({ currentView }) => {
     </>
     );
 };
-
-    
