@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { collection, doc, setDoc, writeBatch } from 'firebase/firestore';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useAdminUser } from '@/firebase';
 import type { Mentor, Session, Tip, Coupon } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { v4 as uuidv4 } from 'uuid';
@@ -428,7 +428,7 @@ const TipForm = ({ tip, onSave, onClose }) => {
 };
 
 export default function AdminCreatePage() {
-    const { isAdmin } = useUser();
+    const { isAdmin } = useAdminUser();
     const [modalState, setModalState] = useState({ type: null, data: null });
     const [mentors, setMentors] = useState<Mentor[]>([]);
     const firestore = useFirestore();
