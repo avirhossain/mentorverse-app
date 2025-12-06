@@ -12,12 +12,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { user, isAdmin, isAuthCheckComplete } = useUser();
   const router = useRouter();
 
-  console.log('[AdminLayout] Rendering with state:', { user: !!user, isAdmin, isAuthCheckComplete });
+  useEffect(() => {
+    // This effect runs after the component renders and whenever its dependencies change.
+    // It's the correct place to handle side effects like redirection.
+    console.log('[AdminLayout Effect] Checking auth state:', { isAuthCheckComplete, user: !!user, isAdmin });
+    
+    // If the authentication check is complete and there's no user, redirect to login.
+    if (isAuthCheckComplete && !user) {
+      console.log('[AdminLayout Effect] No user found. Redirecting to login.');
+      router.push('/admin/login');
+    }
+  }, [isAuthCheckComplete, user, isAdmin, router]);
 
   // 1. While the auth check is running, show a loading screen.
-  // Nothing else happens until isAuthCheckComplete is true.
   if (!isAuthCheckComplete) {
-    console.log('[AdminLayout] Showing loading skeleton because auth check is not complete.');
+    console.log('[AdminLayout Render] Showing loading skeleton because auth check is not complete.');
     return (
       <div className="flex flex-col min-h-screen">
          <Header currentView="admin" />
@@ -33,14 +42,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // 2. Once the auth check is complete, make a final decision.
-  
-  // If there's no user, redirect to login.
+  // 2. If auth check is complete, but there's no user yet, show a redirecting message.
+  // The useEffect will handle the actual navigation.
   if (!user) {
-    console.log('[AdminLayout] Auth check complete, no user found. Redirecting to login.');
-    router.push('/admin/login');
-    // Render a loading state while redirecting
-    return (
+    console.log('[AdminLayout Render] No user, rendering redirecting message.');
+     return (
         <div className="flex flex-col min-h-screen">
              <Header currentView="admin" />
              <div className="flex-1 flex items-center justify-center">Redirecting to login...</div>
@@ -48,9 +54,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // If there is a user, but they are not an admin, show access denied.
+  // 3. If there is a user, but they are not an admin, show access denied.
   if (!isAdmin) {
-    console.log('[AdminLayout] Auth check complete, user is not admin. Showing Access Denied.');
+    console.log('[AdminLayout Render] User is not admin. Showing Access Denied.');
      return (
          <div className="flex flex-col min-h-screen bg-background">
             <Header currentView="admin" />
@@ -67,8 +73,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
      );
   }
 
-  // 3. If all checks pass, render the admin dashboard content.
-  console.log('[AdminLayout] Auth check complete, user is admin. Rendering dashboard.');
+  // 4. If all checks pass, render the admin dashboard content.
+  console.log('[AdminLayout Render] Auth check complete, user is admin. Rendering dashboard.');
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header currentView="admin" />
