@@ -14,7 +14,6 @@ import { Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { notFound } from 'next/navigation';
 
 const adminLoginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -53,11 +52,11 @@ export default function AdminLoginPage() {
         try {
             const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
             
-            // Force a refresh of the token to get the latest claims.
+            // CRITICAL: Force a refresh of the token to get the latest claims.
             const idTokenResult = await userCredential.user.getIdTokenResult(true);
 
+            // Check the claim directly on the login page.
             if (idTokenResult.claims.admin) {
-                // If the claim is present, we are good to go.
                 toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
                 router.push('/admin');
             } else {
@@ -74,7 +73,7 @@ export default function AdminLoginPage() {
              toast({
                 variant: 'destructive',
                 title: 'Admin Login Failed',
-                description: 'Invalid credentials or you do not have admin privileges.',
+                description: 'Invalid credentials or an unexpected error occurred.',
             });
         } finally {
             setIsLoading(false);
