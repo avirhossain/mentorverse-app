@@ -1,17 +1,11 @@
 
 'use server';
-import { config } from 'dotenv';
 import { ai } from './genkit';
+import { config } from 'dotenv';
 
+// Load environment variables from .env file
 config();
 
-// This code runs once when the Genkit development server starts.
-async function runSetup() {
-    console.log('DEV server starting up.');
-    // First admin setup has been removed as it's handled in the Firebase Console.
-    console.log('Admin users should be managed in the Firebase Console or via the admin dashboard.');
-}
-
-runSetup();
-
+// The default export for the Genkit development server should be the
+// Genkit configuration object itself.
 export default ai;
