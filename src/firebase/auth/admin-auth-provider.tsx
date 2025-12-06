@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation'; // Import the notFound function
 import { useAdminUser } from '@/firebase/auth/use-admin-user';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Header } from '@/components/common/Header';
@@ -9,24 +9,23 @@ import { Header } from '@/components/common/Header';
 /**
  * This component acts as a strict gatekeeper for the admin section.
  * It uses the useAdminUser hook to check authentication and admin status,
- * and handles rendering the loading state, the children, or redirecting.
+ * and handles rendering the loading state, the children, or showing a 404 page.
  */
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const { isAdmin, isAuthCheckComplete } = useAdminUser();
-  const router = useRouter();
 
   useEffect(() => {
     // This effect runs whenever the auth state changes.
     if (isAuthCheckComplete && !isAdmin) {
       // If the check is done and the user is NOT an admin,
-      // redirect them away to the admin login page.
-      router.push('/admin/login');
+      // render the 404 "Not Found" page.
+      notFound();
     }
-  }, [isAuthCheckComplete, isAdmin, router]);
+  }, [isAuthCheckComplete, isAdmin]);
 
   if (!isAuthCheckComplete || !isAdmin) {
-    // While the check is running, or if the user is not an admin (and is about to be redirected),
-    // show a loading state. This prevents a flash of the dashboard content for non-admins.
+    // While the check is running, or if the user is not an admin (and is about to see a 404),
+    // show a loading state. This prevents a flash of content for unauthorized users.
     return (
       <div className="flex flex-col min-h-screen bg-background">
          <Header currentView="admin" />
