@@ -67,6 +67,11 @@ export const Header = ({ currentView }) => {
                                         <Link href="/account" className={`flex items-center transition px-3 py-2 rounded-lg ${currentView === 'account' ? 'text-primary bg-primary/10 font-bold' : 'hover:text-primary hover:bg-gray-100'}`}>
                                             <User className="w-5 h-5 mr-1" /> Account
                                         </Link>
+                                        {isAdmin && (
+                                            <Link href="/admin" className="flex items-center transition px-3 py-2 rounded-lg hover:text-primary hover:bg-gray-100">
+                                                <Shield className="w-5 h-5 mr-1" /> Admin
+                                            </Link>
+                                        )}
                                         <Button onClick={handleLogout} variant="outline" size="sm">
                                             <LogOut className="w-4 h-4 mr-2" /> Logout
                                         </Button>
@@ -109,6 +114,11 @@ export const Header = ({ currentView }) => {
                                     <Link href="/account" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}>
                                         <User className="w-5 h-5 mr-2" /> Account
                                     </Link>
+                                    {isAdmin && (
+                                        <Link href="/admin" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                                            <Shield className="w-5 h-5 mr-2" /> Admin Panel
+                                        </Link>
+                                    )}
                                      <Button onClick={handleLogout} className="w-full">
                                         <LogOut className="w-5 h-5 mr-2" /> Logout
                                     </Button>
@@ -129,3 +139,5 @@ export const Header = ({ currentView }) => {
     </>
     );
 };
+
+    
