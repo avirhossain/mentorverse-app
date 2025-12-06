@@ -4,7 +4,6 @@ import React, { createContext, useContext, ReactNode, useMemo, useState, useEffe
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
 import { Auth } from 'firebase/auth';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { UserAuthState, useUserHook } from './auth/use-user';
 
 // The context state now only contains regular user auth state.
@@ -55,7 +54,6 @@ export const FirebaseProvider: React.FC<{
 
   return (
     <FirebaseContext.Provider value={contextValue}>
-      <FirebaseErrorListener />
       {children}
     </FirebaseContext.Provider>
   );

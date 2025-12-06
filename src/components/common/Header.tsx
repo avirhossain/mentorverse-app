@@ -1,35 +1,22 @@
-
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
-import { Home, Lightbulb, User, LogIn, LogOut, Shield } from 'lucide-react';
-import { useAuth, useUser, useAdminUser } from '@/firebase';
+import { usePathname } from 'next/navigation';
+import { Home, User, LogIn, LogOut, Shield } from 'lucide-react';
+import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 
 export const Header = ({ currentView }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const generalUserState = useUser();
-    const adminUserState = useAdminUser();
-    
+    const { user, isUserLoading } = useUser();
     const auth = useAuth();
-    const router = useRouter();
     const pathname = usePathname();
-
-    const isAdminView = pathname.startsWith('/admin');
-    const isAdminLoginPage = pathname === '/admin/login';
-
-    // Use the appropriate auth state based on the current view
-    const { user, isUserLoading } = generalUserState;
-    const { isAdmin, isAuthCheckComplete: isAdminAuthCheckComplete } = adminUserState;
-
 
     const handleLogout = () => {
         if(auth) {
             signOut(auth).then(() => {
                 setIsMenuOpen(false);
-                router.push(isAdminView ? '/admin/login' : '/');
             });
         }
     };
@@ -47,48 +34,27 @@ export const Header = ({ currentView }) => {
     <>
         <header className="sticky top-0 z-50 bg-white shadow-lg border-b border-primary/10">
             <div className="max-w-7xl mx-auto p-4 flex justify-between items-center">
-                <Link href={isAdminView ? "/admin" : "/"} className="text-2xl font-extrabold text-primary">Mentees</Link>
+                <Link href="/" className="text-2xl font-extrabold text-primary">Mentees</Link>
                 
                 <nav className="hidden lg:flex space-x-2 items-center text-gray-600 font-medium">
-                   {/* Admin View Navigation */}
-                   {isAdminView ? (
-                        <>
-                            {isAdminAuthCheckComplete && isAdmin && !isAdminLoginPage && (
-                                <Button onClick={handleLogout} variant="outline">
-                                    <LogOut className="w-5 h-5 mr-2" /> Logout
+                    <NavLink href="/" view="home" icon={Home} text="Home" />
+                    {!isUserLoading && (
+                        user ? (
+                            <>
+                                <Link href="/account" className={`flex items-center transition px-3 py-2 rounded-lg ${currentView === 'account' ? 'text-primary bg-primary/10 font-bold' : 'hover:text-primary hover:bg-gray-100'}`}>
+                                    <User className="w-5 h-5 mr-1" /> Account
+                                </Link>
+                                <Button onClick={handleLogout} variant="outline" size="sm">
+                                    <LogOut className="w-4 h-4 mr-2" /> Logout
                                 </Button>
-                            )}
-                        </>
-                    ) : (
-                        // Standard User View Navigation
-                        <>
-                            <NavLink href="/" view="home" icon={Home} text="Home" />
-                            <NavLink href="/tips" view="tips" icon={Lightbulb} text="Tips" />
-
-                            {!isUserLoading && (
-                                user ? (
-                                    <>
-                                        <Link href="/account" className={`flex items-center transition px-3 py-2 rounded-lg ${currentView === 'account' ? 'text-primary bg-primary/10 font-bold' : 'hover:text-primary hover:bg-gray-100'}`}>
-                                            <User className="w-5 h-5 mr-1" /> Account
-                                        </Link>
-                                        {isAdmin && (
-                                            <Link href="/admin" className="flex items-center transition px-3 py-2 rounded-lg hover:text-primary hover:bg-gray-100">
-                                                <Shield className="w-5 h-5 mr-1" /> Admin
-                                            </Link>
-                                        )}
-                                        <Button onClick={handleLogout} variant="outline" size="sm">
-                                            <LogOut className="w-4 h-4 mr-2" /> Logout
-                                        </Button>
-                                    </>
-                                ) : (
-                                    <Button asChild>
-                                        <Link href="/login">
-                                            <LogIn className="w-5 h-5 mr-2" /> Login
-                                        </Link>
-                                    </Button>
-                                )
-                            )}
-                        </>
+                            </>
+                        ) : (
+                            <Button asChild>
+                                <Link href="/login">
+                                    <LogIn className="w-5 h-5 mr-2" /> Login
+                                </Link>
+                            </Button>
+                        )
                     )}
                 </nav>
                 
@@ -101,42 +67,25 @@ export const Header = ({ currentView }) => {
             
             {isMenuOpen && (
                 <div className="lg:hidden absolute w-full bg-white shadow-lg border-t border-gray-100 py-4 px-4 space-y-3">
-                     {isAdminView ? (
-                         isAdmin && !isAdminLoginPage && (
-                            <Button onClick={handleLogout} className="w-full">
+                    <Link href="/" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Home className="w-5 h-5 mr-2" /> Home</Link>
+                    {!isUserLoading && (
+                        user ? (
+                            <>
+                            <Link href="/account" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                                <User className="w-5 h-5 mr-2" /> Account
+                            </Link>
+                             <Button onClick={handleLogout} className="w-full">
                                 <LogOut className="w-5 h-5 mr-2" /> Logout
                             </Button>
-                         )
-                     ) : (
-                        <>
-                            <Link href="/" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Home className="w-5 h-5 mr-2" /> Home</Link>
-                            <Link href="/tips" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Lightbulb className="w-5 h-5 mr-2" /> Tips & Resources</Link>
-                            
-                            {!isUserLoading && (
-                                user ? (
-                                    <>
-                                    <Link href="/account" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                                        <User className="w-5 h-5 mr-2" /> Account
-                                    </Link>
-                                    {isAdmin && (
-                                        <Link href="/admin" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                                            <Shield className="w-5 h-5 mr-2" /> Admin Panel
-                                        </Link>
-                                    )}
-                                     <Button onClick={handleLogout} className="w-full">
-                                        <LogOut className="w-5 h-5 mr-2" /> Logout
-                                    </Button>
-                                    </>
-                                ) : (
-                                    <Button asChild className="w-full">
-                                        <Link href="/login" onClick={() => setIsMenuOpen(false)}>
-                                            <LogIn className="w-5 h-5 mr-2" /> Login
-                                        </Link>
-                                    </Button>
-                                )
-                            )}
-                        </>
-                     )}
+                            </>
+                        ) : (
+                            <Button asChild className="w-full">
+                                <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                                    <LogIn className="w-5 h-5 mr-2" /> Login
+                                </Link>
+                            </Button>
+                        )
+                    )}
                 </div>
             )}
         </header>

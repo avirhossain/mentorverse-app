@@ -1,80 +1,9 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper functions
-    function isAuth() {
-      return request.auth != null;
-    }
-
-    function isAdmin() {
-      // The most secure way is to check the custom claim set on the user's token.
-      // A second check on the /admins collection can be added for redundancy if needed.
-      return request.auth.token.admin == true && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    // Admins can do anything. This is a wide-reaching rule.
+    // Lock down all access by default
     match /{document=**} {
-      allow read, write: if isAdmin();
-    }
-    
-    // Mentees (users) collection:
-    // - Users can read and update their own profile.
-    // - Any authenticated user can create their own profile document.
-    match /users/{userId} {
-      allow read, update: if isOwner(userId);
-      allow create: if isAuth(); 
-    }
-
-    // User subcollections (e.g., their own sessions list) are owned by the user.
-    match /users/{userId}/{subcollection}/{docId} {
-        allow read, write: if isOwner(userId);
-    }
-    
-    // PUBLICLY READABLE collections for all visitors.
-    match /mentors/{mentorId} {
-      allow read: if true;
-    }
-    
-    match /tips/{tipId} {
-      allow read: if true;
-    }
-
-    // SESSIONS collection:
-    // - Anyone can read the list of sessions.
-    // - Authenticated users can update a session to book it.
-    match /sessions/{sessionId} {
-      allow read: if true;
-      allow update: if isAuth();
-    }
-    
-    // WRITE-ONCE collections for specific actions by any authenticated user.
-    match /mentor_applications/{applicationId} {
-        allow create: if isAuth();
-    }
-    
-    match /support_requests/{requestId} {
-        allow create: if isAuth();
-    }
-
-    match /pending_payments/{paymentId} {
-        allow create: if isAuth();
-    }
-    
-    // SECURE collections that should not be directly accessed by clients.
-    match /coupons/{couponId} {
-        allow read, write: if false; 
-    }
-    
-    match /balance_transactions/{transactionId} {
-        allow read, write: if false;
+      allow read, write: if false;
     }
   }
 }
-
-    
