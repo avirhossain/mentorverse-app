@@ -4,12 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { useAuth, useAdminUser } from '@/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, LogOut } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -19,12 +19,12 @@ const adminLoginSchema = z.object({
   password: z.string().min(1, { message: 'Password is required.' }),
 });
 
-
 export default function AdminLoginPage() {
     const router = useRouter();
     const auth = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
+    const { isAdmin, isAuthCheckComplete } = useAdminUser();
 
     const form = useForm<z.infer<typeof adminLoginSchema>>({
         resolver: zodResolver(adminLoginSchema),
@@ -33,6 +33,13 @@ export default function AdminLoginPage() {
             password: '123456',
         },
     });
+
+    // This effect will redirect the user if they are already a logged-in admin.
+    useEffect(() => {
+        if (isAuthCheckComplete && isAdmin) {
+            router.push('/admin');
+        }
+    }, [isAdmin, isAuthCheckComplete, router]);
 
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
         if (!auth) {
@@ -43,24 +50,12 @@ export default function AdminLoginPage() {
         setIsLoading(true);
 
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-            
-            // CRITICAL: Force a token refresh to get the latest claims, including the admin claim.
-            const tokenResult = await userCredential.user.getIdTokenResult(true);
-
-            // Directly check the claim from the refreshed token.
-            if (tokenResult.claims.admin === true) {
-                toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
-                router.push('/admin'); // Redirect on success
-            } else {
-                // This case handles a valid login for a non-admin user.
-                 toast({
-                    variant: 'destructive',
-                    title: 'Admin Access Not Detected',
-                    description: 'You do not have admin privileges.',
-                });
-                await signOut(auth); // Log out the non-admin user.
-            }
+            // Simply sign in. The auth provider and layout will handle the rest.
+            await signInWithEmailAndPassword(auth, values.email, values.password);
+            // After login, the onAuthStateChanged listener in useAdminUser will fire.
+            // This will update the isAdmin state, and the useEffect above will trigger the redirect.
+            // This avoids the race condition of checking the claim immediately after login.
+            toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
             
         } catch (error: any) {
              toast({
@@ -68,7 +63,6 @@ export default function AdminLoginPage() {
                 title: 'Admin Login Failed',
                 description: 'Invalid credentials or connection issue.',
             });
-        } finally {
             setIsLoading(false);
         }
     };
