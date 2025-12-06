@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User, onAuthStateChanged } from 'firebase/auth';
-import { useAuth as useFirebaseAuth } from '@/firebase/provider';
+import { User, onAuthStateChanged, Auth } from 'firebase/auth';
 
 export interface UserAuthState {
   user: User | null;
@@ -12,9 +11,7 @@ export interface UserAuthState {
   userError: Error | null;
 }
 
-export const useUser = (): UserAuthState & { refreshToken: () => Promise<void> } => {
-  const auth = useFirebaseAuth();
-
+export const useUser = (auth: Auth | null): UserAuthState & { refreshToken: () => Promise<void> } => {
   const [state, setState] = useState<UserAuthState>({
     user: null,
     isAdmin: false,
