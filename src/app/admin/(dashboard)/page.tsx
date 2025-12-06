@@ -10,14 +10,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { collection, getDocs, doc, runTransaction, deleteDoc, setDoc, updateDoc, addDoc, writeBatch, query, where } from 'firebase/firestore';
 import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import type { Mentor, Mentee, Session, Tip, Coupon, PendingPayment, MentorApplication, SupportRequest, AdminUser } from '@/lib/types';
+import type { Mentor, Mentee, Session, Tip, Coupon, PendingPayment, MentorApplication, SupportRequest } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { v4 as uuidv4 } from 'uuid';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRouter } from 'next/navigation';
-import { createAdminUser } from '@/ai/flows/create-admin-user';
 
 
 const Modal = ({ title, children, onClose }) => (
@@ -45,47 +44,6 @@ const DetailItem = ({ icon: Icon, label, value }) => (
         </div>
     </div>
 );
-
-const AdminUserForm = ({ onSave, onClose }) => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const { toast } = useToast();
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            await onSave({ email, password });
-            toast({ title: 'Success!', description: 'New admin user created.' });
-            onClose();
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message });
-        }
-    };
-
-    return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-                type="email"
-                placeholder="New Admin Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-            />
-            <Input
-                type="password"
-                placeholder="Temporary Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-            />
-            <div className="flex justify-end gap-4 pt-4">
-                <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                <Button type="submit">Create Admin</Button>
-            </div>
-        </form>
-    );
-};
-
 
 const MentorApplicationDetails = ({ application }) => (
     <div className="space-y-4">
@@ -807,7 +765,6 @@ export default function AdminPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [mentorApps, setMentorApps] = useState<MentorApplication[]>([]);
   const [supportRequests, setSupportRequests] = useState<SupportRequest[]>([]);
-  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
 
   const [isLoadingMentors, setIsLoadingMentors] = useState(true);
   const [isLoadingMentees, setIsLoadingMentees] = useState(true);
@@ -817,7 +774,6 @@ export default function AdminPage() {
   const [isLoadingCoupons, setIsLoadingCoupons] = useState(true);
   const [isLoadingMentorApps, setIsLoadingMentorApps] = useState(true);
   const [isLoadingSupport, setIsLoadingSupport] = useState(true);
-  const [isLoadingAdmins, setIsLoadingAdmins] = useState(true);
   
   const canWrite = isAdmin;
   const canDelete = isAdmin;
@@ -836,10 +792,9 @@ export default function AdminPage() {
     setIsLoadingCoupons(true);
     setIsLoadingMentorApps(true);
     setIsLoadingSupport(true);
-    setIsLoadingAdmins(true);
 
     try {
-        const [mentorsSnap, menteesSnap, sessionsSnap, tipsSnap, paymentsSnap, couponsSnap, mentorAppsSnap, supportRequestsSnap, adminsSnap] = await Promise.all([
+        const [mentorsSnap, menteesSnap, sessionsSnap, tipsSnap, paymentsSnap, couponsSnap, mentorAppsSnap, supportRequestsSnap] = await Promise.all([
             getDocs(collection(firestore, 'mentors')),
             getDocs(collection(firestore, 'users')),
             getDocs(collection(firestore, 'sessions')),
@@ -848,7 +803,6 @@ export default function AdminPage() {
             getDocs(collection(firestore, 'coupons')),
             getDocs(collection(firestore, 'mentor_applications')),
             getDocs(collection(firestore, 'support_requests')),
-            getDocs(query(collection(firestore, 'users'), where('role', '==', 'admin'))),
         ]);
 
         setMentors(mentorsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentor)));
@@ -859,8 +813,6 @@ export default function AdminPage() {
         setCoupons(couponsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon)));
         setMentorApps(mentorAppsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as MentorApplication)));
         setSupportRequests(supportRequestsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as SupportRequest)));
-        setAdminUsers(adminsSnap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as AdminUser)));
-
 
     } catch (error) {
         toast({ variant: 'destructive', title: 'Error fetching data', description: error.message });
@@ -874,7 +826,6 @@ export default function AdminPage() {
         setIsLoadingCoupons(false);
         setIsLoadingMentorApps(false);
         setIsLoadingSupport(false);
-        setIsLoadingAdmins(false);
     }
   };
 
@@ -1036,11 +987,6 @@ export default function AdminPage() {
         }
     };
     
-    const handleCreateAdmin = async (data) => {
-        await createAdminUser(data);
-        fetchData();
-    };
-
 
   const openModal = (type, data = null) => setModalState({ type, data });
   const closeModal = () => setModalState({ type: null, data: null });
@@ -1123,16 +1069,6 @@ export default function AdminPage() {
                   <Link href="/admin/balances">View Balances</Link>
                 </Button>
               </div>
-               {canWrite && <div className="flex flex-col items-start gap-3 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                <UserCog className="w-8 h-8 text-primary" />
-                <h3 className="text-lg font-semibold dark:text-white">Manage Admins</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                   Create new administrator accounts.
-                </p>
-                <Button onClick={() => openModal('admin')} className="mt-2">
-                  Create New Admin
-                </Button>
-              </div>}
             </div>
           </div>
           
@@ -1387,35 +1323,8 @@ export default function AdminPage() {
                     </>
                 )}
             />
-
-            <DataListView
-                title="Admin Users"
-                data={adminUsers}
-                isLoading={isLoadingAdmins}
-                icon={ShieldCheck}
-                idPrefix="A"
-                columns={[
-                  { header: 'SL', span: 1 },
-                  { header: 'Date', span: 2 },
-                  { header: 'ID', span: 2 },
-                  { header: 'Email', span: 5 },
-                ]}
-                renderActions={(admin) => (
-                    <>
-                        {/* Future actions like 'remove admin' could go here */}
-                    </>
-                )}
-                emptyMessage="No admin users found."
-            />
-
         </div>
       </main>
-
-        {modalState.type === 'admin' && canWrite && (
-            <Modal title="Create New Admin User" onClose={closeModal}>
-                <AdminUserForm onSave={handleCreateAdmin} onClose={closeModal} />
-            </Modal>
-        )}
 
         {modalState.type === 'mentor' && canWrite && (
             <Modal title={modalState.data ? "Edit Mentor" : "Create New Mentor"} onClose={closeModal}>
