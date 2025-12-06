@@ -15,11 +15,10 @@ export async function initFirebaseAdmin() {
     ? cert(JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS))
     : undefined;
 
-
   if (getApps().length === 0) {
-     adminApp = initializeApp({
-       credential
-     });
+     // If credentials are provided, use them. Otherwise, initialize without arguments
+     // to use the application's default credentials.
+     adminApp = credential ? initializeApp({ credential }) : initializeApp();
   } else {
     adminApp = getApps()[0];
   }
