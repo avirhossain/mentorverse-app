@@ -28,14 +28,6 @@ export default function AdminLoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const { user, isAdmin, isAuthCheckComplete } = useUser();
 
-    const form = useForm<z.infer<typeof adminLoginSchema>>({
-        resolver: zodResolver(adminLoginSchema),
-        defaultValues: {
-            email: '',
-            password: '',
-        },
-    });
-
     useEffect(() => {
         // After auth check is complete, if the user is confirmed an admin, redirect them.
         if (isAuthCheckComplete && user && isAdmin) {
@@ -43,7 +35,7 @@ export default function AdminLoginPage() {
         }
     }, [isAdmin, isAuthCheckComplete, user, router]);
 
-    const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
+    const handleAdminLogin = async () => {
         if (!auth) {
             toast({
                 variant: 'destructive',
@@ -55,7 +47,8 @@ export default function AdminLoginPage() {
         setIsLoading(true);
 
         try {
-            await signInWithEmailAndPassword(auth, values.email, values.password);
+            // Hardcoded credentials for the default admin
+            await signInWithEmailAndPassword(auth, 'mmavir89@gmail.com', '123456');
             // On successful sign-in, the useUser hook and useEffect will handle the redirection.
             toast({
                 title: 'Login Successful',
@@ -102,39 +95,9 @@ export default function AdminLoginPage() {
                         </Button>
                     )}
 
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleAdminLogin)} className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="email"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Admin Email</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="admin@example.com" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="password"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Password</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" placeholder="••••••••" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button type="submit" className="w-full" disabled={isLoading || (isAuthCheckComplete && !!user && !isAdmin) }>
-                                {isLoading ? 'Signing In...' : 'Sign In'}
-                            </Button>
-                        </form>
-                    </Form>
+                    <Button onClick={handleAdminLogin} className="w-full" disabled={isLoading || (isAuthCheckComplete && !!user && !isAdmin) }>
+                        {isLoading ? 'Signing In...' : 'Sign in as Admin'}
+                    </Button>
                 </div>
             </div>
         </div>
