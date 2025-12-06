@@ -32,7 +32,7 @@ export const useAdminUser = (): AdminAuthState => {
 
     const authUnsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (!firebaseUser) {
-        // Not logged in, so definitely not an admin.
+        // NOT LOGGED IN: If there's no user, the check is complete, and they are not an admin.
         setState({
           isAdmin: false,
           isAuthCheckComplete: true,
@@ -41,15 +41,16 @@ export const useAdminUser = (): AdminAuthState => {
         return;
       }
 
-      // User is logged in. Now, we listen for our Firestore signal.
+      // LOGGED IN: User is authenticated. Now, listen for our Firestore signal.
       const userDocRef = doc(firestore, 'users', firebaseUser.uid);
       const firestoreUnsubscribe = onSnapshot(userDocRef, async (snapshot) => {
         
         // The `lastLogin` field is our signal. If it's present, we check the token.
         // The snapshot listener will fire on login when the `lastLogin` field is updated.
-        if (snapshot.exists() && snapshot.data()?.lastLogin) {
+        // It's important to check if the check is already complete to avoid re-running on other doc changes.
+        if (snapshot.exists() && snapshot.data()?.lastLogin && !state.isAuthCheckComplete) {
           try {
-            // The signal was received. Force a token refresh to get the latest claims.
+            // Signal received. Force a token refresh to get the latest claims.
             const idTokenResult = await firebaseUser.getIdTokenResult(true);
             const hasAdminClaim = !!idTokenResult.claims.admin;
             
@@ -66,12 +67,24 @@ export const useAdminUser = (): AdminAuthState => {
               userError: error,
             });
           }
+        } else if (!state.isAuthCheckComplete) {
+            // If the signal isn't present but we need to resolve the auth state,
+            // we can check the token once without forcing a refresh.
+            // This handles cases where the user is already logged in and navigating around.
+            firebaseUser.getIdTokenResult().then(idTokenResult => {
+                 setState({
+                    isAdmin: !!idTokenResult.claims.admin,
+                    isAuthCheckComplete: true,
+                    userError: null,
+                 });
+            }).catch(error => {
+                 setState({
+                    isAdmin: false,
+                    isAuthCheckComplete: true,
+                    userError: error,
+                 });
+            });
         }
-        // If there's no `lastLogin` field, we don't do anything yet,
-        // just wait for the login page to provide the signal.
-        // We can set a timeout here to prevent waiting forever.
-        // For now, if the user is logged in but we don't get the signal,
-        // we'll eventually need to time out and consider them not an admin for this session.
         
       }, (error) => {
          setState({
@@ -81,13 +94,11 @@ export const useAdminUser = (): AdminAuthState => {
         });
       });
       
-      // Return the cleanup function for the Firestore listener
       return () => firestoreUnsubscribe();
     });
 
-    // Return the cleanup function for the Auth listener
     return () => authUnsubscribe();
-  }, [auth, firestore]);
+  }, [auth, firestore, state.isAuthCheckComplete]);
 
   return state;
 };
