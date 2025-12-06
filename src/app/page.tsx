@@ -21,10 +21,10 @@ export default function HomePage() {
                         </p>
                         <div className="mt-8 flex justify-center gap-4">
                             <Button asChild size="lg">
-                                <Link href="/mentors">Browse Mentors</Link>
+                                <Link href="#">Browse Mentors</Link>
                             </Button>
                             <Button asChild size="lg" variant="outline">
-                                <Link href="/login">Get Started</Link>
+                                <Link href="#">Get Started</Link>
                             </Button>
                         </div>
                     </div>

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Home, User, LogIn, LogOut, Shield, Lightbulb, Users, Calendar } from 'lucide-react';
+import { Home, User, LogIn, LogOut } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
@@ -30,9 +30,6 @@ export const Header = ({ currentView }) => {
     
     const navLinks = [
         { href: "/", view: "home", icon: Home, text: "Home" },
-        { href: "/mentors", view: "mentors", icon: Users, text: "Mentors" },
-        { href: "/sessions", view: "sessions", icon: Calendar, text: "Sessions" },
-        { href: "/tips", view: "tips", icon: Lightbulb, text: "Tips" },
     ];
 
     return (
@@ -60,9 +57,6 @@ export const Header = ({ currentView }) => {
                             </Button>
                         )
                     )}
-                     <Link href="/admin" className="flex items-center transition px-3 py-2 rounded-lg hover:text-primary hover:bg-gray-100">
-                        <Shield className="w-5 h-5 mr-1" /> Admin
-                    </Link>
                 </nav>
                 
                 <button className="lg:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -97,9 +91,6 @@ export const Header = ({ currentView }) => {
                             </Button>
                         )
                     )}
-                     <Link href="/admin" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}>
-                        <Shield className="w-5 h-5 mr-2" /> Admin
-                    </Link>
                 </div>
             )}
         </header>
