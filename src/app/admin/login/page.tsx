@@ -51,12 +51,16 @@ export default function AdminLoginPage() {
 
         try {
             const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+            // THIS IS THE CRITICAL FIX:
+            // Force a refresh of the ID token to get the latest custom claims.
             const idTokenResult = await userCredential.user.getIdTokenResult(true);
 
+            // Now, check the claim directly from the refreshed token.
             if (idTokenResult.claims.admin) {
                 toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
                 router.push('/admin');
             } else {
+                // If the claim is missing, the user is not an admin. Sign them out.
                 await signOut(auth);
                 toast({
                     variant: 'destructive',
