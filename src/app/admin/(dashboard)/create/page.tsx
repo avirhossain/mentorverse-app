@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { collection, doc, setDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, setDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { useFirestore, useAdminUser } from '@/firebase';
 import type { Mentor, Session, Tip, Coupon } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -248,7 +248,7 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                 </SelectContent>
             </Select>
              {renderDynamicSection('Professional Experience', 'professionalExperience',
-                [{ name: 'title', placeholder: 'Job Title' }, { name: 'company', placeholder: 'Company' }, { name: 'duration', placeholder: 'Duration (e.g., 2020 - Present)' }, { name: 'description', placeholder: 'Description' }],
+                [{ name: 'title', placeholder: 'Job Title' }, { name: 'company', placeholder: 'Company' }, { name: 'duration', placeholder: 'Duration (e.g., 2020 - Present)' }, { name: 'description', placeholder: 'Description', type: 'textarea' }],
                 { title: '', company: '', duration: '', description: '' }
             )}
             {renderDynamicSection('Education', 'education',
@@ -256,7 +256,7 @@ const MentorForm = ({ mentor, onSave, onClose }) => {
                 { degree: '', institution: '', duration: '' }
             )}
             {renderDynamicSection('Mentees Reviews', 'reviews',
-                [{ name: 'mentee', placeholder: 'Mentee Name' }, { name: 'date', placeholder: 'Date (e.g., Nov 1, 2025)' }, { name: 'rating', placeholder: 'Rating (1-5)', type: 'number' }, { name: 'text', placeholder: 'Review Text' }],
+                [{ name: 'mentee', placeholder: 'Mentee Name' }, { name: 'date', placeholder: 'Date (e.g., Nov 1, 2025)' }, { name: 'rating', placeholder: 'Rating (1-5)', type: 'number' }, { name: 'text', placeholder: 'Review Text', type: 'textarea' }],
                 { mentee: '', date: '', rating: 5, text: '' }
             )}
             <div className="flex justify-end gap-4 pt-4">
@@ -434,6 +434,15 @@ export default function AdminCreatePage() {
     const firestore = useFirestore();
     const { toast } = useToast();
 
+    useEffect(() => {
+        if (!firestore) return;
+        const fetchMentors = async () => {
+            const mentorsSnap = await getDocs(collection(firestore, 'mentors'));
+            setMentors(mentorsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Mentor)));
+        };
+        fetchMentors();
+    }, [firestore]);
+
     const handleSaveMentor = async (mentorData: Omit<Mentor, 'id'> & { id?: string }, isEditing: boolean) => {
         if (!firestore) return;
         const mentorId = isEditing ? mentorData.id : uuidv4();
@@ -554,3 +563,5 @@ export default function AdminCreatePage() {
         </>
     );
 }
+
+    
