@@ -37,19 +37,7 @@ export default function AdminLoginPage() {
     });
 
     useEffect(() => {
-        // If there's a user, log them out immediately upon visiting this page.
-        if (user && auth) {
-            signOut(auth);
-            toast({
-                title: 'Logged Out',
-                description: 'You have been automatically signed out to resolve the session state.',
-            });
-        }
-    }, [user, auth]);
-
-    useEffect(() => {
         // After auth check is complete, if the user is confirmed an admin, redirect them.
-        // This will only happen on a subsequent visit after the forced logout.
         if (isAuthCheckComplete && user && isAdmin) {
             router.push('/admin');
         }
@@ -142,7 +130,7 @@ export default function AdminLoginPage() {
                                     </FormItem>
                                 )}
                             />
-                            <Button type="submit" className="w-full" disabled={isLoading || (isAuthCheckComplete && !!user)}>
+                            <Button type="submit" className="w-full" disabled={isLoading || (isAuthCheckComplete && !!user && !isAdmin) }>
                                 {isLoading ? 'Signing In...' : 'Sign In'}
                             </Button>
                         </form>
