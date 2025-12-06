@@ -28,6 +28,14 @@ export default function AdminLoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const { user, isAdmin, isAuthCheckComplete } = useUser();
 
+    const form = useForm<z.infer<typeof adminLoginSchema>>({
+        resolver: zodResolver(adminLoginSchema),
+        defaultValues: {
+            email: '',
+            password: '',
+        },
+    });
+
     useEffect(() => {
         // If an admin is already logged in, redirect them to the dashboard.
         if (isAuthCheckComplete && isAdmin) {
@@ -48,11 +56,10 @@ export default function AdminLoginPage() {
 
         try {
             await signInWithEmailAndPassword(auth, values.email, values.password);
-            // On successful sign-in, the useEffect will handle the redirection.
-            // A small toast to give user feedback.
+            // On successful sign-in, the useUser hook and useEffect will handle the redirection.
             toast({
                 title: 'Login Successful',
-                description: 'Verifying admin status...',
+                description: 'Verifying admin status and redirecting...',
             });
         } catch (error: any) {
              toast({
@@ -97,6 +104,12 @@ export default function AdminLoginPage() {
                             </Button>
                         </div>
                     )}
+                    
+                    {user && (
+                         <Button onClick={handleLogout} variant="outline" className="w-full">
+                            <LogOut className="mr-2 h-4 w-4" /> Log Out from {user.email}
+                        </Button>
+                    )}
 
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleAdminLogin)} className="space-y-4">
@@ -126,7 +139,7 @@ export default function AdminLoginPage() {
                                     </FormItem>
                                 )}
                             />
-                            <Button type="submit" className="w-full" disabled={isLoading || (isAuthCheckComplete && !!user)}>
+                            <Button type="submit" className="w-full" disabled={isLoading || (isAuthCheckComplete && !!user && isAdmin)}>
                                 {isLoading ? 'Signing In...' : 'Sign In'}
                             </Button>
                         </form>
