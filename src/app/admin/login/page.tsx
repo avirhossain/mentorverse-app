@@ -54,20 +54,22 @@ export default function AdminLoginPage() {
 
         try {
             const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-            console.log("[AdminLogin] Login successful. Forcing ID token refresh...");
-            // CRITICAL FIX: Force a token refresh right after login.
+            
+            // CRITICAL FIX: Force a token refresh right after login to get custom claims.
             await userCredential.user.getIdToken(true); 
             
-            console.log("[AdminLogin] Token refreshed. Calling refreshToken to update UI state.");
-            await refreshToken();
+            // Now, trigger the state update in the useAdminUser hook.
+            if (refreshToken) {
+              await refreshToken();
+            }
             
-            // The useEffect will handle the redirect now that the state is guaranteed to be fresh.
+            // The useEffect will handle the redirect once the state is updated.
 
         } catch (error: any) {
              toast({
                 variant: 'destructive',
                 title: 'Admin Login Failed',
-                description: 'Invalid credentials. Please try again.',
+                description: 'Invalid credentials or permissions. Please try again.',
             });
         } finally {
             setIsLoading(false);
