@@ -56,7 +56,7 @@ export const useAdminUser = (): AdminAuthState => {
     return () => {
       unsubscribe();
     };
-  }, [auth, state.isAuthCheckComplete]);
+  }, [auth]);
 
   return state;
 };
