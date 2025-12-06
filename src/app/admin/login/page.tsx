@@ -1,11 +1,11 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth } from '@/firebase';
+import { useAdminUser } from '@/firebase/auth/use-admin-user'; // Import the new hook
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ export default function AdminLoginPage() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [isGranting, setIsGranting] = useState(false);
-    const { user, isAdmin, isAuthCheckComplete, refreshToken } = useUser();
+    const { user, isAdmin, isAuthCheckComplete, refreshToken } = useAdminUser(); // Use the new hook
 
     const form = useForm<z.infer<typeof adminLoginSchema>>({
         resolver: zodResolver(adminLoginSchema),
@@ -38,9 +38,7 @@ export default function AdminLoginPage() {
         },
     });
 
-
     useEffect(() => {
-        // This effect redirects *if* the user is already an admin when the page loads.
         if (isAuthCheckComplete && user && isAdmin) {
             console.log("[AdminLogin] useEffect detected user is already admin. Redirecting to /admin");
             router.push('/admin');
@@ -49,10 +47,7 @@ export default function AdminLoginPage() {
 
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
         if (!auth) {
-            toast({
-                variant: 'destructive',
-                title: 'Authentication service not available.',
-            });
+            toast({ variant: 'destructive', title: 'Authentication service not available.' });
             return;
         }
         
@@ -60,20 +55,14 @@ export default function AdminLoginPage() {
 
         try {
             const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-            const user = userCredential.user;
-
             console.log("[AdminLogin] Login successful. Forcing ID token refresh...");
-            await user.getIdToken(true); 
+            await userCredential.user.getIdToken(true); 
             
             console.log("[AdminLogin] Token refreshed. Calling refreshToken to update UI state.");
             await refreshToken();
             
-            toast({
-                title: 'Login Successful',
-                description: 'Redirecting to dashboard...',
-            });
-            
-            router.push('/admin');
+            // The useEffect will handle the redirect now.
+            // No need to push here.
 
         } catch (error: any) {
              toast({
@@ -97,7 +86,7 @@ export default function AdminLoginPage() {
             if (result.status === 'SUCCESS' || result.status === 'ALREADY_ADMIN') {
                 toast({ title: 'Admin Rights Confirmed!', description: 'Refreshing session... You should be redirected shortly.' });
                 await refreshToken(); // This is the key step to update the client state
-                router.push('/admin'); // Attempt to redirect after granting rights
+                // The useEffect will handle redirection.
             } else {
                  toast({ variant: 'destructive', title: 'Failed to Grant Admin', description: result.message || 'An unknown error occurred.' });
             }

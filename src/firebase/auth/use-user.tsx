@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { User, onAuthStateChanged, Auth } from 'firebase/auth';
+import { FirebaseContext } from '@/firebase/provider';
 
 export interface UserAuthState {
   user: User | null;
@@ -11,7 +12,8 @@ export interface UserAuthState {
   userError: Error | null;
 }
 
-export const useUser = (auth: Auth | null): UserAuthState & { refreshToken: () => Promise<void> } => {
+// This is the internal hook implementation.
+export const useUserHook = (auth: Auth | null): UserAuthState & { refreshToken: () => Promise<void> } => {
   const [state, setState] = useState<UserAuthState>({
     user: null,
     isAdmin: false,
@@ -21,9 +23,7 @@ export const useUser = (auth: Auth | null): UserAuthState & { refreshToken: () =
   });
 
   useEffect(() => {
-    console.log('[useUser] Hook initialized. Auth object available:', !!auth);
     if (!auth) {
-      console.log('[useUser] Auth service not available. Setting non-authed state.');
       setState({
         user: null,
         isAdmin: false,
@@ -35,9 +35,7 @@ export const useUser = (auth: Auth | null): UserAuthState & { refreshToken: () =
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('[useUser] onAuthStateChanged fired. User:', firebaseUser?.email || 'null');
       if (!firebaseUser) {
-        console.log('[useUser] No user found. Setting logged-out state.');
         setState({
           user: null,
           isAdmin: false,
@@ -48,16 +46,9 @@ export const useUser = (auth: Auth | null): UserAuthState & { refreshToken: () =
         return;
       }
 
-      console.log('[useUser] User found. Getting ID token result without force refresh...');
       try {
-        // Do NOT force refresh here. Let's get the state as quickly as possible.
-        // The login page will be responsible for the forced refresh.
         const tokenResult = await firebaseUser.getIdTokenResult(false); 
-        console.log('[useUser] Successfully got initial ID token. Claims:', tokenResult.claims);
-        
         const adminStatus = !!tokenResult.claims.admin;
-        console.log(`[useUser] isAdmin evaluated to: ${adminStatus}`);
-
         const finalState = {
           user: firebaseUser,
           isAdmin: adminStatus,
@@ -65,11 +56,8 @@ export const useUser = (auth: Auth | null): UserAuthState & { refreshToken: () =
           isAuthCheckComplete: true,
           userError: null,
         };
-        console.log('[useUser] Setting final state:', finalState);
         setState(finalState);
-
       } catch (err: any) {
-        console.error('[useUser] Error getting token result:', err);
         setState({
           user: firebaseUser,
           isAdmin: false,
@@ -80,27 +68,32 @@ export const useUser = (auth: Auth | null): UserAuthState & { refreshToken: () =
       }
     });
 
-    return () => {
-      console.log('[useUser] Unsubscribing from onAuthStateChanged.');
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, [auth]);
 
   const refreshToken = async () => {
     if (!state.user) return;
-    console.log('[useUser] refreshToken called.');
-    // Force refresh the token
     await state.user.getIdToken(true);
-    // Get the new result
     const tokenResult = await state.user.getIdTokenResult(true);
     const newIsAdmin = !!tokenResult.claims.admin;
-    console.log(`[useUser] Token refreshed. New isAdmin status: ${newIsAdmin}`);
-    // Update the state with the new claim
     setState((prev) => ({
       ...prev,
       isAdmin: newIsAdmin,
+      isAuthCheckComplete: true, // Ensure this is true after refresh
     }));
   };
 
   return { ...state, refreshToken };
+};
+
+
+// This is the public hook that components will use.
+export const useUser = (): UserAuthState & { refreshToken: () => Promise<void> } => {
+  const context = useContext(FirebaseContext);
+  if (context === undefined) {
+    throw new Error('useUser must be used within a FirebaseProvider.');
+  }
+
+  // The 'refreshToken' function is already part of the context value.
+  return context as UserAuthState & { refreshToken: () => Promise<void> };
 };

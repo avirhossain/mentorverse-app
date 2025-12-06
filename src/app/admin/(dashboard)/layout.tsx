@@ -3,13 +3,12 @@
 
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useAdminUser } from '@/firebase/auth/use-admin-user'; // Import the new hook
 import { Skeleton } from '@/components/ui/skeleton';
 import { Header } from '@/components/common/Header';
-import { Button } from '@/components/ui/button';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, isAdmin, isAuthCheckComplete } = useUser();
+  const { user, isAdmin, isAuthCheckComplete } = useAdminUser(); // Use the new hook
   const router = useRouter();
 
   useEffect(() => {
@@ -19,15 +18,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (isAuthCheckComplete) {
       // If there's no user or the user is not an admin, redirect to the login page.
       if (!user || !isAdmin) {
-        console.log('[AdminLayout Effect] No user or not admin. Redirecting to login.');
+        console.log('[AdminLayout Effect] Not an admin or no user. Redirecting to login.');
         router.push('/admin/login');
       }
     }
   }, [isAuthCheckComplete, user, isAdmin, router]);
 
-  // 1. While the auth check is running, show a loading screen.
-  if (!isAuthCheckComplete || !isAdmin || !user) {
-    console.log('[AdminLayout Render] Showing loading skeleton. State:', { isAuthCheckComplete, isAdmin: !!isAdmin, user: !!user });
+  // While the auth check is running, or if the user is not an admin yet, show a loading screen.
+  if (!isAuthCheckComplete || !isAdmin) {
+    console.log('[AdminLayout Render] Showing loading skeleton. State:', { isAuthCheckComplete, isAdmin: !!isAdmin });
     return (
       <div className="flex flex-col min-h-screen">
          <Header currentView="admin" />
@@ -41,7 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // 4. If all checks pass (auth check complete, user exists, user is admin), render the dashboard.
+  // If all checks pass (auth check complete, user exists, user is admin), render the dashboard.
   console.log('[AdminLayout Render] Auth check complete, user is admin. Rendering dashboard.');
   return (
     <div className="flex flex-col min-h-screen bg-background">
