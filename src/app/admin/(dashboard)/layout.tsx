@@ -12,13 +12,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
 
   useEffect(() => {
-    console.log('[AdminLayout Effect] Checking auth state:', { isAuthCheckComplete, user: !!user, isAdmin });
-    
     // Once the initial auth check is complete, decide what to do.
     if (isAuthCheckComplete) {
       // If there's no user or the user is not an admin, redirect to the login page.
       if (!user || !isAdmin) {
-        console.log('[AdminLayout Effect] Not an admin or no user. Redirecting to login.');
         router.push('/admin/login');
       }
     }
@@ -26,7 +23,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // While the auth check is running, or if the user is not an admin yet, show a loading screen.
   if (!isAuthCheckComplete || !isAdmin) {
-    console.log('[AdminLayout Render] Showing loading skeleton. State:', { isAuthCheckComplete, isAdmin: !!isAdmin });
     return (
       <div className="flex flex-col min-h-screen">
          <Header currentView="admin" />
@@ -41,7 +37,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   // If all checks pass (auth check complete, user exists, user is admin), render the dashboard.
-  console.log('[AdminLayout Render] Auth check complete, user is admin. Rendering dashboard.');
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header currentView="admin" />
