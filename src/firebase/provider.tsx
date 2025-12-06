@@ -1,21 +1,11 @@
-
 'use client';
 
-import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo, useState, useEffect, useCallback, DependencyList } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
-
-// Internal state for user authentication
-interface UserAuthState {
-  user: User | null;
-  isAdmin: boolean;
-  isUserLoading: boolean;
-  isAuthCheckComplete: boolean;
-  userError: Error | null;
-  refreshToken: () => Promise<void>; // Add the refreshToken function
-}
+import { Auth } from 'firebase/auth';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
+import { UserAuthState, useUser as useUserHook } from './auth/use-user';
 
 // Combined state for the Firebase context
 export interface FirebaseContextState extends UserAuthState {
@@ -31,9 +21,6 @@ export interface FirebaseServicesAndUser extends FirebaseContextState {
   firestore: Firestore;
   auth: Auth;
 }
-
-// Return type for useUser() - specific to user auth state
-export interface UserHookResult extends UserAuthState {}
 
 // React Context
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
@@ -52,68 +39,7 @@ export const FirebaseProvider: React.FC<{
   firestore,
   auth,
 }) => {
-  const [userAuthState, setUserAuthState] = useState<Omit<UserAuthState, 'refreshToken'>>({
-    user: null,
-    isAdmin: false,
-    isUserLoading: true,
-    isAuthCheckComplete: false,
-    userError: null,
-  });
-
-  // Effect to subscribe to Firebase auth state changes
-  useEffect(() => {
-    if (!auth) {
-      setUserAuthState({ user: null, isAdmin: false, isUserLoading: false, isAuthCheckComplete: true, userError: new Error("Auth service not provided.") });
-      return;
-    }
-
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (firebaseUser) => {
-        if (firebaseUser) {
-            try {
-                const idTokenResult = await firebaseUser.getIdTokenResult(); // Don't force refresh here, do it on demand
-                const isAdmin = !!idTokenResult.claims.admin;
-                
-                setUserAuthState({ user: firebaseUser, isAdmin: isAdmin, isUserLoading: false, isAuthCheckComplete: true, userError: null });
-
-            } catch (error) {
-                 console.error("FirebaseProvider: Error checking admin status:", error);
-                 setUserAuthState({ user: firebaseUser, isAdmin: false, isUserLoading: false, isAuthCheckComplete: true, userError: error as Error });
-            }
-        } else {
-            // No user is logged in
-            setUserAuthState({ user: null, isAdmin: false, isUserLoading: false, isAuthCheckComplete: true, userError: null });
-        }
-      },
-      (error) => {
-        console.error("FirebaseProvider: onAuthStateChanged error:", error);
-        setUserAuthState({ user: null, isAdmin: false, isUserLoading: false, isAuthCheckComplete: true, userError: error });
-      }
-    );
-    return () => unsubscribe();
-  }, [auth]);
-
-  const refreshToken = useCallback(async () => {
-    const user = auth?.currentUser;
-    if (user) {
-      try {
-        await user.getIdToken(true); // Force refresh the token
-        const freshTokenResult = await user.getIdTokenResult();
-        const newIsAdmin = !!freshTokenResult.claims.admin;
-
-        // Manually update the state after refreshing to ensure UI consistency
-        setUserAuthState(prevState => ({
-            ...prevState,
-            isAdmin: newIsAdmin,
-            user: prevState.user // user object itself doesn't change, just its token
-        }));
-      } catch (error) {
-        console.error("Error refreshing token:", error);
-        setUserAuthState(prevState => ({...prevState, userError: error as Error}));
-      }
-    }
-  }, [auth]);
+  const userAuthState = useUserHook(auth);
 
   const contextValue = useMemo((): FirebaseContextState => {
     const servicesAvailable = !!(firebaseApp && firestore && auth);
@@ -123,9 +49,8 @@ export const FirebaseProvider: React.FC<{
       firestore: servicesAvailable ? firestore : null,
       auth: servicesAvailable ? auth : null,
       ...userAuthState,
-      refreshToken,
     };
-  }, [firebaseApp, firestore, auth, userAuthState, refreshToken]);
+  }, [firebaseApp, firestore, auth, userAuthState]);
 
   return (
     <FirebaseContext.Provider value={contextValue}>
@@ -178,15 +103,3 @@ export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | 
   
   return memoized;
 }
-
-/**
- * Hook specifically for accessing the authenticated user's state.
- */
-export const useUser = (): UserHookResult => {
-  const context = useContext(FirebaseContext);
-  if (context === undefined) {
-    throw new Error('useUser must be used within a FirebaseProvider.');
-  }
-  const { user, isUserLoading, userError, isAdmin, isAuthCheckComplete, refreshToken } = context;
-  return { user, isUserLoading, userError, isAdmin, isAuthCheckComplete, refreshToken };
-};
