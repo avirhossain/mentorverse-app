@@ -1,7 +1,8 @@
+
 'use client';
 
 import React, { useEffect } from 'react';
-import { notFound } from 'next/navigation'; // Import the notFound function
+import { notFound } from 'next/navigation';
 import { useAdminUser } from '@/firebase/auth/use-admin-user';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Header } from '@/components/common/Header';
@@ -18,7 +19,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     // This effect runs whenever the auth state changes.
     if (isAuthCheckComplete && !isAdmin) {
       // If the check is done and the user is NOT an admin,
-      // render the 404 "Not Found" page.
+      // render the 404 "Not Found" page. This is a security measure.
       notFound();
     }
   }, [isAuthCheckComplete, isAdmin]);
