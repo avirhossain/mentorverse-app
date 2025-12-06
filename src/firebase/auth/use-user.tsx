@@ -48,15 +48,16 @@ export const useUser = (auth: Auth | null): UserAuthState & { refreshToken: () =
         return;
       }
 
-      console.log('[useUser] User found. Attempting to get ID token with force refresh...');
+      console.log('[useUser] User found. Getting ID token result without force refresh...');
       try {
-        const tokenResult = await firebaseUser.getIdTokenResult(true);
-        console.log('[useUser] Successfully got ID token. Claims:', tokenResult.claims);
+        // Do NOT force refresh here. Let's get the state as quickly as possible.
+        // The login page will be responsible for the forced refresh.
+        const tokenResult = await firebaseUser.getIdTokenResult(false); 
+        console.log('[useUser] Successfully got initial ID token. Claims:', tokenResult.claims);
         
         const adminStatus = !!tokenResult.claims.admin;
         console.log(`[useUser] isAdmin evaluated to: ${adminStatus}`);
 
-        console.log('[useUser] Setting final state:');
         const finalState = {
           user: firebaseUser,
           isAdmin: adminStatus,
@@ -64,7 +65,7 @@ export const useUser = (auth: Auth | null): UserAuthState & { refreshToken: () =
           isAuthCheckComplete: true,
           userError: null,
         };
-        console.log(finalState);
+        console.log('[useUser] Setting final state:', finalState);
         setState(finalState);
 
       } catch (err: any) {
@@ -88,10 +89,13 @@ export const useUser = (auth: Auth | null): UserAuthState & { refreshToken: () =
   const refreshToken = async () => {
     if (!state.user) return;
     console.log('[useUser] refreshToken called.');
+    // Force refresh the token
     await state.user.getIdToken(true);
+    // Get the new result
     const tokenResult = await state.user.getIdTokenResult(true);
     const newIsAdmin = !!tokenResult.claims.admin;
     console.log(`[useUser] Token refreshed. New isAdmin status: ${newIsAdmin}`);
+    // Update the state with the new claim
     setState((prev) => ({
       ...prev,
       isAdmin: newIsAdmin,

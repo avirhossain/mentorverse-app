@@ -62,18 +62,19 @@ export default function AdminLoginPage() {
             const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
             const user = userCredential.user;
 
-            console.log("[AdminLogin] Forcing ID token refresh to get admin claims...");
+            console.log("[AdminLogin] Login successful. Forcing ID token refresh...");
             await user.getIdToken(true); 
-
-            // After login, the component will re-render, and the useEffect will handle the redirect if the user is an admin.
-            // We explicitly call refreshToken to ensure the useUser hook's state is current.
+            console.log("[AdminLogin] Token refreshed. Calling refreshToken to update UI state.");
             await refreshToken();
-
+            
             toast({
                 title: 'Login Successful',
-                description: 'Verifying admin status...',
+                description: 'Redirecting to dashboard...',
             });
             
+            // The useEffect will handle the redirect once the state is updated
+            // Forcing a direct push as a fallback.
+            router.push('/admin');
 
         } catch (error: any) {
              toast({
@@ -117,6 +118,18 @@ export default function AdminLoginPage() {
         }
     };
     
+    // While checking, or if user is admin, show minimal UI to avoid flashes
+    if (!isAuthCheckComplete || (user && isAdmin)) {
+        return (
+             <div className="flex flex-col min-h-screen bg-background">
+                <Header currentView="admin" />
+                <div className="flex-1 flex items-center justify-center">
+                    <p>Verifying authentication...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-background">
             <Header currentView="admin" />
@@ -132,7 +145,7 @@ export default function AdminLoginPage() {
                         </p>
                     </div>
                     
-                    {isAuthCheckComplete && user && !isAdmin ? (
+                    {user && !isAdmin ? (
                          <div className="space-y-4">
                             <p className="text-center text-sm">Logged in as: <br/> <span className="font-bold">{user.email}</span></p>
                            
