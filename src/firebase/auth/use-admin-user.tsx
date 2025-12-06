@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { User, onAuthStateChanged, Auth } from 'firebase/auth';
 import { useAuth as useFirebaseAuth } from '@/firebase/provider'; 
 
@@ -28,6 +28,7 @@ export const useAdminUser = (): AdminAuthState => {
       return;
     }
 
+    // This listener is the single source of truth for the user's auth state
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (!firebaseUser) {
         setState({
@@ -40,10 +41,14 @@ export const useAdminUser = (): AdminAuthState => {
       }
 
       try {
+        // Always check the token to ensure claims are fresh, especially after login.
         const tokenResult = await firebaseUser.getIdTokenResult();
         const newIsAdmin = !!tokenResult.claims.admin;
+        
         setState({ user: firebaseUser, isAdmin: newIsAdmin, isAuthCheckComplete: true, userError: null });
+
       } catch (err: any) {
+        // If token verification fails, treat as a non-admin.
         setState({ user: firebaseUser, isAdmin: false, userError: err, isAuthCheckComplete: true });
       }
     });
@@ -51,7 +56,7 @@ export const useAdminUser = (): AdminAuthState => {
     return () => {
       unsubscribe();
     };
-  }, [auth]);
+  }, [auth, state.isAuthCheckComplete]);
 
   return state;
 };

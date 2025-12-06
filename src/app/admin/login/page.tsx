@@ -36,12 +36,12 @@ export default function AdminLoginPage() {
         },
     });
     
-    // This effect will handle redirection if a user is ALREADY an admin when they land on this page.
+    // This effect handles redirection if an admin is already logged in when they land on this page.
     useEffect(() => {
-        if (isAuthCheckComplete && user && isAdmin) {
+        if (isAuthCheckComplete && isAdmin) {
             router.push('/admin');
         }
-    }, [isAdmin, isAuthCheckComplete, user, router]);
+    }, [isAdmin, isAuthCheckComplete, router]);
 
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
         if (!auth) {
@@ -59,16 +59,14 @@ export default function AdminLoginPage() {
 
             // Directly check the claim from the refreshed token.
             if (tokenResult.claims.admin === true) {
-                // The useEffect above will now detect the state change and redirect.
-                // This ensures the admin state is confirmed before any navigation.
                 toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
-                router.push('/admin'); // Force redirect immediately
+                router.push('/admin'); // Redirect on success
             } else {
                 // This case handles a valid login for a non-admin user.
                  toast({
                     variant: 'destructive',
                     title: 'Admin Access Not Detected',
-                    description: 'You have successfully signed in, but you do not have admin privileges.',
+                    description: 'You do not have admin privileges.',
                 });
                 await signOut(auth); // Log out the non-admin user.
             }
@@ -77,7 +75,7 @@ export default function AdminLoginPage() {
              toast({
                 variant: 'destructive',
                 title: 'Admin Login Failed',
-                description: 'Invalid credentials or connection issue. Please try again.',
+                description: 'Invalid credentials or connection issue.',
             });
         } finally {
             setIsLoading(false);
@@ -105,7 +103,8 @@ export default function AdminLoginPage() {
         );
     }
     
-    // If the user is logged in, but not an admin, show the error message.
+    // If the user is logged in, but not an admin, show an error message.
+    // This handles cases where a non-admin user somehow navigates here.
     if (isAuthCheckComplete && user && !isAdmin) {
          return (
             <div className="min-h-screen bg-background">
@@ -136,7 +135,7 @@ export default function AdminLoginPage() {
         );
     }
 
-    // If no user is logged in, show the login form.
+    // If no user is logged in, or if the auth check isn't complete yet, show the login form.
     return (
         <div className="min-h-screen bg-background">
             <Header currentView="admin" />
