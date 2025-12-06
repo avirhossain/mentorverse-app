@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -44,9 +45,17 @@ export const useUser = (auth: Auth | null): UserAuthState => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          // Get the token result to check for admin custom claim
-          const idTokenResult = await firebaseUser.getIdTokenResult();
-          const isAdmin = !!idTokenResult.claims.admin;
+          // First, get the token without forcing a refresh
+          let idTokenResult = await firebaseUser.getIdTokenResult();
+          let isAdmin = !!idTokenResult.claims.admin;
+
+          // If the admin claim isn't present, force a refresh and check again.
+          // This handles the case where claims have just been updated on the server.
+          if (!isAdmin) {
+            idTokenResult = await firebaseUser.getIdTokenResult(true);
+            isAdmin = !!idTokenResult.claims.admin;
+          }
+          
           setUserState({
             user: firebaseUser,
             isAdmin,
