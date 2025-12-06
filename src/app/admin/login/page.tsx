@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '@/firebase';
-import { useAdminUser } from '@/firebase/auth/use-admin-user'; // Import the new hook
+import { useAdminUser } from '@/firebase/auth/use-admin-user';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ export default function AdminLoginPage() {
     const auth = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    const { user, isAdmin, isAuthCheckComplete, refreshToken } = useAdminUser(); // Use the new hook
+    const { user, isAdmin, isAuthCheckComplete } = useAdminUser();
 
     const form = useForm<z.infer<typeof adminLoginSchema>>({
         resolver: zodResolver(adminLoginSchema),
@@ -36,7 +36,8 @@ export default function AdminLoginPage() {
             password: '123456',
         },
     });
-
+    
+    // This effect will handle redirection if a user is ALREADY an admin when they land on this page.
     useEffect(() => {
         if (isAuthCheckComplete && user && isAdmin) {
             router.push('/admin');
@@ -55,15 +56,25 @@ export default function AdminLoginPage() {
             const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
             
             // CRITICAL: Force a token refresh right after login to get custom claims.
-            await userCredential.user.getIdToken(true); 
+            const tokenResult = await userCredential.user.getIdTokenResult(true); 
             
-            // Now, trigger the state update in the useAdminUser hook.
-            if (refreshToken) {
-              await refreshToken();
+            // Explicitly check the claim right here.
+            if (tokenResult.claims.admin) {
+                toast({
+                    title: 'Login Successful',
+                    description: 'Redirecting to dashboard...',
+                });
+                // If the claim is present, redirect to the admin dashboard.
+                router.push('/admin');
+            } else {
+                // If claim is not present, show error and log the user out.
+                toast({
+                    variant: 'destructive',
+                    title: 'Admin Access Not Detected',
+                    description: 'You do not have administrative privileges.',
+                });
+                await signOut(auth);
             }
-            
-            // The useEffect will handle the redirect once the state is updated.
-
         } catch (error: any) {
              toast({
                 variant: 'destructive',

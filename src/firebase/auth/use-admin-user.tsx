@@ -3,9 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import { User, onAuthStateChanged, Auth } from 'firebase/auth';
-import { useAuth as useFirebaseAuth } from '@/firebase/provider'; // Use the hook to get auth instance
+import { useAuth as useFirebaseAuth } from '@/firebase/provider'; 
 
-// The state no longer needs to hold the user object, only the admin status.
 export interface AdminAuthState {
   user: User | null;
   isAdmin: boolean;
@@ -13,18 +12,24 @@ export interface AdminAuthState {
   userError: Error | null;
 }
 
-// This hook is now completely standalone and dedicated to admin checks.
-export const useAdminUser = (): AdminAuthState & { refreshToken: () => Promise<void> } => {
-  const auth = useFirebaseAuth(); // Get auth instance from context
+export const useAdminUser = (): AdminAuthState => {
+  const auth = useFirebaseAuth();
   const [state, setState] = useState<AdminAuthState>({
-    user: null, // We still need the user object internally for refreshing tokens
+    user: null,
     isAdmin: false,
-    isAuthCheckComplete: false, // Start as false
+    isAuthCheckComplete: false,
     userError: null,
   });
 
   useEffect(() => {
     if (!auth) {
+      // If auth service is not ready, mark check as complete with no admin.
+      setState({
+        user: null,
+        isAdmin: false,
+        isAuthCheckComplete: true,
+        userError: null
+      });
       return;
     }
 
@@ -42,11 +47,12 @@ export const useAdminUser = (): AdminAuthState & { refreshToken: () => Promise<v
 
       try {
         // A user is logged in, now check their token for the admin claim.
-        const tokenResult = await firebaseUser.getIdTokenResult(true); // true = force refresh to ensure latest claims
+        // Force refresh to ensure we have the latest claims.
+        const tokenResult = await firebaseUser.getIdTokenResult(true); 
         const adminStatus = !!tokenResult.claims.admin;
         
         setState({
-          user: firebaseUser, // Keep user internally for token refreshes
+          user: firebaseUser,
           isAdmin: adminStatus,
           isAuthCheckComplete: true,
           userError: null,
@@ -67,20 +73,5 @@ export const useAdminUser = (): AdminAuthState & { refreshToken: () => Promise<v
     };
   }, [auth]);
 
-  // Function to manually force a token refresh.
-  const refreshToken = async () => {
-    if (!state.user) {
-      return;
-    }
-    await state.user.getIdToken(true); // Force refresh
-    const tokenResult = await state.user.getIdTokenResult(true);
-    const newIsAdmin = !!tokenResult.claims.admin;
-    setState((prev) => ({
-      ...prev,
-      isAdmin: newIsAdmin,
-      isAuthCheckComplete: true, // Ensure this stays true
-    }));
-  };
-
-  return { ...state, refreshToken };
+  return state;
 };
