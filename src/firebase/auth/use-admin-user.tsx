@@ -28,23 +28,21 @@ export const useAdminUser = (): AdminAuthState => {
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!firebaseUser) {
+      if (firebaseUser) {
+        // TEMPORARY: Hardcoding isAdmin to true on any successful login as per user request.
+        // This is insecure and should be reverted before going live.
+        setState({
+          isAdmin: true,
+          isAuthCheckComplete: true,
+          userError: null,
+        });
+      } else {
+        // If there is no user, they are definitely not an admin.
         setState({
           isAdmin: false,
           isAuthCheckComplete: true,
           userError: null,
         });
-        return;
-      }
-
-      try {
-        const tokenResult = await firebaseUser.getIdTokenResult(true);
-        const newIsAdmin = !!tokenResult.claims.admin;
-        
-        setState({ isAdmin: newIsAdmin, isAuthCheckComplete: true, userError: null });
-
-      } catch (err: any) {
-        setState({ isAdmin: false, userError: err, isAuthCheckComplete: true });
       }
     });
 
