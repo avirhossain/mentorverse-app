@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth, useAdminUser } from '@/firebase';
+import { useAuth, useAdminUser, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { Shield, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 const adminLoginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -23,6 +24,7 @@ const adminLoginSchema = z.object({
 export default function AdminLoginPage() {
     const router = useRouter();
     const auth = useAuth();
+    const firestore = useFirestore();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const { isAdmin, isAuthCheckComplete } = useAdminUser();
@@ -42,7 +44,7 @@ export default function AdminLoginPage() {
     }, [isAdmin, isAuthCheckComplete, router]);
 
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
-        if (!auth) {
+        if (!auth || !firestore) {
             toast({ variant: 'destructive', title: 'Authentication service not available.' });
             return;
         }
@@ -51,23 +53,18 @@ export default function AdminLoginPage() {
 
         try {
             const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-            // THIS IS THE CRITICAL FIX:
-            // Force a refresh of the ID token to get the latest custom claims.
-            const idTokenResult = await userCredential.user.getIdTokenResult(true);
+            
+            // This is the CRITICAL "SIGNAL" to the useAdminUser hook.
+            // By updating the user's document, we trigger the onSnapshot listener
+            // in the hook, which then knows to refresh the token and check for claims.
+            const userDocRef = doc(firestore, 'users', userCredential.user.uid);
+            await updateDoc(userDocRef, {
+                lastLogin: serverTimestamp(),
+            });
 
-            // Now, check the claim directly from the refreshed token.
-            if (idTokenResult.claims.admin) {
-                toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
-                router.push('/admin');
-            } else {
-                // If the claim is missing, the user is not an admin. Sign them out.
-                await signOut(auth);
-                toast({
-                    variant: 'destructive',
-                    title: 'Admin Access Not Detected',
-                    description: 'You do not have admin privileges.',
-                });
-            }
+            // We no longer check claims or redirect here.
+            // The useEffect above will handle the redirect once useAdminUser confirms admin status.
+            toast({ title: 'Login Successful', description: 'Verifying admin status...' });
             
         } catch (error: any) {
              toast({
@@ -75,8 +72,7 @@ export default function AdminLoginPage() {
                 title: 'Admin Login Failed',
                 description: 'Invalid credentials or an unexpected error occurred.',
             });
-        } finally {
-            setIsLoading(false);
+            setIsLoading(false); // Only set loading to false on error.
         }
     };
 
@@ -159,7 +155,7 @@ export default function AdminLoginPage() {
             );
         }
 
-        return null; // Should not be reached if logic is correct
+        return null;
     }
 
     if (isAuthCheckComplete && isAdmin) {
