@@ -14,7 +14,7 @@ import { Shield, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const adminLoginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -57,10 +57,14 @@ export default function AdminLoginPage() {
             // This is the CRITICAL "SIGNAL" to the useAdminUser hook.
             // By updating the user's document, we trigger the onSnapshot listener
             // in the hook, which then knows to refresh the token and check for claims.
+            // Using setDoc with merge:true acts as an "upsert".
             const userDocRef = doc(firestore, 'users', userCredential.user.uid);
-            await updateDoc(userDocRef, {
+            await setDoc(userDocRef, {
                 lastLogin: serverTimestamp(),
-            });
+                email: userCredential.user.email, // Ensure email is present
+                name: userCredential.user.displayName || 'Admin User' // Ensure name is present
+            }, { merge: true });
+
 
             // We no longer check claims or redirect here.
             // The useEffect above will handle the redirect once useAdminUser confirms admin status.
