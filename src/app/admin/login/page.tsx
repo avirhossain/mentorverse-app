@@ -40,9 +40,9 @@ export default function AdminLoginPage() {
 
 
     useEffect(() => {
-        // This effect now controls the redirect AFTER successful admin verification.
+        // This effect redirects *if* the user is already an admin when the page loads.
         if (isAuthCheckComplete && user && isAdmin) {
-            console.log("[AdminLogin] useEffect detected user is admin. Redirecting to /admin");
+            console.log("[AdminLogin] useEffect detected user is already admin. Redirecting to /admin");
             router.push('/admin');
         }
     }, [isAdmin, isAuthCheckComplete, user, router]);
@@ -64,6 +64,7 @@ export default function AdminLoginPage() {
 
             console.log("[AdminLogin] Login successful. Forcing ID token refresh...");
             await user.getIdToken(true); 
+            
             console.log("[AdminLogin] Token refreshed. Calling refreshToken to update UI state.");
             await refreshToken();
             
@@ -72,8 +73,6 @@ export default function AdminLoginPage() {
                 description: 'Redirecting to dashboard...',
             });
             
-            // The useEffect will handle the redirect once the state is updated
-            // Forcing a direct push as a fallback.
             router.push('/admin');
 
         } catch (error: any) {
@@ -98,6 +97,7 @@ export default function AdminLoginPage() {
             if (result.status === 'SUCCESS' || result.status === 'ALREADY_ADMIN') {
                 toast({ title: 'Admin Rights Confirmed!', description: 'Refreshing session... You should be redirected shortly.' });
                 await refreshToken(); // This is the key step to update the client state
+                router.push('/admin'); // Attempt to redirect after granting rights
             } else {
                  toast({ variant: 'destructive', title: 'Failed to Grant Admin', description: result.message || 'An unknown error occurred.' });
             }
@@ -118,9 +118,8 @@ export default function AdminLoginPage() {
         }
     };
     
-    // While checking, or if user is admin, show minimal UI to avoid flashes
-    if (!isAuthCheckComplete || (user && isAdmin)) {
-        return (
+    if (!isAuthCheckComplete) {
+         return (
              <div className="flex flex-col min-h-screen bg-background">
                 <Header currentView="admin" />
                 <div className="flex-1 flex items-center justify-center">
@@ -162,7 +161,7 @@ export default function AdminLoginPage() {
                                 <LogOut className="mr-2 h-4 w-4" /> Log Out & Try Again
                             </Button>
                         </div>
-                    ) : (
+                    ) : !user ? (
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(handleAdminLogin)} className="space-y-4">
                                 <FormField
@@ -196,7 +195,7 @@ export default function AdminLoginPage() {
                                 </Button>
                             </form>
                         </Form>
-                    )}
+                    ) : null }
                 </div>
             </div>
         </div>
