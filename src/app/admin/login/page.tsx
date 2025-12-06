@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -13,23 +12,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, LogOut } from 'lucide-react';
+import { Shield, LogOut, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { grantAdminRights } from '@/ai/flows/grant-admin-rights';
 
-const adminLoginSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address.' }),
-  password: z.string().min(1, { message: 'Password is required.' }),
-});
 
 export default function AdminLoginPage() {
     const router = useRouter();
     const auth = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    const { user, isAdmin, isAuthCheckComplete } = useUser();
+    const [isGranting, setIsGranting] = useState(false);
+    const { user, isAdmin, isAuthCheckComplete, refreshToken } = useUser();
+
 
     useEffect(() => {
-        // After auth check is complete, if the user is confirmed an admin, redirect them.
         if (isAuthCheckComplete && user && isAdmin) {
             router.push('/admin');
         }
@@ -47,9 +44,7 @@ export default function AdminLoginPage() {
         setIsLoading(true);
 
         try {
-            // Hardcoded credentials for the default admin
             await signInWithEmailAndPassword(auth, 'mmavir89@gmail.com', '123456');
-            // On successful sign-in, the useUser hook and useEffect will handle the redirection.
             toast({
                 title: 'Login Successful',
                 description: 'Verifying admin status and redirecting...',
@@ -58,9 +53,33 @@ export default function AdminLoginPage() {
              toast({
                 variant: 'destructive',
                 title: 'Admin Login Failed',
-                description: 'Invalid credentials or you do not have admin access.',
+                description: 'Invalid credentials. Please try again.',
             });
-             setIsLoading(false);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    const handleGrantAdmin = async () => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be logged in to grant admin rights.' });
+            return;
+        }
+        setIsGranting(true);
+        try {
+            const result = await grantAdminRights();
+            if (result.status === 'SUCCESS') {
+                toast({ title: 'Admin Rights Granted!', description: 'Please wait a moment while we refresh your session.' });
+                // Force a token refresh to get the new claim, then the useEffect will redirect.
+                await refreshToken();
+
+            } else {
+                 toast({ variant: 'destructive', title: 'Failed to Grant Admin', description: result.message || 'An unknown error occurred.' });
+            }
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Error', description: error.message || 'An error occurred.' });
+        } finally {
+            setIsGranting(false);
         }
     };
 
@@ -90,14 +109,34 @@ export default function AdminLoginPage() {
                     </div>
                     
                     {isAuthCheckComplete && user && (
-                         <Button onClick={handleLogout} variant="destructive" className="w-full">
-                            <LogOut className="mr-2 h-4 w-4" /> Log Out from {user.email}
-                        </Button>
+                         <div className="space-y-4">
+                            <p className="text-center text-sm">Logged in as: <br/> <span className="font-bold">{user.email}</span></p>
+                            {isAdmin ? (
+                                <p className="text-center font-semibold text-green-600">Admin status confirmed. Redirecting...</p>
+                            ) : (
+                                <div className="p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-r-lg">
+                                    <p className="font-bold">Admin Access Not Detected</p>
+                                    <p className="text-sm">Click the button below to grant yourself admin rights. You only need to do this once.</p>
+                                </div>
+                            )}
+                             <Button onClick={handleLogout} variant="outline" className="w-full">
+                                <LogOut className="mr-2 h-4 w-4" /> Log Out
+                            </Button>
+                        </div>
                     )}
 
-                    <Button onClick={handleAdminLogin} className="w-full" disabled={isLoading || (isAuthCheckComplete && !!user && !isAdmin) }>
-                        {isLoading ? 'Signing In...' : 'Sign in as Admin'}
-                    </Button>
+                    <div className="space-y-4">
+                        <Button onClick={handleAdminLogin} className="w-full" disabled={isLoading || (isAuthCheckComplete && !!user) }>
+                            {isLoading ? 'Signing In...' : 'Sign in as Admin'}
+                        </Button>
+
+                         {user && !isAdmin && (
+                            <Button onClick={handleGrantAdmin} variant="secondary" className="w-full" disabled={isGranting}>
+                                <ShieldCheck className="mr-2 h-4 w-4" />
+                                {isGranting ? 'Granting...' : 'Grant Admin Rights'}
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
