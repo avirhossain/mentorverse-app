@@ -3,23 +3,26 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { useUser, useAdminUser } from '@/firebase';
+import { useUser, useAdminUser, useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { X, Terminal } from 'lucide-react';
+import { getIdTokenResult } from 'firebase/auth';
 
 /**
- * A floating debug console to display real-time auth state.
+ * A floating debug console to display real-time auth state and token claims.
  * Toggle visibility with Ctrl+D.
  */
 export const DebugConsole = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
+    const [tokenClaims, setTokenClaims] = useState<any>(null);
     const userState = useUser();
     const adminState = useAdminUser();
+    const auth = useAuth();
     const pathname = usePathname();
 
     const isAdminView = pathname.startsWith('/admin');
-    
+
     useEffect(() => {
         setIsMounted(true);
         const savedVisibility = localStorage.getItem('debugConsoleVisible');
@@ -41,6 +44,30 @@ export const DebugConsole = () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, []);
+
+    useEffect(() => {
+        const fetchClaims = async () => {
+            if (auth?.currentUser) {
+                try {
+                    const idTokenResult = await getIdTokenResult(auth.currentUser, true); // Force refresh
+                    setTokenClaims(idTokenResult.claims);
+                } catch (error) {
+                    setTokenClaims({ error: 'Failed to fetch token claims.', details: error.message });
+                }
+            } else {
+                setTokenClaims(null);
+            }
+        };
+
+        // Fetch claims when the user state changes or the component mounts
+        fetchClaims();
+        
+        // Also refetch every 30 seconds
+        const interval = setInterval(fetchClaims, 30000);
+        return () => clearInterval(interval);
+
+    }, [auth, userState.user]);
+
 
     const handleClose = () => {
         setIsVisible(false);
@@ -80,6 +107,10 @@ export const DebugConsole = () => {
                         </div>
                     </>
                 )}
+                 <div className="mt-4">
+                    <p className="font-bold text-yellow-400 mb-1">ID Token Claims (Refreshed):</p>
+                    <pre className="bg-black/30 p-2 rounded-md whitespace-pre-wrap">{formatState(tokenClaims)}</pre>
+                </div>
             </div>
              <div className="p-2 bg-gray-800/50 text-center text-gray-400 border-t border-primary/30">
                 Toggle with <span className="font-bold text-primary/80">Ctrl + D</span>
