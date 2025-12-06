@@ -1,8 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Home, User, LogIn, LogOut, Shield } from 'lucide-react';
+import { Home, User, LogIn, LogOut, Shield, Lightbulb, Users, Calendar } from 'lucide-react';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,6 @@ export const Header = ({ currentView }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { user, isUserLoading } = useUser();
     const auth = useAuth();
-    const pathname = usePathname();
 
     const handleLogout = () => {
         if(auth) {
@@ -29,6 +27,13 @@ export const Header = ({ currentView }) => {
             <Icon className="w-5 h-5 mr-1" /> {text}
         </Link>
     );
+    
+    const navLinks = [
+        { href: "/", view: "home", icon: Home, text: "Home" },
+        { href: "/mentors", view: "mentors", icon: Users, text: "Mentors" },
+        { href: "/sessions", view: "sessions", icon: Calendar, text: "Sessions" },
+        { href: "/tips", view: "tips", icon: Lightbulb, text: "Tips" },
+    ];
 
     return (
     <>
@@ -37,13 +42,12 @@ export const Header = ({ currentView }) => {
                 <Link href="/" className="text-2xl font-extrabold text-primary">Mentees</Link>
                 
                 <nav className="hidden lg:flex space-x-2 items-center text-gray-600 font-medium">
-                    <NavLink href="/" view="home" icon={Home} text="Home" />
+                    {navLinks.map(link => <NavLink key={link.href} {...link} />)}
+                    
                     {!isUserLoading && (
                         user ? (
                             <>
-                                <Link href="/account" className={`flex items-center transition px-3 py-2 rounded-lg ${currentView === 'account' ? 'text-primary bg-primary/10 font-bold' : 'hover:text-primary hover:bg-gray-100'}`}>
-                                    <User className="w-5 h-5 mr-1" /> Account
-                                </Link>
+                                <NavLink href="/account" view="account" icon={User} text="Account" />
                                 <Button onClick={handleLogout} variant="outline" size="sm">
                                     <LogOut className="w-4 h-4 mr-2" /> Logout
                                 </Button>
@@ -56,6 +60,9 @@ export const Header = ({ currentView }) => {
                             </Button>
                         )
                     )}
+                     <Link href="/admin" className="flex items-center transition px-3 py-2 rounded-lg hover:text-primary hover:bg-gray-100">
+                        <Shield className="w-5 h-5 mr-1" /> Admin
+                    </Link>
                 </nav>
                 
                 <button className="lg:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -67,7 +74,11 @@ export const Header = ({ currentView }) => {
             
             {isMenuOpen && (
                 <div className="lg:hidden absolute w-full bg-white shadow-lg border-t border-gray-100 py-4 px-4 space-y-3">
-                    <Link href="/" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}><Home className="w-5 h-5 mr-2" /> Home</Link>
+                    {navLinks.map(link => (
+                         <Link key={link.href} href={link.href} className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                            <link.icon className="w-5 h-5 mr-2" /> {link.text}
+                         </Link>
+                    ))}
                     {!isUserLoading && (
                         user ? (
                             <>
@@ -86,6 +97,9 @@ export const Header = ({ currentView }) => {
                             </Button>
                         )
                     )}
+                     <Link href="/admin" className="flex items-center p-2 text-gray-700 hover:bg-primary/5 rounded-lg" onClick={() => setIsMenuOpen(false)}>
+                        <Shield className="w-5 h-5 mr-2" /> Admin
+                    </Link>
                 </div>
             )}
         </header>
