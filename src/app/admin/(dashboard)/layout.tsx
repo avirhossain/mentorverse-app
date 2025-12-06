@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect } from 'react';
@@ -22,9 +23,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [user, isAdmin, isAuthCheckComplete, router]);
 
-  // While the auth check is running or if the user is not an admin (and is about to be redirected),
-  // show a loading skeleton. This prevents a flash of the dashboard content for non-admin users.
-  if (!isAuthCheckComplete || !isAdmin) {
+  // Only show a loading skeleton while the initial auth check is in progress.
+  // After the check, the useEffect will either redirect or the content will be rendered.
+  if (!isAuthCheckComplete) {
     return (
       <div className="flex flex-col min-h-screen">
         <div className="p-8">
@@ -40,5 +41,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   // If the auth check is complete and the user is a verified admin, render the dashboard content.
+  // If they are not an admin, they will be redirected by the useEffect above.
   return <>{children}</>;
 }
