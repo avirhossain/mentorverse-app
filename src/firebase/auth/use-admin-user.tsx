@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -16,7 +17,7 @@ export const useAdminUser = (): AdminAuthState => {
   const [state, setState] = useState<AdminAuthState>({
     user: auth?.currentUser || null,
     isAdmin: false,
-    isAuthCheckComplete: false,
+    isAuthCheckComplete: false, // Start as false to indicate check is in progress
     userError: null,
   });
 
@@ -28,8 +29,9 @@ export const useAdminUser = (): AdminAuthState => {
       return;
     }
 
-    // This listener is the single source of truth for the user's auth state
+    // This listener is the single source of truth for the user's auth state.
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // If no user is logged in, the check is complete, and they are not an admin.
       if (!firebaseUser) {
         setState({
           user: null,
@@ -40,22 +42,28 @@ export const useAdminUser = (): AdminAuthState => {
         return;
       }
 
+      // If a user is found, we immediately check their token for the admin claim.
+      // We force a refresh (true) to ensure we get the latest claims after login.
       try {
-        // Always check the token to ensure claims are fresh, especially after login.
-        const tokenResult = await firebaseUser.getIdTokenResult();
+        const tokenResult = await firebaseUser.getIdTokenResult(true);
         const newIsAdmin = !!tokenResult.claims.admin;
         
+        // Only after the token is verified do we mark the auth check as complete.
         setState({ user: firebaseUser, isAdmin: newIsAdmin, isAuthCheckComplete: true, userError: null });
 
       } catch (err: any) {
-        // If token verification fails, treat as a non-admin.
+        // If token verification fails for any reason, treat as a non-admin.
+        // The check is complete, but the outcome is "not an admin".
         setState({ user: firebaseUser, isAdmin: false, userError: err, isAuthCheckComplete: true });
       }
     });
 
+    // Clean up the listener when the component unmounts.
     return () => {
       unsubscribe();
     };
+  // We only want this effect to run once when the auth instance is available.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth]);
 
   return state;
