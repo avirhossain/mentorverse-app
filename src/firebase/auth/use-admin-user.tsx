@@ -9,33 +9,16 @@ export interface AdminAuthState {
   isAdmin: boolean;
   isAuthCheckComplete: boolean;
   userError: Error | null;
-  checkAdminStatus: () => Promise<boolean>;
 }
 
 export const useAdminUser = (): AdminAuthState => {
   const auth = useFirebaseAuth();
-  const [state, setState] = useState<Omit<AdminAuthState, 'checkAdminStatus'>>({
+  const [state, setState] = useState<AdminAuthState>({
     user: auth?.currentUser || null,
     isAdmin: false,
     isAuthCheckComplete: false,
     userError: null,
   });
-
-  const checkAdminStatus = useCallback(async (): Promise<boolean> => {
-    if (!auth?.currentUser) {
-      setState(s => ({ ...s, isAdmin: false }));
-      return false;
-    }
-    try {
-      const tokenResult = await auth.currentUser.getIdTokenResult(true); // Force refresh
-      const newIsAdmin = !!tokenResult.claims.admin;
-      setState(s => ({ ...s, isAdmin: newIsAdmin, user: auth.currentUser, isAuthCheckComplete: true }));
-      return newIsAdmin;
-    } catch (err: any) {
-      setState(s => ({ ...s, isAdmin: false, userError: err, isAuthCheckComplete: true }));
-      return false;
-    }
-  }, [auth]);
 
   useEffect(() => {
     if (!auth) {
@@ -55,14 +38,20 @@ export const useAdminUser = (): AdminAuthState => {
         });
         return;
       }
-      // Initial check on page load
-      await checkAdminStatus();
+
+      try {
+        const tokenResult = await firebaseUser.getIdTokenResult();
+        const newIsAdmin = !!tokenResult.claims.admin;
+        setState({ user: firebaseUser, isAdmin: newIsAdmin, isAuthCheckComplete: true, userError: null });
+      } catch (err: any) {
+        setState({ user: firebaseUser, isAdmin: false, userError: err, isAuthCheckComplete: true });
+      }
     });
 
     return () => {
       unsubscribe();
     };
-  }, [auth, checkAdminStatus]);
+  }, [auth]);
 
-  return { ...state, checkAdminStatus };
+  return state;
 };

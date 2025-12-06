@@ -26,7 +26,7 @@ export default function AdminLoginPage() {
     const auth = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    const { user, isAdmin, isAuthCheckComplete, checkAdminStatus } = useAdminUser();
+    const { user, isAdmin, isAuthCheckComplete } = useAdminUser();
 
     const form = useForm<z.infer<typeof adminLoginSchema>>({
         resolver: zodResolver(adminLoginSchema),
@@ -52,12 +52,13 @@ export default function AdminLoginPage() {
         setIsLoading(true);
 
         try {
-            await signInWithEmailAndPassword(auth, values.email, values.password);
+            const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
             
-            // CRITICAL: Explicitly check for admin status and wait for the result.
-            const isAdmin = await checkAdminStatus();
+            // CRITICAL: Force a token refresh to get the latest claims, including the admin claim.
+            const tokenResult = await userCredential.user.getIdTokenResult(true);
 
-            if (isAdmin) {
+            // Directly check the claim from the refreshed token.
+            if (tokenResult.claims.admin === true) {
                 toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
                 router.push('/admin');
             } else {
@@ -68,16 +69,16 @@ export default function AdminLoginPage() {
                     description: 'You have successfully signed in, but you do not have admin privileges.',
                 });
                 await signOut(auth); // Log out the non-admin user.
+                setIsLoading(false);
             }
             
         } catch (error: any) {
              toast({
                 variant: 'destructive',
                 title: 'Admin Login Failed',
-                description: 'Invalid credentials. Please try again.',
+                description: 'Invalid credentials or connection issue. Please try again.',
             });
-        } finally {
-            setIsLoading(false);
+             setIsLoading(false);
         }
     };
     
