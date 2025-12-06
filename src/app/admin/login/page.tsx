@@ -59,8 +59,10 @@ export default function AdminLoginPage() {
 
             // Directly check the claim from the refreshed token.
             if (tokenResult.claims.admin === true) {
+                // The useEffect above will now detect the state change and redirect.
+                // This ensures the admin state is confirmed before any navigation.
                 toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
-                router.push('/admin');
+                router.push('/admin'); // Force redirect immediately
             } else {
                 // This case handles a valid login for a non-admin user.
                  toast({
@@ -69,7 +71,6 @@ export default function AdminLoginPage() {
                     description: 'You have successfully signed in, but you do not have admin privileges.',
                 });
                 await signOut(auth); // Log out the non-admin user.
-                setIsLoading(false);
             }
             
         } catch (error: any) {
@@ -78,7 +79,8 @@ export default function AdminLoginPage() {
                 title: 'Admin Login Failed',
                 description: 'Invalid credentials or connection issue. Please try again.',
             });
-             setIsLoading(false);
+        } finally {
+            setIsLoading(false);
         }
     };
     
