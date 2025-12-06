@@ -1,3 +1,4 @@
+
 // A simple, lightweight event emitter.
 type Listener<T> = (data: T) => void;
 

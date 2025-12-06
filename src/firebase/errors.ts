@@ -1,3 +1,4 @@
+
 // Defines a structured error for Firestore security rule violations.
 
 export type SecurityRuleContext = {
