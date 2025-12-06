@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -49,8 +48,9 @@ export const useUser = (): UserAuthState & { refreshToken: () => Promise<void> }
       }
 
       try {
-        const tokenResult = await firebaseUser.getIdTokenResult();
-        console.log("🔥 Claims:", tokenResult.claims);
+        // 🔥 FIX: force refresh ID token to get the latest custom claims
+        const tokenResult = await firebaseUser.getIdTokenResult(true);
+        console.log("🔥 Claims (refreshed):", tokenResult.claims);
 
         setState({
           user: firebaseUser,
@@ -75,8 +75,8 @@ export const useUser = (): UserAuthState & { refreshToken: () => Promise<void> }
 
   const refreshToken = async () => {
     if (!state.user) return;
-    await state.user.getIdToken(true);
-    const tokenResult = await state.user.getIdTokenResult();
+    await state.user.getIdToken(true); // refresh
+    const tokenResult = await state.user.getIdTokenResult(true);
     setState((prev) => ({
       ...prev,
       isAdmin: !!tokenResult.claims.admin,
