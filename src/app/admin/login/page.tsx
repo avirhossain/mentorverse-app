@@ -1,6 +1,10 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { useAuth, useUser } from '@/firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
@@ -9,6 +13,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Shield, LogOut, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { grantAdminRights } from '@/ai/flows/grant-admin-rights';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+
+const adminLoginSchema = z.object({
+  email: z.string().email({ message: 'Please enter a valid email.' }),
+  password: z.string().min(1, { message: 'Password is required.' }),
+});
 
 
 export default function AdminLoginPage() {
@@ -19,6 +30,14 @@ export default function AdminLoginPage() {
     const [isGranting, setIsGranting] = useState(false);
     const { user, isAdmin, isAuthCheckComplete, refreshToken } = useUser();
 
+    const form = useForm<z.infer<typeof adminLoginSchema>>({
+        resolver: zodResolver(adminLoginSchema),
+        defaultValues: {
+            email: 'mmavir89@gmail.com',
+            password: '123456',
+        },
+    });
+
 
     useEffect(() => {
         if (isAuthCheckComplete && user && isAdmin) {
@@ -26,7 +45,7 @@ export default function AdminLoginPage() {
         }
     }, [isAdmin, isAuthCheckComplete, user, router]);
 
-    const handleAdminLogin = async () => {
+    const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
         if (!auth) {
             toast({
                 variant: 'destructive',
@@ -38,7 +57,7 @@ export default function AdminLoginPage() {
         setIsLoading(true);
 
         try {
-            await signInWithEmailAndPassword(auth, 'mmavir89@gmail.com', '123456');
+            await signInWithEmailAndPassword(auth, values.email, values.password);
             console.log('[AdminLogin] signInWithEmailAndPassword successful. Waiting for auth state change.');
             toast({
                 title: 'Login Successful',
@@ -63,11 +82,9 @@ export default function AdminLoginPage() {
         setIsGranting(true);
         try {
             const result = await grantAdminRights();
-            if (result.status === 'SUCCESS') {
-                toast({ title: 'Admin Rights Granted!', description: 'Please wait a moment while we refresh your session.' });
-                // Force a token refresh to get the new claim, then the useEffect will redirect.
+            if (result.status === 'SUCCESS' || result.status === 'ALREADY_ADMIN') {
+                toast({ title: 'Admin Rights Confirmed!', description: 'Please wait a moment while we refresh your session.' });
                 await refreshToken();
-
             } else {
                  toast({ variant: 'destructive', title: 'Failed to Grant Admin', description: result.message || 'An unknown error occurred.' });
             }
@@ -99,39 +116,64 @@ export default function AdminLoginPage() {
                             Admin Access
                         </h1>
                         <p className="mt-2 text-gray-500">
-                            Sign in to the admin dashboard.
+                           {user ? "Manage your session" : "Sign in to the admin dashboard."}
                         </p>
                     </div>
                     
-                    {isAuthCheckComplete && user && (
+                    {isAuthCheckComplete && user ? (
                          <div className="space-y-4">
                             <p className="text-center text-sm">Logged in as: <br/> <span className="font-bold">{user.email}</span></p>
                             {isAdmin ? (
                                 <p className="text-center font-semibold text-green-600">Admin status confirmed. Redirecting...</p>
                             ) : (
-                                <div className="p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-r-lg">
+                                <div className="p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-r-lg space-y-3">
                                     <p className="font-bold">Admin Access Not Detected</p>
                                     <p className="text-sm">Click the button below to grant yourself admin rights. You only need to do this once.</p>
+                                     <Button onClick={handleGrantAdmin} variant="secondary" className="w-full" disabled={isGranting}>
+                                        <ShieldCheck className="mr-2 h-4 w-4" />
+                                        {isGranting ? 'Granting...' : 'Grant Admin Rights'}
+                                    </Button>
                                 </div>
                             )}
                              <Button onClick={handleLogout} variant="outline" className="w-full">
                                 <LogOut className="mr-2 h-4 w-4" /> Log Out
                             </Button>
                         </div>
+                    ) : (
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(handleAdminLogin)} className="space-y-4">
+                                <FormField
+                                    control={form.control}
+                                    name="email"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Admin Email</FormLabel>
+                                            <FormControl>
+                                                <Input type="email" placeholder="admin@example.com" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="password"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Password</FormLabel>
+                                            <FormControl>
+                                                <Input type="password" placeholder="••••••••" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <Button type="submit" className="w-full" disabled={isLoading}>
+                                    {isLoading ? 'Signing In...' : 'Sign in as Admin'}
+                                </Button>
+                            </form>
+                        </Form>
                     )}
-
-                    <div className="space-y-4">
-                        <Button onClick={handleAdminLogin} className="w-full" disabled={isLoading || (isAuthCheckComplete && !!user) }>
-                            {isLoading ? 'Signing In...' : 'Sign in as Admin'}
-                        </Button>
-
-                         {user && !isAdmin && (
-                            <Button onClick={handleGrantAdmin} variant="secondary" className="w-full" disabled={isGranting}>
-                                <ShieldCheck className="mr-2 h-4 w-4" />
-                                {isGranting ? 'Granting...' : 'Grant Admin Rights'}
-                            </Button>
-                        )}
-                    </div>
                 </div>
             </div>
         </div>
