@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -10,7 +11,7 @@ import { X, Terminal } from 'lucide-react';
  * Toggle visibility with Ctrl+D.
  */
 export const DebugConsole = () => {
-    const [isVisible, setIsVisible] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
     const userState = useUser();
     const adminState = useAdminUser();
 
