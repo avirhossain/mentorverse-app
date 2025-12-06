@@ -1,18 +1,15 @@
 'use client';
 
 import React from 'react';
-import { AdminAuthProvider } from '@/firebase/auth/admin-auth-provider';
 import { Header } from '@/components/common/Header';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  // AdminAuthProvider now handles all auth checks and redirection logic.
-  // This layout is only responsible for providing the consistent UI shell (Header).
+  // Authorization has been temporarily removed for development.
+  // TODO: Re-enable AdminAuthProvider before production.
   return (
-    <AdminAuthProvider>
-      <div className="flex flex-col min-h-screen bg-background">
-        <Header currentView="admin" />
-        {children}
-      </div>
-    </AdminAuthProvider>
+    <div className="flex flex-col min-h-screen bg-background">
+      <Header currentView="admin" />
+      {children}
+    </div>
   );
 }
