@@ -12,18 +12,28 @@ import { X, Terminal } from 'lucide-react';
  * Toggle visibility with Ctrl+D.
  */
 export const DebugConsole = () => {
-    const [isVisible, setIsVisible] = useState(true);
+    const [isVisible, setIsVisible] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
     const userState = useUser();
     const adminState = useAdminUser();
     const pathname = usePathname();
 
     const isAdminView = pathname.startsWith('/admin');
-
+    
     useEffect(() => {
+        setIsMounted(true);
+        // Set initial visibility from a saved preference or default to false/true
+        const savedVisibility = localStorage.getItem('debugConsoleVisible');
+        setIsVisible(savedVisibility === null ? true : JSON.parse(savedVisibility));
+
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.ctrlKey && e.key === 'd') {
                 e.preventDefault();
-                setIsVisible(prev => !prev);
+                setIsVisible(prev => {
+                    const newVisibility = !prev;
+                    localStorage.setItem('debugConsoleVisible', JSON.stringify(newVisibility));
+                    return newVisibility;
+                });
             }
         };
 
@@ -33,7 +43,12 @@ export const DebugConsole = () => {
         };
     }, []);
 
-    if (!isVisible) {
+    const handleClose = () => {
+        setIsVisible(false);
+        localStorage.setItem('debugConsoleVisible', 'false');
+    };
+
+    if (!isMounted || !isVisible) {
         return null;
     }
 
@@ -44,6 +59,14 @@ export const DebugConsole = () => {
         let customState = { ...rest };
         if (state.isAuthCheckComplete !== undefined) {
              customState.isAuthCheckComplete = state.isAuthCheckComplete;
+        }
+        
+        // This is a special check for the admin hook to display claims if they exist
+        if (state.isAdmin !== undefined && user) {
+            const tokenResult = (user as any).tokenResult;
+            if(tokenResult && tokenResult.claims) {
+                 (userDisplay as any).claims = tokenResult.claims;
+            }
         }
 
         return JSON.stringify({ user: userDisplay, ...customState }, null, 2);
@@ -56,7 +79,7 @@ export const DebugConsole = () => {
                     <Terminal className="w-4 h-4 mr-2" />
                     Debug Console
                 </h3>
-                <Button variant="ghost" size="sm" onClick={() => setIsVisible(false)} className="text-gray-400 hover:text-white p-1 h-auto">
+                <Button variant="ghost" size="sm" onClick={handleClose} className="text-gray-400 hover:text-white p-1 h-auto">
                     <X className="w-4 h-4" />
                 </Button>
             </div>
@@ -71,10 +94,6 @@ export const DebugConsole = () => {
                         <div>
                             <p className="font-bold text-green-400 mb-1">useUser():</p>
                             <pre className="bg-black/30 p-2 rounded-md whitespace-pre-wrap">{formatState(userState)}</pre>
-                        </div>
-                        <div className="mt-4">
-                            <p className="font-bold text-cyan-400 mb-1">useAdminUser() (Global Context):</p>
-                            <pre className="bg-black/30 p-2 rounded-md whitespace-pre-wrap">{formatState(adminState)}</pre>
                         </div>
                     </>
                 )}
