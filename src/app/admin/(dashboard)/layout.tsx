@@ -7,21 +7,22 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Header } from '@/components/common/Header';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, isAdmin, isAuthCheckComplete } = useAdminUser();
+  const { isAdmin, isAuthCheckComplete } = useAdminUser();
   const router = useRouter();
 
   useEffect(() => {
-    // Once the initial auth check is complete, decide what to do.
+    // Wait until the authentication check is fully complete.
     if (isAuthCheckComplete) {
-      // If there's no user or the user is not an admin, redirect to the login page.
-      if (!user || !isAdmin) {
+      // If the user is NOT an admin, redirect them to the login page.
+      // This single check covers both cases: user is not logged in, or user is logged in but lacks admin claims.
+      if (!isAdmin) {
         router.push('/admin/login');
       }
     }
-  }, [isAuthCheckComplete, user, isAdmin, router]);
+  }, [isAuthCheckComplete, isAdmin, router]);
 
-  // While the auth check is running, show a loading screen.
-  // We also check for `isAdmin` here to prevent a brief flash of the dashboard for non-admins.
+  // While the auth check is running, or if the user is not an admin (and is about to be redirected),
+  // show a loading state. This prevents a flash of the dashboard content for non-admins.
   if (!isAuthCheckComplete || !isAdmin) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
@@ -36,7 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // If all checks pass (auth check complete, user exists, user is admin), render the dashboard.
+  // If all checks pass (auth check complete and user is an admin), render the dashboard.
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header currentView="admin" />
