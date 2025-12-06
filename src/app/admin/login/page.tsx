@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -6,13 +7,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { useAuth, useUser } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Shield } from 'lucide-react';
+import { Shield, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const adminLoginSchema = z.object({
@@ -25,7 +26,7 @@ export default function AdminLoginPage() {
     const auth = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    const { isAdmin, isAuthCheckComplete } = useUser();
+    const { user, isAdmin, isAuthCheckComplete } = useUser();
 
     useEffect(() => {
         // If an admin is already logged in, redirect them to the dashboard.
@@ -33,14 +34,6 @@ export default function AdminLoginPage() {
             router.push('/admin');
         }
     }, [isAdmin, isAuthCheckComplete, router]);
-
-    const form = useForm<z.infer<typeof adminLoginSchema>>({
-        resolver: zodResolver(adminLoginSchema),
-        defaultValues: {
-            email: '',
-            password: '',
-        },
-    });
 
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
         if (!auth) {
@@ -55,12 +48,12 @@ export default function AdminLoginPage() {
 
         try {
             await signInWithEmailAndPassword(auth, values.email, values.password);
-            // On successful sign-in, redirect immediately.
+            // On successful sign-in, the useEffect will handle the redirection.
+            // A small toast to give user feedback.
             toast({
                 title: 'Login Successful',
-                description: 'Redirecting to the admin dashboard...',
+                description: 'Verifying admin status...',
             });
-            router.push('/admin');
         } catch (error: any) {
              toast({
                 variant: 'destructive',
@@ -68,6 +61,16 @@ export default function AdminLoginPage() {
                 description: 'Invalid credentials or you do not have admin access.',
             });
              setIsLoading(false);
+        }
+    };
+
+    const handleLogout = () => {
+        if (auth) {
+            signOut(auth);
+            toast({
+                title: 'Logged Out',
+                description: 'You have been successfully signed out.',
+            });
         }
     };
     
@@ -85,6 +88,15 @@ export default function AdminLoginPage() {
                             Sign in to the admin dashboard.
                         </p>
                     </div>
+
+                    {isAuthCheckComplete && user && !isAdmin && (
+                        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md space-y-3">
+                            <p className="font-bold">You are signed in as {user.email}, but do not have admin privileges.</p>
+                            <Button onClick={handleLogout} className="w-full">
+                                <LogOut className="mr-2 h-4 w-4" /> Log Out and Try Again
+                            </Button>
+                        </div>
+                    )}
 
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleAdminLogin)} className="space-y-4">
@@ -114,7 +126,7 @@ export default function AdminLoginPage() {
                                     </FormItem>
                                 )}
                             />
-                            <Button type="submit" className="w-full" disabled={isLoading}>
+                            <Button type="submit" className="w-full" disabled={isLoading || (isAuthCheckComplete && !!user)}>
                                 {isLoading ? 'Signing In...' : 'Sign In'}
                             </Button>
                         </form>
