@@ -26,7 +26,7 @@ export default function AdminLoginPage() {
     const auth = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    const { user, isAdmin, isAuthCheckComplete } = useAdminUser();
+    const { user, isAdmin, isAuthCheckComplete, checkAdminStatus } = useAdminUser();
 
     const form = useForm<z.infer<typeof adminLoginSchema>>({
         resolver: zodResolver(adminLoginSchema),
@@ -52,20 +52,29 @@ export default function AdminLoginPage() {
         setIsLoading(true);
 
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+            await signInWithEmailAndPassword(auth, values.email, values.password);
             
-            // CRITICAL: Force a token refresh right after login to get custom claims.
-            // This ensures the `useAdminUser` hook gets the `admin:true` claim immediately.
-            await userCredential.user.getIdTokenResult(true); 
-            
-            // After the refresh, the `useAdminUser` hook will update, and the `useEffect` above
-            // will handle the redirection to the admin dashboard.
+            // CRITICAL: Explicitly check for admin status and wait for the result.
+            const isAdmin = await checkAdminStatus();
+
+            if (isAdmin) {
+                toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
+                router.push('/admin');
+            } else {
+                // This case handles a valid login for a non-admin user.
+                 toast({
+                    variant: 'destructive',
+                    title: 'Admin Access Not Detected',
+                    description: 'You have successfully signed in, but you do not have admin privileges.',
+                });
+                await signOut(auth); // Log out the non-admin user.
+            }
             
         } catch (error: any) {
              toast({
                 variant: 'destructive',
                 title: 'Admin Login Failed',
-                description: 'Invalid credentials or permissions. Please try again.',
+                description: 'Invalid credentials. Please try again.',
             });
         } finally {
             setIsLoading(false);

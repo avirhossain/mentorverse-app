@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { User, onAuthStateChanged, Auth } from 'firebase/auth';
 import { useAuth as useFirebaseAuth } from '@/firebase/provider'; 
 
@@ -9,20 +9,36 @@ export interface AdminAuthState {
   isAdmin: boolean;
   isAuthCheckComplete: boolean;
   userError: Error | null;
+  checkAdminStatus: () => Promise<boolean>;
 }
 
 export const useAdminUser = (): AdminAuthState => {
   const auth = useFirebaseAuth();
-  const [state, setState] = useState<AdminAuthState>({
-    user: auth?.currentUser || null, // Initialize with current user if available
+  const [state, setState] = useState<Omit<AdminAuthState, 'checkAdminStatus'>>({
+    user: auth?.currentUser || null,
     isAdmin: false,
     isAuthCheckComplete: false,
     userError: null,
   });
 
+  const checkAdminStatus = useCallback(async (): Promise<boolean> => {
+    if (!auth?.currentUser) {
+      setState(s => ({ ...s, isAdmin: false }));
+      return false;
+    }
+    try {
+      const tokenResult = await auth.currentUser.getIdTokenResult(true); // Force refresh
+      const newIsAdmin = !!tokenResult.claims.admin;
+      setState(s => ({ ...s, isAdmin: newIsAdmin, user: auth.currentUser, isAuthCheckComplete: true }));
+      return newIsAdmin;
+    } catch (err: any) {
+      setState(s => ({ ...s, isAdmin: false, userError: err, isAuthCheckComplete: true }));
+      return false;
+    }
+  }, [auth]);
+
   useEffect(() => {
     if (!auth) {
-      // If auth service is not ready, mark check as complete with no user/admin.
       if (!state.isAuthCheckComplete) {
          setState(s => ({ ...s, isAuthCheckComplete: true, user: null, isAdmin: false }));
       }
@@ -31,7 +47,6 @@ export const useAdminUser = (): AdminAuthState => {
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (!firebaseUser) {
-        // If there's no user, they are not an admin. The check is complete.
         setState({
           user: null,
           isAdmin: false,
@@ -40,34 +55,14 @@ export const useAdminUser = (): AdminAuthState => {
         });
         return;
       }
-
-      try {
-        // A user is logged in, now check their token for the admin claim.
-        // Force refresh to ensure we have the latest claims.
-        const tokenResult = await firebaseUser.getIdTokenResult(true); 
-        const adminStatus = !!tokenResult.claims.admin;
-        
-        setState({
-          user: firebaseUser,
-          isAdmin: adminStatus,
-          isAuthCheckComplete: true,
-          userError: null,
-        });
-      } catch (err: any) {
-        // If token fetching fails, they can't be an admin.
-        setState({
-          user: firebaseUser,
-          isAdmin: false,
-          isAuthCheckComplete: true,
-          userError: err,
-        });
-      }
+      // Initial check on page load
+      await checkAdminStatus();
     });
 
     return () => {
       unsubscribe();
     };
-  }, [auth]);
+  }, [auth, checkAdminStatus]);
 
-  return state;
+  return { ...state, checkAdminStatus };
 };
