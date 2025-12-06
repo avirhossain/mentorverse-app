@@ -5,8 +5,8 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth, useAdminUser, useFirestore } from '@/firebase';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { useAuth, useAdminUser } from '@/firebase';
+import { signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -14,7 +14,6 @@ import { Shield, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const adminLoginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -24,7 +23,6 @@ const adminLoginSchema = z.object({
 export default function AdminLoginPage() {
     const router = useRouter();
     const auth = useAuth();
-    const firestore = useFirestore();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const { isAdmin, isAuthCheckComplete } = useAdminUser();
@@ -44,7 +42,7 @@ export default function AdminLoginPage() {
     }, [isAdmin, isAuthCheckComplete, router]);
 
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
-        if (!auth || !firestore) {
+        if (!auth) {
             toast({ variant: 'destructive', title: 'Authentication service not available.' });
             return;
         }
@@ -52,22 +50,12 @@ export default function AdminLoginPage() {
         setIsLoading(true);
 
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-            
-            // This is the CRITICAL "SIGNAL" to the useAdminUser hook.
-            // By updating the user's document, we trigger the onSnapshot listener
-            // in the hook, which then knows to refresh the token and check for claims.
-            // Using setDoc with merge:true acts as an "upsert".
-            const userDocRef = doc(firestore, 'users', userCredential.user.uid);
-            await setDoc(userDocRef, {
-                lastLogin: serverTimestamp(),
-                email: userCredential.user.email, // Ensure email is present
-                name: userCredential.user.displayName || 'Admin User' // Ensure name is present
-            }, { merge: true });
+            // This just signs the user in. The useAdminUser hook will handle verification.
+            await signInWithEmailAndPassword(auth, values.email, values.password);
 
-
-            // We no longer check claims or redirect here.
-            // The useEffect above will handle the redirect once useAdminUser confirms admin status.
+            // After login, the useAdminUser hook will automatically run,
+            // get the token, check claims, and update its state,
+            // which will trigger the useEffect above to redirect if successful.
             toast({ title: 'Login Successful', description: 'Verifying admin status...' });
             
         } catch (error: any) {
@@ -76,7 +64,7 @@ export default function AdminLoginPage() {
                 title: 'Admin Login Failed',
                 description: 'Invalid credentials or an unexpected error occurred.',
             });
-            setIsLoading(false); // Only set loading to false on error.
+            setIsLoading(false);
         }
     };
 
@@ -96,7 +84,7 @@ export default function AdminLoginPage() {
             );
         }
 
-        // This case handles a non-admin who is already logged in.
+        // This case handles a non-admin who is already logged in, or a failed admin login.
         if (isAuthCheckComplete && !isAdmin) {
              return (
                 <>

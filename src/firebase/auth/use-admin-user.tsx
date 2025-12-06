@@ -2,9 +2,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase/provider'; 
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { useAuth as useFirebaseAuth } from '@/firebase/provider'; 
 
 export interface AdminAuthState {
   isAdmin: boolean;
@@ -14,7 +13,6 @@ export interface AdminAuthState {
 
 export const useAdminUser = (): AdminAuthState => {
   const auth = useFirebaseAuth();
-  const firestore = useFirestore();
 
   const [state, setState] = useState<AdminAuthState>({
     isAdmin: false,
@@ -23,88 +21,54 @@ export const useAdminUser = (): AdminAuthState => {
   });
 
   useEffect(() => {
-    if (!auth || !firestore) {
+    if (!auth) {
       if (!state.isAuthCheckComplete) {
          setState(s => ({ ...s, isAuthCheckComplete: true, isAdmin: false }));
       }
       return;
     }
 
-    const authUnsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const authUnsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
       if (!firebaseUser) {
-        // NOT LOGGED IN: If there's no user, the check is complete, and they are not an admin.
-        if (!state.isAuthCheckComplete) {
-          setState({
-            isAdmin: false,
-            isAuthCheckComplete: true,
-            userError: null,
-          });
-        }
-        return;
+        // NOT LOGGED IN: Check is complete, user is not an admin.
+        return setState({
+          isAdmin: false,
+          isAuthCheckComplete: true,
+          userError: null,
+        });
       }
 
-      // LOGGED IN: User is authenticated. Now, listen for our Firestore signal.
-      const userDocRef = doc(firestore, 'users', firebaseUser.uid);
-      const firestoreUnsubscribe = onSnapshot(userDocRef, async (snapshot) => {
+      // LOGGED IN: User is authenticated. Force a token refresh to get latest claims.
+      try {
+        const idTokenResult = await firebaseUser.getIdTokenResult(true);
+        const hasAdminClaim = !!idTokenResult.claims.admin;
         
-        const handleClaimCheck = async () => {
-           try {
-              // Force a token refresh to get the latest claims.
-              const idTokenResult = await firebaseUser.getIdTokenResult(true);
-              const hasAdminClaim = !!idTokenResult.claims.admin;
-              
-              if (!state.isAuthCheckComplete || state.isAdmin !== hasAdminClaim) {
-                setState({
-                  isAdmin: hasAdminClaim,
-                  isAuthCheckComplete: true,
-                  userError: null,
-                });
-              }
+        setState({
+          isAdmin: hasAdminClaim,
+          isAuthCheckComplete: true,
+          userError: null,
+        });
 
-            } catch (error: any) {
-               if (!state.isAuthCheckComplete) {
-                  setState({
-                    isAdmin: false,
-                    isAuthCheckComplete: true,
-                    userError: error,
-                  });
-               }
-            }
-        };
-
-        // The `lastLogin` field is our signal. If it's present, we check the token.
-        if (snapshot.exists() && snapshot.data()?.lastLogin) {
-          handleClaimCheck();
-        } else if (!snapshot.exists()) {
-            // This handles the case where an admin user might not have a doc in the 'users' collection.
-            // We still want to check their claims if they successfully log in.
-            handleClaimCheck();
-        }
-        
-      }, (error) => {
-         if (!state.isAuthCheckComplete) {
-            setState({
-              isAdmin: false,
-              isAuthCheckComplete: true,
-              userError: error,
-            });
-         }
-      });
-      
-      return () => firestoreUnsubscribe();
+      } catch (error: any) {
+        setState({
+          isAdmin: false,
+          isAuthCheckComplete: true,
+          userError: error,
+        });
+      }
     }, (error) => {
-        // Handle errors from onAuthStateChanged itself
-         if (!state.isAuthCheckComplete) {
-            setState({
-                isAdmin: false,
-                isAuthCheckComplete: true,
-                userError: error,
-            });
-         }
+        // Handle errors from the listener itself
+        setState({
+            isAdmin: false,
+            isAuthCheckComplete: true,
+            userError: error,
+        });
     });
 
     return () => authUnsubscribe();
-  }, [auth, firestore, state.isAuthCheckComplete, state.isAdmin]);
+    // The dependency array is intentionally empty to run this effect only once.
+    // The onAuthStateChanged listener handles all subsequent auth state changes.
+  }, [auth]);
 
   return state;
 };
