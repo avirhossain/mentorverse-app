@@ -9,15 +9,16 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // Admin status is determined by a custom claim on the auth token.
-      return request.auth.token.admin == true;
+      // The most secure way is to check the custom claim set on the user's token.
+      // A second check on the /admins collection can be added for redundancy if needed.
+      return request.auth.token.admin == true && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    // Admins can do anything.
+    // Admins can do anything. This is a wide-reaching rule.
     match /{document=**} {
       allow read, write: if isAdmin();
     }
@@ -75,3 +76,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
