@@ -10,7 +10,7 @@ import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Shield } from 'lucide-react';
+import { Shield, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -25,7 +25,7 @@ export default function AdminLoginPage() {
     const auth = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    const { isAdmin, isAuthCheckComplete } = useAdminUser();
+    const { user, isAdmin, isAuthCheckComplete } = useAdminUser();
 
     const form = useForm<z.infer<typeof adminLoginSchema>>({
         resolver: zodResolver(adminLoginSchema),
@@ -35,7 +35,6 @@ export default function AdminLoginPage() {
         },
     });
 
-    // This effect handles redirection if an admin is already logged in.
     useEffect(() => {
         if (isAuthCheckComplete && isAdmin) {
             router.push('/admin');
@@ -52,16 +51,12 @@ export default function AdminLoginPage() {
 
         try {
             const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-            
-            // CRITICAL: Force a refresh of the token to get the latest claims.
             const idTokenResult = await userCredential.user.getIdTokenResult(true);
 
-            // Check the claim directly on the login page.
             if (idTokenResult.claims.admin) {
                 toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
                 router.push('/admin');
             } else {
-                // If the claim is NOT present, deny access and log out.
                 await signOut(auth);
                 toast({
                     variant: 'destructive',
@@ -81,12 +76,92 @@ export default function AdminLoginPage() {
         }
     };
 
-    // While the initial auth check is happening, or if the user is already an admin and is being redirected,
-    // show a simple loading state. This prevents a flash of the login form.
-    if (!isAuthCheckComplete || isAdmin) {
+    const handleLogout = async () => {
+        if (auth) {
+            await signOut(auth);
+            toast({ title: 'Logged Out', description: 'You have been successfully signed out.' });
+        }
+    };
+    
+    const renderContent = () => {
+        if (!isAuthCheckComplete) {
+            return (
+                <div className="text-center">
+                    <p>Loading...</p>
+                </div>
+            );
+        }
+
+        if (user && !isAdmin) {
+             return (
+                <div className="text-center">
+                    <h1 className="text-2xl font-extrabold text-gray-900">
+                        Access Denied
+                    </h1>
+                    <p className="mt-2 text-gray-600">
+                       You are signed in as {user.email}, but you do not have admin privileges.
+                    </p>
+                    <Button onClick={handleLogout} className="w-full mt-6" variant="destructive">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Log Out and Try Again
+                    </Button>
+                </div>
+            );
+        }
+
+        return (
+            <>
+                <div className="text-center">
+                    <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
+                    <h1 className="text-3xl font-extrabold text-gray-900">
+                        Admin Access
+                    </h1>
+                    <p className="mt-2 text-gray-500">
+                       Sign in to the admin dashboard.
+                    </p>
+                </div>
+                
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleAdminLogin)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Admin Email</FormLabel>
+                                    <FormControl>
+                                        <Input type="email" placeholder="admin@example.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Password</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" placeholder="••••••••" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                            {isLoading ? 'Verifying...' : 'Sign in as Admin'}
+                        </Button>
+                    </form>
+                </Form>
+            </>
+        );
+    }
+
+    if (isAuthCheckComplete && isAdmin) {
         return (
              <div className="flex items-center justify-center min-h-screen">
-                <p>Loading...</p>
+                <p>Redirecting to dashboard...</p>
             </div>
         );
     }
@@ -96,49 +171,7 @@ export default function AdminLoginPage() {
             <Header currentView="admin" />
             <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
                 <div className="w-full max-w-sm p-8 space-y-6 bg-white rounded-xl shadow-2xl border-t-4 border-primary">
-                    <div className="text-center">
-                        <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
-                        <h1 className="text-3xl font-extrabold text-gray-900">
-                            Admin Access
-                        </h1>
-                        <p className="mt-2 text-gray-500">
-                           Sign in to the admin dashboard.
-                        </p>
-                    </div>
-                    
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleAdminLogin)} className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="email"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Admin Email</FormLabel>
-                                        <FormControl>
-                                            <Input type="email" placeholder="admin@example.com" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="password"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Password</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" placeholder="••••••••" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button type="submit" className="w-full" disabled={isLoading}>
-                                {isLoading ? 'Verifying...' : 'Sign in as Admin'}
-                            </Button>
-                        </form>
-                    </Form>
+                    {renderContent()}
                 </div>
             </div>
         </div>
