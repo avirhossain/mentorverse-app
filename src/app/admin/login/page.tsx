@@ -35,6 +35,7 @@ export default function AdminLoginPage() {
         },
     });
 
+    // This effect handles redirection if an admin is already logged in.
     useEffect(() => {
         if (isAuthCheckComplete && isAdmin) {
             router.push('/admin');
@@ -80,11 +81,12 @@ export default function AdminLoginPage() {
         }
     };
 
-    if (isAuthCheckComplete && isAdmin) {
-        // If user is already an admin, just show a loading state while redirecting.
+    // While the initial auth check is happening, or if the user is already an admin and is being redirected,
+    // show a simple loading state. This prevents a flash of the login form.
+    if (!isAuthCheckComplete || isAdmin) {
         return (
              <div className="flex items-center justify-center min-h-screen">
-                <p>Redirecting to dashboard...</p>
+                <p>Loading...</p>
             </div>
         );
     }
