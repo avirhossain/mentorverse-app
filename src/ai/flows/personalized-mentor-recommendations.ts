@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -9,7 +10,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const PersonalizedRecommendationsInputSchema = z.object({
   menteeProfile: z.string().describe('The profile of the mentee, including their interests and experience.'),
