@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -56,13 +57,13 @@ export default function AdminLoginPage() {
         try {
             const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
             console.log("[AdminLogin] Login successful. Forcing ID token refresh...");
+            // CRITICAL FIX: Force a token refresh right after login.
             await userCredential.user.getIdToken(true); 
             
             console.log("[AdminLogin] Token refreshed. Calling refreshToken to update UI state.");
             await refreshToken();
             
-            // The useEffect will handle the redirect now.
-            // No need to push here.
+            // The useEffect will handle the redirect now that the state is guaranteed to be fresh.
 
         } catch (error: any) {
              toast({
