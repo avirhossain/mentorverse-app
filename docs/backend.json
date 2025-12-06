@@ -276,47 +276,6 @@
         "availableSlots"
       ]
     },
-    "Recommendation": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Recommendation",
-      "type": "object",
-      "description": "Represents a recommendation for a mentee.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the recommendation."
-        },
-        "menteeId": {
-          "type": "string",
-          "description": "Reference to Mentee. (Relationship: Mentee 1:N Recommendation)"
-        },
-        "mentorId": {
-          "type": "string",
-          "description": "Reference to Mentor. (Relationship: Mentor 1:N Recommendation)"
-        },
-        "uniqueSessionId": {
-          "type": "string",
-          "description": "Reference to UniqueSession. (Relationship: UniqueSession 1:N Recommendation)"
-        },
-        "reason": {
-          "type": "string",
-          "description": "The reason for the recommendation."
-        },
-        "timestamp": {
-          "type": "string",
-          "description": "The time the recommendation was made.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "menteeId",
-        "mentorId",
-        "uniqueSessionId",
-        "reason",
-        "timestamp"
-      ]
-    },
     "Tip": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Tip",
@@ -532,26 +491,6 @@
             {
               "name": "uniqueSessionId",
               "description": "The unique identifier of the unique session."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{menteeId}/recommendations/{recommendationId}",
-        "definition": {
-          "entityName": "Recommendation",
-          "schema": {
-            "$ref": "#/backend/entities/Recommendation"
-          },
-          "description": "Subcollection to store personalized mentor recommendations for a mentee. Includes denormalized 'menteeId' for authorization independence.",
-          "params": [
-            {
-              "name": "menteeId",
-              "description": "The unique identifier of the mentee."
-            },
-            {
-              "name": "recommendationId",
-              "description": "The unique identifier of the recommendation."
             }
           ]
         }

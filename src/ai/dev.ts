@@ -3,8 +3,6 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/personalized-mentor-recommendations.ts';
-    
 // This code runs once when the Genkit development server starts.
 async function runSetup() {
     console.log('DEV server starting up.');
