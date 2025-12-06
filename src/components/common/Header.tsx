@@ -20,9 +20,9 @@ export const Header = ({ currentView }) => {
     const isAdminView = pathname.startsWith('/admin');
     const isAdminLoginPage = pathname === '/admin/login';
 
-    const { user, isUserLoading, isAdmin } = isAdminView ? 
-        { user: adminUserState.user, isUserLoading: !adminUserState.isAuthCheckComplete, isAdmin: adminUserState.isAdmin } : 
-        generalUserState;
+    // Use the appropriate auth state based on the current view
+    const { user, isUserLoading } = generalUserState;
+    const { isAdmin, isAuthCheckComplete: isAdminAuthCheckComplete } = adminUserState;
 
 
     const handleLogout = () => {
@@ -53,8 +53,7 @@ export const Header = ({ currentView }) => {
                    {/* Admin View Navigation */}
                    {isAdminView ? (
                         <>
-                            {/* Only show logout button if user is an admin AND not on the login page */}
-                            {user && isAdmin && !isAdminLoginPage && (
+                            {isAdminAuthCheckComplete && isAdmin && !isAdminLoginPage && (
                                 <Button onClick={handleLogout} variant="outline">
                                     <LogOut className="w-5 h-5 mr-2" /> Logout
                                 </Button>
@@ -103,7 +102,7 @@ export const Header = ({ currentView }) => {
             {isMenuOpen && (
                 <div className="lg:hidden absolute w-full bg-white shadow-lg border-t border-gray-100 py-4 px-4 space-y-3">
                      {isAdminView ? (
-                         user && isAdmin && !isAdminLoginPage && (
+                         isAdmin && !isAdminLoginPage && (
                             <Button onClick={handleLogout} className="w-full">
                                 <LogOut className="w-5 h-5 mr-2" /> Logout
                             </Button>

@@ -25,7 +25,7 @@ export default function AdminLoginPage() {
     const auth = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    const { user, isAdmin, isAuthCheckComplete } = useAdminUser();
+    const { isAdmin, isAuthCheckComplete } = useAdminUser();
 
     const form = useForm<z.infer<typeof adminLoginSchema>>({
         resolver: zodResolver(adminLoginSchema),
@@ -92,70 +92,70 @@ export default function AdminLoginPage() {
             );
         }
 
-        if (user && !isAdmin) {
+        // This case handles a non-admin who is already logged in.
+        if (isAuthCheckComplete && !isAdmin) {
              return (
-                <div className="text-center">
-                    <h1 className="text-2xl font-extrabold text-gray-900">
-                        Access Denied
-                    </h1>
-                    <p className="mt-2 text-gray-600">
-                       You are signed in as {user.email}, but you do not have admin privileges.
-                    </p>
-                    <Button onClick={handleLogout} className="w-full mt-6" variant="destructive">
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Log Out and Try Again
-                    </Button>
-                </div>
+                <>
+                    <div className="text-center">
+                        <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
+                        <h1 className="text-3xl font-extrabold text-gray-900">
+                            Admin Access
+                        </h1>
+                        <p className="mt-2 text-gray-500">
+                           Sign in to the admin dashboard.
+                        </p>
+                    </div>
+                    
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleAdminLogin)} className="space-y-4">
+                            <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Admin Email</FormLabel>
+                                        <FormControl>
+                                            <Input type="email" placeholder="admin@example.com" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Password</FormLabel>
+                                        <FormControl>
+                                            <Input type="password" placeholder="••••••••" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit" className="w-full" disabled={isLoading}>
+                                {isLoading ? 'Verifying...' : 'Sign in as Admin'}
+                            </Button>
+                        </form>
+                    </Form>
+
+                    {auth?.currentUser && (
+                         <div className="text-center mt-6">
+                            <p className="text-sm text-gray-600 mb-2">
+                                Signed in as a non-admin user.
+                            </p>
+                            <Button onClick={handleLogout} className="w-full" variant="destructive">
+                                <LogOut className="w-4 h-4 mr-2" />
+                                Log Out and Try Again
+                            </Button>
+                        </div>
+                    )}
+                </>
             );
         }
 
-        return (
-            <>
-                <div className="text-center">
-                    <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
-                    <h1 className="text-3xl font-extrabold text-gray-900">
-                        Admin Access
-                    </h1>
-                    <p className="mt-2 text-gray-500">
-                       Sign in to the admin dashboard.
-                    </p>
-                </div>
-                
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleAdminLogin)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="email"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Admin Email</FormLabel>
-                                    <FormControl>
-                                        <Input type="email" placeholder="admin@example.com" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="password"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Password</FormLabel>
-                                    <FormControl>
-                                        <Input type="password" placeholder="••••••••" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <Button type="submit" className="w-full" disabled={isLoading}>
-                            {isLoading ? 'Verifying...' : 'Sign in as Admin'}
-                        </Button>
-                    </form>
-                </Form>
-            </>
-        );
+        return null; // Should not be reached if logic is correct
     }
 
     if (isAuthCheckComplete && isAdmin) {

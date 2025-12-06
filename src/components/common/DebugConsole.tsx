@@ -22,7 +22,6 @@ export const DebugConsole = () => {
     
     useEffect(() => {
         setIsMounted(true);
-        // Set initial visibility from a saved preference or default to false/true
         const savedVisibility = localStorage.getItem('debugConsoleVisible');
         setIsVisible(savedVisibility === null ? true : JSON.parse(savedVisibility));
 
@@ -53,23 +52,7 @@ export const DebugConsole = () => {
     }
 
     const formatState = (state: any) => {
-        const { user, ...rest } = state;
-        const userDisplay = user ? { uid: user.uid, email: user.email, displayName: user.displayName, claims: (user as any).claims } : null;
-        
-        let customState = { ...rest };
-        if (state.isAuthCheckComplete !== undefined) {
-             customState.isAuthCheckComplete = state.isAuthCheckComplete;
-        }
-        
-        // This is a special check for the admin hook to display claims if they exist
-        if (state.isAdmin !== undefined && user) {
-            const tokenResult = (user as any).tokenResult;
-            if(tokenResult && tokenResult.claims) {
-                 (userDisplay as any).claims = tokenResult.claims;
-            }
-        }
-
-        return JSON.stringify({ user: userDisplay, ...customState }, null, 2);
+        return JSON.stringify(state, null, 2);
     };
     
     return (
