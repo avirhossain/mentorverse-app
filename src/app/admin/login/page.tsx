@@ -51,16 +51,22 @@ export default function AdminLoginPage() {
         }
         
         setIsLoading(true);
+        console.log('[AdminLogin:handleAdminLogin] Attempting sign-in for:', values.email);
 
         try {
             const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+            console.log('[AdminLogin:handleAdminLogin] Sign-in successful for user:', userCredential.user.uid);
             
             // CRITICAL: Force a token refresh right after login to get custom claims.
+            console.log('[AdminLogin:handleAdminLogin] Forcing token refresh to get admin claim...');
             await userCredential.user.getIdToken(true); 
+            console.log('[AdminLogin:handleAdminLogin] Token refresh complete.');
             
             // Now, trigger the state update in the useAdminUser hook.
             if (refreshToken) {
+              console.log('[AdminLogin:handleAdminLogin] Calling refreshToken to update admin state...');
               await refreshToken();
+              console.log('[AdminLogin:handleAdminLogin] Admin state update triggered.');
             }
             
             // The useEffect will handle the redirect once the state is updated.
@@ -71,6 +77,7 @@ export default function AdminLoginPage() {
                 title: 'Admin Login Failed',
                 description: 'Invalid credentials or permissions. Please try again.',
             });
+             console.error('[AdminLogin:handleAdminLogin] Login error:', error);
         } finally {
             setIsLoading(false);
         }
