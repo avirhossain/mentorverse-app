@@ -22,27 +22,31 @@ export const useAdminUser = (): AdminAuthState => {
 
   useEffect(() => {
     if (!auth) {
+      // If auth service isn't ready, mark check as complete but not admin.
       if (!state.isAuthCheckComplete) {
-         setState(s => ({ ...s, isAuthCheckComplete: true, isAdmin: false }));
+         setState({ isAdmin: false, isAuthCheckComplete: true, userError: new Error("Auth service not available.") });
       }
       return;
     }
 
-    const authUnsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
       if (!firebaseUser) {
-        // NOT LOGGED IN: Check is complete, user is not an admin.
-        return setState({
+        // No user is logged in. The check is complete, and they are not an admin.
+        setState({
           isAdmin: false,
           isAuthCheckComplete: true,
           userError: null,
         });
+        return;
       }
 
-      // LOGGED IN: User is authenticated. Force a token refresh to get latest claims.
+      // A user is logged in. Force a refresh of the ID token to get the latest claims.
+      // This is the critical step to ensure we have up-to-date information.
       try {
-        const idTokenResult = await firebaseUser.getIdTokenResult(true);
+        const idTokenResult = await firebaseUser.getIdTokenResult(true); // true == force refresh
         const hasAdminClaim = !!idTokenResult.claims.admin;
         
+        // The check is now complete. Set the admin status based on the refreshed token.
         setState({
           isAdmin: hasAdminClaim,
           isAuthCheckComplete: true,
@@ -50,25 +54,18 @@ export const useAdminUser = (): AdminAuthState => {
         });
 
       } catch (error: any) {
+        // An error occurred while trying to get the token.
         setState({
           isAdmin: false,
           isAuthCheckComplete: true,
           userError: error,
         });
       }
-    }, (error) => {
-        // Handle errors from the listener itself
-        setState({
-            isAdmin: false,
-            isAuthCheckComplete: true,
-            userError: error,
-        });
     });
 
-    return () => authUnsubscribe();
-    // The dependency array is intentionally empty to run this effect only once.
-    // The onAuthStateChanged listener handles all subsequent auth state changes.
-  }, [auth]);
+    // Clean up the subscription on component unmount
+    return () => unsubscribe();
+  }, [auth]); // Rerun the effect if the auth instance changes
 
   return state;
 };
