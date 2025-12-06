@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Shield, LogOut, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { grantAdminRights } from '@/ai/flows/grant-admin-rights';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 
@@ -28,7 +27,6 @@ export default function AdminLoginPage() {
     const auth = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    const [isGranting, setIsGranting] = useState(false);
     const { user, isAdmin, isAuthCheckComplete, refreshToken } = useAdminUser(); // Use the new hook
 
     const form = useForm<z.infer<typeof adminLoginSchema>>({
@@ -76,28 +74,6 @@ export default function AdminLoginPage() {
         }
     };
     
-    const handleGrantAdmin = async () => {
-        if (!user) {
-            toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be logged in to grant admin rights.' });
-            return;
-        }
-        setIsGranting(true);
-        try {
-            const result = await grantAdminRights();
-            if (result.status === 'SUCCESS' || result.status === 'ALREADY_ADMIN') {
-                toast({ title: 'Admin Rights Confirmed!', description: 'Refreshing session... You should be redirected shortly.' });
-                await refreshToken(); // This is the key step to update the client state
-                // The useEffect will handle redirection.
-            } else {
-                 toast({ variant: 'destructive', title: 'Failed to Grant Admin', description: result.message || 'An unknown error occurred.' });
-            }
-        } catch (error: any) {
-             toast({ variant: 'destructive', title: 'Error', description: error.message || 'An error occurred.' });
-        } finally {
-            setIsGranting(false);
-        }
-    };
-
     const handleLogout = () => {
         if (auth) {
             signOut(auth);
@@ -140,11 +116,7 @@ export default function AdminLoginPage() {
                            
                             <div className="p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-r-lg space-y-3">
                                 <p className="font-bold">Admin Access Not Detected</p>
-                                <p className="text-sm">Click the button below to grant yourself admin rights. You only need to do this once.</p>
-                                 <Button onClick={handleGrantAdmin} variant="secondary" className="w-full" disabled={isGranting}>
-                                    <ShieldCheck className="mr-2 h-4 w-4" />
-                                    {isGranting ? 'Granting...' : 'Grant Admin Rights'}
-                                </Button>
+                                <p className="text-sm">You are logged in, but not as an administrator. Please log out and sign in with an admin account.</p>
                             </div>
                             
                              <Button onClick={handleLogout} variant="outline" className="w-full">
