@@ -203,7 +203,7 @@ const ProfilePicture = ({ imageUrl, isEditing }) => (
 );
 
 
-const ProfileDetails = ({ user, onUpdate }) => {
+const ProfileDetails = ({ user, onUpdate, onLogout }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState(user);
     const { toast } = useToast();
@@ -275,6 +275,15 @@ const ProfileDetails = ({ user, onUpdate }) => {
                     </Button>
                 </div>
             )}
+             <div className="pt-8 mt-8 border-t">
+                <button
+                    onClick={onLogout}
+                    className="w-full flex items-center justify-center py-3 px-4 text-lg font-semibold rounded-xl text-white bg-red-600 hover:bg-red-700 transition duration-150 shadow-lg"
+                >
+                    <LogOut className="w-5 h-5 mr-2" />
+                    Log Out
+                </button>
+            </div>
         </div>
     );
 };
@@ -657,18 +666,6 @@ export default function AccountPage() {
         await updateDoc(userDocRef, updatedData);
     };
 
-    const LogoutButton = () => (
-        <div className="pt-8 mt-8">
-            <button
-                onClick={handleLogout}
-                className="w-full flex items-center justify-center py-3 px-4 text-lg font-semibold rounded-xl text-white bg-red-600 hover:bg-red-700 transition duration-150 shadow-lg"
-            >
-                <LogOut className="w-5 h-5 mr-2" />
-                Log Out
-            </button>
-        </div>
-    );
-
     const isLoading = isUserLoading || isMenteeLoading;
 
     return (
@@ -691,7 +688,7 @@ export default function AccountPage() {
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             <aside className="lg:col-span-1">
-                                <ProfileDetails user={menteeData} onUpdate={handleProfileUpdate} />
+                                <ProfileDetails user={menteeData} onUpdate={handleProfileUpdate} onLogout={handleLogout} />
                             </aside>
 
                             <div className="lg:col-span-2 space-y-8">
@@ -699,7 +696,6 @@ export default function AccountPage() {
                                 <UpcomingSessions sessions={upcomingSessions} isLoading={isLoadingUserSessions} />
                                 <ActivitySection sessions={previousSessions} isLoading={isLoadingUserSessions} onReview={setSessionToReview} />
                                 <SavedContentSection content={[]} />
-                                <LogoutButton />
                             </div>
                         </div>
                     </>
@@ -728,5 +724,3 @@ export default function AccountPage() {
         </div>
     );
 };
-
-    
