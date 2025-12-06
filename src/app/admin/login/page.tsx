@@ -1,16 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-
 import { useAuth, useUser } from '@/firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { Header } from '@/components/common/Header';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Shield, LogOut, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -45,6 +39,7 @@ export default function AdminLoginPage() {
 
         try {
             await signInWithEmailAndPassword(auth, 'mmavir89@gmail.com', '123456');
+            console.log('[AdminLogin] signInWithEmailAndPassword successful. Waiting for auth state change.');
             toast({
                 title: 'Login Successful',
                 description: 'Verifying admin status and redirecting...',

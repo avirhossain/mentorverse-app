@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect } from 'react';
@@ -10,22 +9,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { user, isAdmin, isAuthCheckComplete } = useUser();
   const router = useRouter();
 
+  console.log('[AdminLayout] Rendering with state:', { user: !!user, isAdmin, isAuthCheckComplete });
+
   useEffect(() => {
-    // Wait until the initial authentication check is complete before making any decisions.
+    console.log('[AdminLayout] useEffect triggered. State:', { user: !!user, isAdmin, isAuthCheckComplete });
+
     if (!isAuthCheckComplete) {
+      console.log('[AdminLayout] Auth check not complete. Waiting...');
       return;
     }
 
-    // If the check is complete and the user is either not logged in or is not an admin,
-    // then redirect them to the login page.
     if (!user || !isAdmin) {
+      console.log('[AdminLayout] REDIRECTING to /admin/login. Reason:', !user ? 'User is not logged in.' : 'User is not an admin.');
       router.push('/admin/login');
+    } else {
+      console.log('[AdminLayout] User is an admin. Allowing access.');
     }
   }, [user, isAdmin, isAuthCheckComplete, router]);
 
-  // Only show a loading skeleton while the initial auth check is in progress.
-  // After the check, the useEffect will either redirect or the content will be rendered.
   if (!isAuthCheckComplete) {
+    console.log('[AdminLayout] Showing loading skeleton because auth check is not complete.');
     return (
       <div className="flex flex-col min-h-screen">
         <div className="p-8">
@@ -40,7 +43,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // If the auth check is complete and the user is a verified admin, render the dashboard content.
-  // If they are not an admin, they will be redirected by the useEffect above.
+  // If auth is complete but user is not admin, they will be redirected.
+  // We can show a skeleton here as well to prevent a flash of content before redirect.
+  if (!isAdmin) {
+     console.log('[AdminLayout] Showing loading skeleton because user is not (yet) admin.');
+     return (
+      <div className="flex flex-col min-h-screen">
+        <div className="p-8">
+            <Skeleton className="h-8 w-1/4 mb-4" />
+            <Skeleton className="h-4 w-1/2" />
+        </div>
+        <div className="flex-1 p-8 space-y-8">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  console.log('[AdminLayout] Auth complete and user is admin. Rendering children.');
   return <>{children}</>;
 }
