@@ -55,7 +55,7 @@ export default function AdminLoginPage() {
         try {
             const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
             
-            // CRITICAL FIX: Force a token refresh right after login to get custom claims.
+            // CRITICAL: Force a token refresh right after login to get custom claims.
             await userCredential.user.getIdToken(true); 
             
             // Now, trigger the state update in the useAdminUser hook.
