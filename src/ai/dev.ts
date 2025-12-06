@@ -1,6 +1,8 @@
 
 'use server';
 import { config } from 'dotenv';
+import { ai } from './genkit';
+
 config();
 
 // This code runs once when the Genkit development server starts.
@@ -11,3 +13,5 @@ async function runSetup() {
 }
 
 runSetup();
+
+export default ai;
