@@ -37,11 +37,23 @@ export default function AdminLoginPage() {
     });
 
     useEffect(() => {
-        // If an admin is already logged in, redirect them to the dashboard.
-        if (isAuthCheckComplete && isAdmin) {
+        // If there's a user, log them out immediately upon visiting this page.
+        if (user && auth) {
+            signOut(auth);
+            toast({
+                title: 'Logged Out',
+                description: 'You have been automatically signed out to resolve the session state.',
+            });
+        }
+    }, [user, auth]);
+
+    useEffect(() => {
+        // After auth check is complete, if the user is confirmed an admin, redirect them.
+        // This will only happen on a subsequent visit after the forced logout.
+        if (isAuthCheckComplete && user && isAdmin) {
             router.push('/admin');
         }
-    }, [isAdmin, isAuthCheckComplete, router]);
+    }, [isAdmin, isAuthCheckComplete, user, router]);
 
     const handleAdminLogin = async (values: z.infer<typeof adminLoginSchema>) => {
         if (!auth) {
@@ -95,18 +107,9 @@ export default function AdminLoginPage() {
                             Sign in to the admin dashboard.
                         </p>
                     </div>
-
-                    {isAuthCheckComplete && user && !isAdmin && (
-                        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md space-y-3">
-                            <p className="font-bold">You are signed in as {user.email}, but do not have admin privileges.</p>
-                            <Button onClick={handleLogout} className="w-full">
-                                <LogOut className="mr-2 h-4 w-4" /> Log Out and Try Again
-                            </Button>
-                        </div>
-                    )}
                     
-                    {user && (
-                         <Button onClick={handleLogout} variant="outline" className="w-full">
+                    {isAuthCheckComplete && user && (
+                         <Button onClick={handleLogout} variant="destructive" className="w-full">
                             <LogOut className="mr-2 h-4 w-4" /> Log Out from {user.email}
                         </Button>
                     )}
@@ -139,7 +142,7 @@ export default function AdminLoginPage() {
                                     </FormItem>
                                 )}
                             />
-                            <Button type="submit" className="w-full" disabled={isLoading || (isAuthCheckComplete && !!user && isAdmin)}>
+                            <Button type="submit" className="w-full" disabled={isLoading || (isAuthCheckComplete && !!user)}>
                                 {isLoading ? 'Signing In...' : 'Sign In'}
                             </Button>
                         </form>
