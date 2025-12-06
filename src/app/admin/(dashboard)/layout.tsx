@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Header } from '@/components/common/Header';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isAdmin, isAuthCheckComplete } = useUser();
@@ -61,5 +62,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // If the auth check is complete, render the children immediately.
   // The useEffect timer will handle the redirect if necessary after the delay.
   console.log('[AdminLayout] Auth complete. Rendering children while timer runs.');
-  return <>{children}</>;
+  return (
+    <div className="flex flex-col min-h-screen bg-background">
+      <Header currentView="admin" />
+      {children}
+    </div>
+  );
 }
