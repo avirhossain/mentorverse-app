@@ -4,6 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
+      // This rule checks if a user has the email 'avirhossain@gmail.com'.
       // For production, it's recommended to use custom claims instead of hardcoding emails.
       return request.auth != null && request.auth.token.email == 'avirhossain@gmail.com';
     }
@@ -33,7 +34,8 @@ service cloud.firestore {
       allow get: if request.auth != null && (request.auth.uid == resource.data.menteeId || isAdmin());
       
       // A mentee can only list their own bookings. Admins can list all.
-      allow list: if request.auth != null && (resource == null || request.auth.uid == request.query.get("where")[0][2] || isAdmin());
+      // Note: This rule is complex and requires the client to query correctly.
+      allow list: if request.auth != null && (isAdmin() || (request.query.get("where") != null && request.query.get("where")[0][0] == "menteeId" && request.query.get("where")[0][2] == request.auth.uid));
 
       // Allow a mentee to create a booking for themselves.
       allow create: if request.auth != null && request.resource.data.menteeId == request.auth.uid;
