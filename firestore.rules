@@ -166,7 +166,7 @@ service cloud.firestore {
      */
     match /sessions/{sessionId} {
       allow get: if isAdmin() || isMenteeOnExistingDoc();
-      allow list: if isAdmin(); // Only admins can list all sessions to prevent data leakage.
+      allow list: if true; // Allow public listing for the dashboard
       allow create: if isAdmin() || (isSignedIn() && isMenteeOnIncomingDoc());
       allow update: if isAdmin() && isExistingDoc() && isMenteeIdImmutable();
       allow delete: if isAdmin() && isExistingDoc();
