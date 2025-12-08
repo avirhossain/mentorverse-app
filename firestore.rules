@@ -165,9 +165,7 @@ service cloud.firestore {
      */
     match /sessions/{sessionId} {
       allow get, list: if true;
-      allow create: if isAdmin(); // Only admins can create sessions from scratch
-      allow update: if (isAdmin() || isOwner(resource.data.menteeId)) && isExistingDoc() && isMenteeIdImmutable();
-      allow delete: if isAdmin() && isExistingDoc();
+      allow create, update, delete: if isAdmin();
     }
     
     /**
