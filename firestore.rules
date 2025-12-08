@@ -29,9 +29,18 @@ service cloud.firestore {
     // Bookings: Mentees can create their own bookings and read them.
     // Admins can read all bookings.
     match /bookings/{bookingId} {
+      // Allow a mentee to read a booking if their UID matches the menteeId in the document.
+      // Allow an admin to read any booking.
       allow get: if request.auth != null && (request.auth.uid == resource.data.menteeId || isAdmin());
-      allow list: if request.auth != null && (request.auth.uid == request.query.where.menteeId || isAdmin());
+      
+      // Allow a mentee to list bookings only for themselves.
+      // Allow an admin to list all bookings.
+      allow list: if request.auth != null && ((request.query.get("where") == null || request.query.where[0][2] == request.auth.uid) || isAdmin());
+
+      // Allow a mentee to create a booking for themselves.
       allow create: if request.auth != null && request.resource.data.menteeId == request.auth.uid;
+      
+      // Only admins can update or delete bookings.
       allow update, delete: if isAdmin();
     }
 
@@ -63,5 +72,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
