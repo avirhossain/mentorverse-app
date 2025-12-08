@@ -11,86 +11,109 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, limit, orderBy, getDoc, doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect, useState } from 'react';
 
-const placeholderSessions: (Session & { mentorName: string })[] = [
-  {
-    id: 'S01',
-    mentorId: 'M01',
-    mentorName: 'Dr. Evelyn Reed',
-    menteeId: '',
-    name: 'Intro to Quantum Computing',
-    sessionType: 'Paid',
-    bookingTime: '2024-05-10T10:00:00Z',
-    scheduledDate: '2024-07-20',
-    scheduledTime: '14:00',
-    status: 'confirmed',
-    sessionFee: 75,
-    adminDisbursementStatus: 'pending',
-    tag: 'Beginner',
-  },
-  {
-    id: 'S02',
-    mentorId: 'M02',
-    mentorName: 'Dr. Samuel Cortez',
-    menteeId: '',
-    name: 'Ethical Frameworks for AI',
-    sessionType: 'Free',
-    bookingTime: '2024-05-11T11:30:00Z',
-    scheduledDate: '2024-07-22',
-    scheduledTime: '16:00',
-    status: 'pending',
-    sessionFee: 0,
-    adminDisbursementStatus: 'pending',
-    tag: 'Intermediate',
-  },
-  {
-    id: 'S03',
-    mentorId: 'M03',
-    mentorName: 'Alicia Chen',
-    menteeId: '',
-    name: 'Advanced UX Prototyping',
-    sessionType: 'Paid',
-    bookingTime: '2024-05-12T09:00:00Z',
-    scheduledDate: '2024-07-25',
-    scheduledTime: '10:00',
-    status: 'confirmed',
-    sessionFee: 150,
-    adminDisbursementStatus: 'paid',
-    tag: 'Advanced',
-  },
-  {
-    id: 'S04',
-    mentorId: 'M01',
-    mentorName: 'Dr. Evelyn Reed',
-    menteeId: '',
-    name: 'Astrobiology Basics',
-    sessionType: 'Paid',
-    bookingTime: '2024-06-01T14:00:00Z',
-    scheduledDate: '2024-08-10',
-    scheduledTime: '11:00',
-    status: 'confirmed',
-    sessionFee: 75,
-    adminDisbursementStatus: 'pending',
-    tag: 'Beginner',
-  },
-    {
-    id: 'S05',
-    mentorId: 'M04',
-    mentorName: 'Kenji Tanaka',
-    menteeId: '',
-    name: 'DevOps on a Shoestring',
-    sessionType: 'Free',
-    bookingTime: '2024-06-05T10:00:00Z',
-    scheduledDate: '2024-08-01',
-    scheduledTime: '18:00',
-    status: 'confirmed',
-    sessionFee: 0,
-    adminDisbursementStatus: 'pending',
-    tag: 'All Levels',
-  },
-];
+type SessionWithMentorName = Session & { mentorName: string };
 
 export default function SessionsPage() {
+  const firestore = useFirestore();
+  const [sessionsWithMentors, setSessionsWithMentors] = useState<SessionWithMentorName[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const sessionsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'sessions'),
+      where('status', 'in', ['pending', 'confirmed']),
+      where('sessionType', 'in', ['Free', 'Paid']),
+      orderBy('scheduledDate', 'asc'),
+      limit(20)
+    );
+  }, [firestore]);
+
+  const {
+    data: sessions,
+    isLoading: sessionsLoading,
+    error: sessionsError,
+  } = useCollection<Session>(sessionsQuery);
+
+  useEffect(() => {
+    if (sessionsLoading) {
+      setIsLoading(true);
+      return;
+    }
+    if (sessionsError) {
+      setError(sessionsError);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!sessions || !firestore) {
+      setIsLoading(false);
+      setSessionsWithMentors([]);
+      return;
+    }
+
+    const fetchMentorNames = async () => {
+      setIsLoading(true);
+      try {
+        const enrichedSessions = await Promise.all(
+          sessions.map(async (session) => {
+            let mentorName = session.mentorName || '...'; // Use existing if available
+            if (!session.mentorName && session.mentorId) {
+              const mentorRef = doc(firestore, 'mentors', session.mentorId);
+              const mentorSnap = await getDoc(mentorRef);
+              if (mentorSnap.exists()) {
+                mentorName = mentorSnap.data().name || 'Mentor';
+              }
+            }
+            return { ...session, mentorName };
+          })
+        );
+        setSessionsWithMentors(enrichedSessions);
+      } catch (e: any) {
+        setError(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMentorNames();
+  }, [sessions, sessionsLoading, sessionsError, firestore]);
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <Skeleton key={index} className="h-[320px] w-full rounded-lg" />
+          ))}
+        </div>
+      )
+    }
+
+    if (error) {
+      return <p className="text-center text-destructive">Error: {error.message}</p>
+    }
+
+    if(sessionsWithMentors.length === 0) {
+      return <p className="text-center text-muted-foreground">No sessions found.</p>
+    }
+
+    return (
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        {sessionsWithMentors.map((session) => (
+          <SessionCard key={session.id} session={session} />
+        ))}
+      </div>
+    )
+  }
+
+
   return (
     <div className="container mx-auto px-4 py-8">
       <section className="text-center">
@@ -130,12 +153,7 @@ export default function SessionsPage() {
           </Select>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {placeholderSessions.map((session) => (
-          <SessionCard key={session.id} session={session} />
-        ))}
-      </div>
+      {renderContent()}
     </div>
   );
 }

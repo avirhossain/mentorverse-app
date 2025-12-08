@@ -135,6 +135,10 @@
         "mentorId": {
           "type": "string"
         },
+        "mentorName": {
+          "type": "string",
+          "description": "Denormalized mentor name for easier querying and display."
+        },
         "menteeId": {
           "type": "string"
         },
@@ -223,6 +227,7 @@
       "required": [
         "id",
         "mentorId",
+        "mentorName",
         "menteeId",
         "bookingTime",
         "scheduledDate",

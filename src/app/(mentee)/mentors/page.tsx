@@ -11,64 +11,57 @@ import {
 } from '@/components/ui/select';
 import type { Mentor } from '@/lib/types';
 import { Search } from 'lucide-react';
-
-// Placeholder data - will be replaced with Firestore data
-const placeholderMentors: Mentor[] = [
-  {
-    id: 'M01',
-    name: 'Dr. Evelyn Reed',
-    email: 'evelyn.reed@example.com',
-    expertise: ['Quantum Physics', 'Astrobiology'],
-    bio: 'Exploring the fabric of the universe, from quantum mechanics to the search for life beyond Earth.',
-    totalSessions: 120,
-    ratingAvg: 4.9,
-    ratingCount: 45,
-    isActive: true,
-    createdAt: '2023-01-15T09:30:00Z',
-    photoUrl: 'https://i.pravatar.cc/150?u=evelyn.reed@example.com'
-  },
-  {
-    id: 'M02',
-    name: 'Dr. Samuel Cortez',
-    email: 'samuel.cortez@example.com',
-    expertise: ['AI Ethics', 'Machine Learning'],
-    bio: 'Passionate about building ethical and responsible AI. Guiding the next generation of AI developers.',
-    totalSessions: 85,
-    ratingAvg: 4.8,
-    ratingCount: 30,
-    isActive: true,
-    createdAt: '2023-02-20T11:00:00Z',
-    photoUrl: 'https://i.pravatar.cc/150?u=samuel.cortez@example.com'
-  },
-  {
-    id: 'M03',
-    name: 'Alicia Chen',
-    email: 'alicia.chen@example.com',
-    expertise: ['Product Management', 'UX/UI Design'],
-    bio: 'Helping teams build products that users love. From idea to launch and beyond.',
-    totalSessions: 210,
-    ratingAvg: 4.9,
-    ratingCount: 78,
-    isActive: true,
-    createdAt: '2022-11-10T14:00:00Z',
-    photoUrl: 'https://i.pravatar.cc/150?u=alicia.chen@example.com'
-  },
-    {
-    id: 'M04',
-    name: 'Kenji Tanaka',
-    email: 'kenji.tanaka@example.com',
-    expertise: ['Cybersecurity', 'DevOps'],
-    bio: 'Securing digital assets and streamlining development pipelines. Let\'s build a resilient infrastructure.',
-    totalSessions: 150,
-    ratingAvg: 4.7,
-    ratingCount: 55,
-    isActive: true,
-    createdAt: '2023-03-10T14:00:00Z',
-    photoUrl: 'https://i.pravatar.cc/150?u=kenji.tanaka@example.com'
-  },
-];
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, limit } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MentorsPage() {
+  const firestore = useFirestore();
+
+  const mentorsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'mentors'),
+      where('isActive', '==', true),
+      limit(20)
+    );
+  }, [firestore]);
+
+  const {
+    data: mentors,
+    isLoading,
+    error,
+  } = useCollection<Mentor>(mentorsQuery);
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <Skeleton key={index} className="h-[280px] w-full rounded-lg" />
+          ))}
+        </div>
+      );
+    }
+    
+    if (error) {
+       return <p className="text-center text-destructive">Error: {error.message}</p>
+    }
+
+    if (!mentors || mentors.length === 0) {
+      return <p className="text-center text-muted-foreground">No mentors found.</p>
+    }
+
+    return (
+       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        {mentors.map((mentor) => (
+          <MentorCard key={mentor.id} mentor={mentor} />
+        ))}
+      </div>
+    )
+  }
+
+
   return (
     <div className="container mx-auto px-4 py-8">
       <section className="text-center">
@@ -99,12 +92,7 @@ export default function MentorsPage() {
           </Select>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {placeholderMentors.map((mentor) => (
-          <MentorCard key={mentor.id} mentor={mentor} />
-        ))}
-      </div>
+      {renderContent()}
     </div>
   );
 }

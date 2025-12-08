@@ -4,13 +4,15 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
+      // Admin check: User must be authenticated and have the 'admin' custom claim.
       return request.auth != null && request.auth.token.admin == true;
     }
 
     // Mentees can only read/write their own profile. Admins can manage all.
     match /mentees/{menteeId} {
       allow read, update: if request.auth.uid == menteeId || isAdmin();
-      allow create, delete: if isAdmin();
+      allow create: if request.auth.uid == menteeId;
+      allow delete: if isAdmin();
     }
 
     // Mentors are publicly readable, but only managed by admins.
@@ -19,26 +21,39 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
-    // Sessions are publicly readable, but only managed by admins.
+    // Sessions are publicly readable, but can be booked by any logged-in user,
+    // and are fully managed by admins.
     match /sessions/{sessionId} {
       allow get, list: if true;
+      allow create, update: if request.auth.uid != null || isAdmin(); // Allow booking and admin edits
+      allow delete: if isAdmin();
+    }
+    
+    // Reviews can be read by anyone, created by any logged-in user,
+    // but only deleted by admins.
+    match /reviews/{reviewId} {
+       allow read: if true;
+       allow create: if request.auth.uid != null;
+       allow update, delete: if isAdmin();
+    }
+    
+    // Tips are publicly readable, but only managed by admins.
+    match /tips/{tipId} {
+      allow read: if true;
       allow create, update, delete: if isAdmin();
     }
-
+    
     // All other collections are admin-only for all operations.
     match /disbursements/{disbursementId} {
       allow read, write: if isAdmin();
     }
 
-    match /reviews/{reviewId} {
-       allow read: if true;
-       allow create: if request.auth.uid != null; // Allow logged-in users to create reviews
-       allow update, delete: if isAdmin();
+    match /mentees/{menteeId}/transactions/{transactionId} {
+      allow read, write: if request.auth.uid == menteeId || isAdmin();
     }
     
-    match /tips/{tipId} {
-      allow read: if true;
-      allow write: if isAdmin();
+    match /mentors/{mentorId}/payouts/{payoutId} {
+      allow read, write: if isAdmin();
     }
   }
 }

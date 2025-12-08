@@ -39,6 +39,7 @@ export interface Mentee {
 export interface Session {
   id: string; // Corresponds to document ID
   mentorId: string;
+  mentorName: string; // denormalized for easier display
   menteeId: string;
   name: string;
   tag?: string;
