@@ -10,7 +10,7 @@
         },
         {
           "fieldPath": "scheduledDate",
-          "order": "ASCENDING"
+          "order": "DESCENDING"
         }
       ]
     }

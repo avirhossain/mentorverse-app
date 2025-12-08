@@ -4,19 +4,22 @@ import type { Session } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, limit, orderBy } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
+import { format } from 'date-fns';
 
 export function UpcomingSessions() {
   const firestore = useFirestore();
+  const today = format(new Date(), 'yyyy-MM-dd');
 
   const sessionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
       collection(firestore, 'sessions'),
       where('isActive', '==', true),
-      orderBy('scheduledDate', 'asc'),
+      where('scheduledDate', '>=', today),
+      orderBy('scheduledDate', 'desc'),
       limit(6)
     );
-  }, [firestore]);
+  }, [firestore, today]);
 
   const {
     data: sessions,
@@ -78,5 +81,3 @@ export function UpcomingSessions() {
     </section>
   );
 }
-
-    

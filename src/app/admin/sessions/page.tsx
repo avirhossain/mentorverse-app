@@ -39,9 +39,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { SessionForm } from '@/components/admin/SessionForm';
 import type { Session, Mentor } from '@/lib/types';
-import { format } from 'date-fns';
+import { format, isPast, parseISO } from 'date-fns';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SessionsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
@@ -54,6 +54,17 @@ const getTypeBadgeVariant = (type: Session['sessionType']) => {
         default: return 'secondary';
     }
 }
+
+const getStatus = (session: Session): { text: string; variant: "default" | "secondary" | "destructive" } => {
+    const sessionDate = parseISO(`${session.scheduledDate}T${session.scheduledTime}`);
+    if (isPast(sessionDate)) {
+        return { text: 'Expired', variant: 'destructive' };
+    }
+    if (session.isActive) {
+        return { text: 'Active', variant: 'default' };
+    }
+    return { text: 'Inactive', variant: 'secondary' };
+};
 
 
 export default function SessionsPage() {
@@ -130,52 +141,55 @@ export default function SessionsPage() {
       return <TableRow><TableCell colSpan={6} className="text-center">No sessions found.</TableCell></TableRow>
     }
     
-    return sessions.map((session) => (
-      <TableRow key={session.id}>
-        <TableCell>
-            <div className="font-medium">{session.name}</div>
-        </TableCell>
-        <TableCell>{session.mentorName}</TableCell>
-        <TableCell>
-          {format(new Date(session.scheduledDate), 'MMM d, yyyy')} at {session.scheduledTime}
-        </TableCell>
-        <TableCell>
-           <Badge variant={getTypeBadgeVariant(session.sessionType)}>
-              {session.sessionType}
-           </Badge>
-        </TableCell>
-        <TableCell>
-          <Badge variant={session.isActive ? 'default' : 'secondary'}>
-            {session.isActive ? 'Active' : 'Inactive'}
-          </Badge>
-        </TableCell>
-        <TableCell className="text-right">${session.sessionFee.toFixed(2)}</TableCell>
-        <TableCell>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                aria-haspopup="true"
-                size="icon"
-                variant="ghost"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => handleEdit(session)}>
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-               <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(session.id)}>
-                  Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </TableCell>
-      </TableRow>
-    ));
+    return sessions.map((session) => {
+      const status = getStatus(session);
+      return (
+        <TableRow key={session.id}>
+          <TableCell>
+              <div className="font-medium">{session.name}</div>
+          </TableCell>
+          <TableCell>{session.mentorName}</TableCell>
+          <TableCell>
+            {format(new Date(session.scheduledDate), 'MMM d, yyyy')} at {session.scheduledTime}
+          </TableCell>
+          <TableCell>
+             <Badge variant={getTypeBadgeVariant(session.sessionType)}>
+                {session.sessionType}
+             </Badge>
+          </TableCell>
+          <TableCell>
+            <Badge variant={status.variant}>
+              {status.text}
+            </Badge>
+          </TableCell>
+          <TableCell className="text-right">${session.sessionFee.toFixed(2)}</TableCell>
+          <TableCell>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-haspopup="true"
+                  size="icon"
+                  variant="ghost"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleEdit(session)}>
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                 <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(session.id)}>
+                    Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </TableCell>
+        </TableRow>
+      )
+    });
   }
 
 
@@ -205,6 +219,7 @@ export default function SessionsPage() {
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem checked>Active</DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem>Inactive</DropdownMenuCheckboxItem>
+               <DropdownMenuCheckboxItem>Expired</DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button size="sm" variant="outline" className="h-8 gap-1">
@@ -273,5 +288,3 @@ export default function SessionsPage() {
     </>
   );
 }
-
-    
