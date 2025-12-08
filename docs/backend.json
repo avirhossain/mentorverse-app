@@ -138,6 +138,34 @@
         "menteeId": {
           "type": "string"
         },
+        "name": {
+          "type": "string",
+          "description": "The name of the session."
+        },
+        "tag": {
+          "type": "string",
+          "description": "A tag for the session."
+        },
+        "offerings": {
+          "type": "string",
+          "description": "What the session offers."
+        },
+        "bestSuitedFor": {
+          "type": "string",
+          "description": "Who the session is best suited for."
+        },
+        "requirements": {
+          "type": "string",
+          "description": "Any requirements for the session."
+        },
+        "sessionType": {
+          "type": "string",
+          "enum": [
+            "Free",
+            "Paid",
+            "Exclusive"
+          ]
+        },
         "bookingTime": {
           "type": "string",
           "format": "date-time"
@@ -200,7 +228,9 @@
         "scheduledDate",
         "scheduledTime",
         "status",
-        "sessionFee"
+        "sessionFee",
+        "name",
+        "sessionType"
       ]
     },
     "review": {

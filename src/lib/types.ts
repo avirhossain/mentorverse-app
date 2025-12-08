@@ -40,6 +40,12 @@ export interface Session {
   id: string; // Corresponds to document ID
   mentorId: string;
   menteeId: string;
+  name: string;
+  tag?: string;
+  offerings?: string;
+  bestSuitedFor?: string;
+  requirements?: string;
+  sessionType: 'Free' | 'Paid' | 'Exclusive';
   bookingTime: string; // ISO 8601 date string
   scheduledDate: string; // YYYY-MM-DD
   scheduledTime: string; // HH:mm
