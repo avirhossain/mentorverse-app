@@ -26,6 +26,8 @@ export const Header = () => {
   const handleSignOut = () => {
     signOut(auth);
   };
+  
+  const currentLabel = navItems.find(item => pathname.startsWith(item.href) && (item.href !== '/admin' || pathname === '/admin'))?.label ?? 'Dashboard';
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
@@ -51,7 +53,7 @@ export const Header = () => {
                       href={item.href}
                       className={cn(
                         "flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
-                        pathname === item.href && "text-foreground"
+                        pathname.startsWith(item.href) && (item.href !== '/admin' || pathname === '/admin') && "text-foreground"
                       )}
                     >
                       <item.icon className="h-5 w-5" />
@@ -63,7 +65,7 @@ export const Header = () => {
           </Sheet>
       <div className="flex-1">
         <h1 className="text-xl font-semibold">
-            {navItems.find(item => pathname.startsWith(item.href))?.label ?? 'Dashboard'}
+            {currentLabel}
         </h1>
       </div>
       {auth.currentUser && (

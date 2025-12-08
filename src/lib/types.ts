@@ -87,6 +87,7 @@ export interface Disbursement {
   sessions: string[]; // Array of session IDs
   status: 'pending' | 'paid';
   paidAt?: string; // ISO 8601 date string
+  createdAt: string; // ISO 8601 date string
   adminId: string;
 }
 
