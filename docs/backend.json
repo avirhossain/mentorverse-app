@@ -1,9 +1,388 @@
 {
-  "entities": {},
+  "entities": {
+    "mentor": {
+      "title": "Mentor",
+      "description": "A mentor user with a full profile, availability, and rating.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Mentor's full name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Mentor's email address."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Mentor's phone number."
+        },
+        "photoUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the mentor's profile picture."
+        },
+        "bio": {
+          "type": "string",
+          "description": "A short biography of the mentor."
+        },
+        "expertise": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of the mentor's areas of expertise."
+        },
+        "education": {
+          "type": "string",
+          "description": "Mentor's educational background."
+        },
+        "experienceYears": {
+          "type": "number",
+          "description": "Number of years of experience."
+        },
+        "ratingAvg": {
+          "type": "number",
+          "description": "The mentor's average rating."
+        },
+        "ratingCount": {
+          "type": "number",
+          "description": "Total number of ratings received."
+        },
+        "totalSessions": {
+          "type": "number",
+          "description": "Total number of sessions completed."
+        },
+        "hourlyRate": {
+          "type": "number",
+          "description": "The mentor's hourly rate for sessions."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the mentor profile was created."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the mentor's profile is currently active."
+        },
+        "availability": {
+          "type": "array",
+          "description": "Mentor's weekly availability slots.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "day": {
+                "type": "string",
+                "enum": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+              },
+              "slots": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "time"
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": ["name", "email", "isActive"]
+    },
+    "mentee": {
+      "title": "Mentee",
+      "description": "A mentee user account with balance and basic information.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Mentee's full name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Mentee's email address."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Mentee's phone number."
+        },
+        "photoUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the mentee's profile picture."
+        },
+        "accountBalance": {
+          "type": "number",
+          "description": "The mentee's current account balance."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the mentee account was created."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the mentee's account is currently active."
+        },
+        "totalSessionsBooked": {
+          "type": "number",
+          "description": "Total number of sessions booked by the mentee."
+        }
+      },
+      "required": ["name", "email", "accountBalance", "isActive"]
+    },
+    "session": {
+      "title": "Session",
+      "description": "A booked session between a mentor and a mentee.",
+      "type": "object",
+      "properties": {
+        "mentorId": {
+          "type": "string",
+          "description": "ID of the mentor for this session."
+        },
+        "menteeId": {
+          "type": "string",
+          "description": "ID of the mentee for this session."
+        },
+        "bookingTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the user booked the session."
+        },
+        "scheduledDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The scheduled date of the session."
+        },
+        "scheduledTime": {
+          "type": "string",
+          "format": "time",
+          "description": "The scheduled time of the session."
+        },
+        "bookedSlotId": {
+          "type": "string",
+          "description": "Identifier for the specific availability slot that was booked."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "confirmed", "started", "completed", "cancelled"],
+          "description": "The current status of the session."
+        },
+        "meetingUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URL for the video meeting (e.g., Jitsi)."
+        },
+        "meetingStartedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the meeting was started by the admin."
+        },
+        "meetingEndedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the meeting ended."
+        },
+        "mentorNotes": {
+          "type": "string",
+          "description": "Notes taken by the mentor during the session."
+        },
+        "menteeReviewId": {
+          "type": "string",
+          "description": "ID of the review left by the mentee."
+        },
+        "sessionFee": {
+          "type": "number",
+          "description": "The fee charged for this session."
+        },
+        "adminDisbursementStatus": {
+          "type": "string",
+          "enum": ["pending", "paid"],
+          "description": "Status of the payment to the mentor."
+        }
+      },
+      "required": ["mentorId", "menteeId", "bookingTime", "scheduledDate", "scheduledTime", "status", "sessionFee"]
+    },
+    "review": {
+      "title": "Review",
+      "description": "A review of a completed session.",
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string"
+        },
+        "mentorId": {
+          "type": "string"
+        },
+        "menteeId": {
+          "type": "string"
+        },
+        "rating": {
+          "type": "number"
+        },
+        "reviewText": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["sessionId", "mentorId", "menteeId", "rating", "createdAt"]
+    },
+    "tip": {
+      "title": "Tip",
+      "description": "Short advice for mentees, managed by admins.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "imageUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdByAdminId": {
+          "type": "string"
+        },
+        "isActive": {
+          "type": "boolean"
+        }
+      },
+      "required": ["title", "description", "createdAt", "createdByAdminId", "isActive"]
+    },
+    "disbursement": {
+      "title": "Disbursement",
+      "description": "Tracks payment settlements to mentors.",
+      "type": "object",
+      "properties": {
+        "mentorId": {
+          "type": "string"
+        },
+        "totalAmount": {
+          "type": "number"
+        },
+        "sessions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "paid"]
+        },
+        "paidAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "adminId": {
+          "type": "string"
+        }
+      },
+      "required": ["mentorId", "totalAmount", "sessions", "status", "adminId"]
+    },
+    "transaction": {
+      "title": "Transaction",
+      "description": "A record of a mentee's account balance change.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["topup", "booking", "refund"]
+        },
+        "amount": {
+          "type": "number"
+        },
+        "description": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["type", "amount", "createdAt"]
+    },
+    "payout": {
+      "title": "Payout",
+      "description": "A record of a payout made to a mentor.",
+      "type": "object",
+      "properties": {
+        "disbursementId": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["disbursementId", "amount", "createdAt"]
+    }
+  },
   "auth": {
     "providers": []
   },
   "firestore": {
-    "structure": []
+    "/mentors/{mentorId}": {
+      "schema": {
+        "$ref": "#/entities/mentor"
+      },
+      "description": "Stores mentor profiles."
+    },
+    "/mentees/{menteeId}": {
+      "schema": {
+        "$ref": "#/entities/mentee"
+      },
+      "description": "Stores mentee user accounts."
+    },
+    "/sessions/{sessionId}": {
+      "schema": {
+        "$ref": "#/entities/session"
+      },
+      "description": "Stores all booked sessions."
+    },
+    "/reviews/{reviewId}": {
+      "schema": {
+        "$ref": "#/entities/review"
+      },
+      "description": "Stores reviews for completed sessions."
+    },
+    "/tips/{tipId}": {
+      "schema": {
+        "$ref": "#/entities/tip"
+      },
+      "description": "Stores tips for mentees, managed by admins."
+    },
+    "/disbursements/{disbursementId}": {
+      "schema": {
+        "$ref": "#/entities/disbursement"
+      },
+      "description": "Tracks mentor payment settlements."
+    },
+    "/mentees/{menteeId}/transactions/{transactionId}": {
+      "schema": {
+        "$ref": "#/entities/transaction"
+      },
+      "description": "Subcollection for a mentee's account balance history."
+    },
+    "/mentors/{mentorId}/payouts/{payoutId}": {
+      "schema": {
+        "$ref": "#/entities/payout"
+      },
+      "description": "Subcollection for a mentor's payout history."
+    }
   }
 }
