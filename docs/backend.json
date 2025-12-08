@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "mentor": {
@@ -251,14 +252,14 @@
           "type": "string",
           "format": "date-time"
         },
-        "createdByAdminId": {
+        "adminId": {
           "type": "string"
         },
         "isActive": {
           "type": "boolean"
         }
       },
-      "required": ["title", "description", "createdAt", "createdByAdminId", "isActive"]
+      "required": ["title", "description", "createdAt", "adminId", "isActive"]
     },
     "disbursement": {
       "title": "Disbursement",
@@ -386,3 +387,5 @@
     }
   }
 }
+
+    
