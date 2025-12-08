@@ -24,7 +24,9 @@ export const Header = () => {
   const pathname = usePathname();
 
   const handleSignOut = () => {
-    signOut(auth);
+    signOut(auth).then(() => {
+        // This will trigger the auth listener to redirect to login
+    });
   };
   
   const currentLabel = navItems.find(item => pathname.startsWith(item.href) && (item.href !== '/admin' || pathname === '/admin'))?.label ?? 'Dashboard';

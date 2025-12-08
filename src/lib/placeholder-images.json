@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "mentor-1",
+      "description": "Profile picture of Dr. Evelyn Reed",
+      "imageUrl": "https://i.pravatar.cc/150?u=evelyn.reed@example.com",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "mentor-2",
+      "description": "Profile picture of Dr. Samuel Cortez",
+      "imageUrl": "https://i.pravatar.cc/150?u=samuel.cortez@example.com",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "mentor-3",
+      "description": "Profile picture of Alicia Chen",
+      "imageUrl": "https://i.pravatar.cc/150?u=alicia.chen@example.com",
+      "imageHint": "woman portrait smiling"
+    },
+    {
+      "id": "mentor-4",
+      "description": "Profile picture of a potential new mentor",
+      "imageUrl": "https://i.pravatar.cc/150?u=new.mentor@example.com",
+      "imageHint": "man smiling"
+    }
+  ]
 }

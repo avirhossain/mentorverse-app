@@ -1,10 +1,9 @@
-'use client';
 import { FeaturedMentors } from '@/components/mentee/FeaturedMentors';
 import { UpcomingSessions } from '@/components/mentee/UpcomingSessions';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 
-export function MenteeDashboard() {
+export default function MenteeHomePage() {
   return (
     <>
       <section className="relative h-[60vh] w-full">
@@ -14,7 +13,6 @@ export function MenteeDashboard() {
           fill
           className="object-cover"
           priority
-          data-ai-hint="people working"
         />
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 flex h-full flex-col items-center justify-center text-center text-white">
