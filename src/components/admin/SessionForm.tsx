@@ -50,7 +50,7 @@ type SessionFormValues = z.infer<typeof sessionFormSchema>;
 interface SessionFormProps {
   session?: Session | null;
   mentors: Mentor[]; // A list of available mentors
-  onSubmit: (data: Partial<Session>)- void;
+  onSubmit: (data: Partial<Session>) => void;
 }
 
 export const SessionForm: React.FC<SessionFormProps> = ({
