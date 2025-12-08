@@ -77,6 +77,8 @@ service cloud.firestore {
      * Admin status is granted by the existence of a document in the `roles_admin` collection.
      */
     function isAdmin() {
+      // This is a placeholder. In a real app, you'd check for a custom claim or a document.
+      // For now, we will assume a roles collection.
       return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
 
@@ -122,16 +124,15 @@ service cloud.firestore {
      * @principle Restricts access to a user's own data tree, enforcing strict ownership.
      */
     match /mentees/{menteeId} {
-      allow get: if isOwner(menteeId) || isAdmin();
+      allow get, update: if isOwner(menteeId) || isAdmin();
       allow list: if isAdmin(); // Only admins can list all mentees.
       allow create: if isOwner(menteeId) && newMenteeDataIsValid(menteeId);
-      allow update: if (isOwner(menteeId) || isAdmin()) && isExistingDoc();
       allow delete: if isAdmin() && isExistingDoc();
 
       // Subcollection rules for transactions
       match /transactions/{transactionId} {
         allow get, list: if isOwner(menteeId) || isAdmin();
-        allow create: if isOwner(menteeId) || isAdmin();
+        allow create: if isOwner(menteeId) || isAdmin(); // Mentee can create for balance top-up, admin for refunds etc.
         allow update, delete: if isAdmin();
       }
     }
@@ -156,11 +157,11 @@ service cloud.firestore {
 
     /**
      * @description Rules for mentorship sessions. Sessions can be read by anyone to allow for public browsing.
-     *   Creation is allowed for admins only. Updates are allowed by the mentee who booked it or an admin.
+     *   Creation is allowed for admins only. Updates and deletes are also admin only.
      * @path /sessions/{sessionId}
      * @allow A guest visitor listing all sessions on the main dashboard. (list)
      * @deny A mentee trying to create a session from scratch. (create)
-     * @principle Enforces public read access while securing write operations. Admins manage content, users manage their own bookings.
+     * @principle Enforces public read access while securing write operations. Admins manage all content.
      */
     match /sessions/{sessionId} {
       allow get, list: if true;
