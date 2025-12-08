@@ -25,8 +25,8 @@ service cloud.firestore {
     // and are fully managed by admins.
     match /sessions/{sessionId} {
       allow get, list: if true;
-      allow create, update: if request.auth.uid != null || isAdmin(); // Allow booking and admin edits
-      allow delete: if isAdmin();
+      allow create: if request.auth != null; // Any logged-in user can book
+      allow update, delete: if isAdmin(); // Only admins can modify/delete
     }
     
     // Reviews can be read by anyone, created by any logged-in user,
