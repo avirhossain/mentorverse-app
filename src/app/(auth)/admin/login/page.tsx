@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
         variant: 'destructive',
         title: 'Sign-in failed',
         description:
-          error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password'
+          error.code === 'auth/invalid-credential'
             ? 'Invalid credentials. Please try again.'
             : 'An unexpected error occurred.',
       });

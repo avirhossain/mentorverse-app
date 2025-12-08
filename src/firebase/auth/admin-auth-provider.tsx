@@ -2,7 +2,7 @@
 
 import React, { type ReactNode } from 'react';
 import { useAdminUser } from './use-admin-user';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface AdminAuthProviderProps {
@@ -17,13 +17,20 @@ interface AdminAuthProviderProps {
 export function AdminAuthProvider({ children }: AdminAuthProviderProps) {
   const { isAdmin, isUserLoading } = useAdminUser();
   const router = useRouter();
+  const pathname = usePathname();
 
   React.useEffect(() => {
-    // If the user check is complete and the user is not an admin, redirect.
+    // If auth check is done, user is not an admin, and they are NOT on the login page...
     if (!isUserLoading && !isAdmin) {
-      router.push('/admin/login');
+       // Redirect them to the login page.
+       router.push('/admin/login');
     }
-  }, [isAdmin, isUserLoading, router]);
+     // If auth check is done, user IS an admin, and they are on the login page...
+    if (!isUserLoading && isAdmin && pathname === '/admin/login') {
+      // Redirect them to the main admin dashboard.
+      router.push('/admin');
+    }
+  }, [isAdmin, isUserLoading, router, pathname]);
 
   // While checking, show a loading state to prevent flashing content.
   if (isUserLoading) {
@@ -45,6 +52,6 @@ export function AdminAuthProvider({ children }: AdminAuthProviderProps) {
     return <>{children}</>;
   }
 
-  // If not loading and not an admin, render nothing as a redirect is in progress.
+  // If redirecting, or if user is not an admin, render null.
   return null;
 }
