@@ -15,10 +15,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const navLinks = [
-  { href: '/mentors', label: 'Mentors' },
+  { href: '/', label: 'Home' },
+  { href: '/tips', label: 'Tips' },
   { href: '/sessions', label: 'Sessions' },
-  { href: '/about', label: 'About' },
-  { href: '/contact', label: 'Contact' },
 ];
 
 export function MenteeHeader() {
@@ -69,6 +68,12 @@ export function MenteeHeader() {
               {link.label}
             </Link>
           ))}
+           <Link
+              href="/mentors"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Mentors
+            </Link>
         </nav>
         <div className="ml-auto flex items-center gap-4">
           {isUserLoading ? null : user ? (
