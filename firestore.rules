@@ -7,9 +7,38 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.admin == true;
     }
 
+    // Mentees can only read/write their own profile. Admins can manage all.
+    match /mentees/{menteeId} {
+      allow read, update: if request.auth.uid == menteeId || isAdmin();
+      allow create, delete: if isAdmin();
+    }
+
+    // Mentors are publicly readable, but only managed by admins.
+    match /mentors/{mentorId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Sessions are publicly readable, but only managed by admins.
     match /sessions/{sessionId} {
-      allow get, list: if true;           // anyone can read
-      allow create, update, delete: if isAdmin();  // only admins can write
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // All other collections are admin-only for all operations.
+    match /disbursements/{disbursementId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+       allow read: if true;
+       allow create: if request.auth.uid != null; // Allow logged-in users to create reviews
+       allow update, delete: if isAdmin();
+    }
+    
+    match /tips/{tipId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }
