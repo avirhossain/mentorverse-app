@@ -2,6 +2,6 @@
 
 import { MenteeDashboard } from '@/components/mentee/MenteeDashboard';
 
-export default function MenteeHomePage() {
+export default function MenteeDashboardPage() {
   return <MenteeDashboard />;
 }

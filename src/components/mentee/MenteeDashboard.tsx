@@ -1,36 +1,33 @@
 'use client';
-import { FeaturedMentors } from '@/components/mentee/FeaturedMentors';
-import { UpcomingSessions } from '@/components/mentee/UpcomingSessions';
-import { Button } from '@/components/ui/button';
-import Image from 'next/image';
+
+import { useUser } from '@/firebase';
+import { MySessions } from './MySessions';
+import { FeaturedMentors } from './FeaturedMentors';
+import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 
 export function MenteeDashboard() {
+  const { user } = useUser();
+
   return (
-    <>
-      <section className="relative h-[60vh] w-full">
-        <Image
-          src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop"
-          alt="Mentorship"
-          fill
-          className="object-cover"
-          priority
-          data-ai-hint="people working"
-        />
-        <div className="absolute inset-0 bg-black/50" />
-        <div className="relative z-10 flex h-full flex-col items-center justify-center text-center text-white">
-          <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
-            Your dream and journey starts now.
-          </h1>
-          <p className="mt-4 max-w-2xl text-lg text-gray-200">
-            Connect with experienced mentors who can guide you to success.
-          </p>
-          <Button size="lg" className="mt-8">
-            Browse Mentors
-          </Button>
-        </div>
-      </section>
-      <FeaturedMentors />
-      <UpcomingSessions />
-    </>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold tracking-tight mb-4">
+        Welcome, {user?.displayName || 'Mentee'}!
+      </h1>
+      <p className="text-muted-foreground mb-8">
+        Here's a quick overview of your mentorship journey.
+      </p>
+
+      <div className="grid gap-8">
+        <MySessions />
+        <Card>
+           <CardHeader>
+             <CardTitle>Discover New Mentors</CardTitle>
+           </CardHeader>
+           <CardContent>
+            <FeaturedMentors />
+           </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
