@@ -4,9 +4,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      // This rule checks if a user has a custom claim 'admin' set to true.
-      // This claim must be set via the Firebase Admin SDK on a server.
-      return request.auth != null && request.auth.token.admin == true;
+      // This rule checks if a user's email is 'avirhossain@gmail.com'.
+      // For production, it's recommended to use custom claims instead of hardcoding emails.
+      return request.auth != null && request.auth.token.email == 'avirhossain@gmail.com';
     }
 
     // Mentees: Can only read/write their own profile.
