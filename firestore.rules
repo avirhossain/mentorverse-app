@@ -165,8 +165,7 @@ service cloud.firestore {
      * @principle Enforces document-level access control using a denormalized `menteeId` field.
      */
     match /sessions/{sessionId} {
-      allow get: if isAdmin() || isMenteeOnExistingDoc();
-      allow list: if true; // Allow public listing for the dashboard
+      allow get, list: if true;
       allow create: if isAdmin() || (isSignedIn() && isMenteeOnIncomingDoc());
       allow update: if isAdmin() && isExistingDoc() && isMenteeIdImmutable();
       allow delete: if isAdmin() && isExistingDoc();
