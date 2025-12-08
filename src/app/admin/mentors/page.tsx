@@ -84,10 +84,19 @@ export default function MentorsPage() {
         description: `${data.name}'s profile has been updated.`,
       });
     } else {
-      MentorsAPI.createMentor(firestore, data as Mentor);
+      const mentorCount = mentors?.length || 0;
+      const newId = `MEN${(mentorCount + 1).toString().padStart(2, '0')}`;
+      const newMentor: Mentor = {
+        ...data,
+        id: newId,
+        createdAt: new Date().toISOString(),
+        isActive: data.isActive ?? true,
+      } as Mentor;
+
+      MentorsAPI.createMentor(firestore, newMentor);
       toast({
         title: 'Mentor Created',
-        description: `A new profile for ${data.name} has been created.`,
+        description: `A new profile for ${data.name} has been created with ID ${newId}.`,
       });
     }
     setIsFormOpen(false);
@@ -114,7 +123,10 @@ export default function MentorsPage() {
     
     return mentors.map((mentor) => (
       <TableRow key={mentor.id}>
-        <TableCell className="font-medium">{mentor.name}</TableCell>
+        <TableCell>
+          <div className="font-medium">{mentor.name}</div>
+          <div className="text-sm text-muted-foreground">{mentor.id}</div>
+        </TableCell>
         <TableCell>
           <Badge variant={mentor.isActive ? 'default' : 'secondary'}>
             {mentor.isActive ? 'Active' : 'Inactive'}

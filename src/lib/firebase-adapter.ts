@@ -94,9 +94,9 @@ export const MentorsAPI = {
   },
 
   createMentor: (db: Firestore, data: WithFieldValue<Mentor>) => {
-    const mentorsCol = collection(db, 'mentors');
-    addDoc(mentorsCol, data).catch(() => {
-      emitPermissionError(mentorsCol.path, 'create', data);
+    const mentorRef = doc(db, 'mentors', data.id);
+    setDoc(mentorRef, data).catch(() => {
+      emitPermissionError(mentorRef.path, 'create', data);
     });
   },
 
@@ -248,5 +248,3 @@ export const DisbursementAPI = {
     return getDocs(q);
   },
 };
-
-    
