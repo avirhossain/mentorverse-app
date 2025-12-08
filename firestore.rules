@@ -4,14 +4,14 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      // For now, we will consider everyone an admin to remove login barriers.
       // In a real app, this would be: request.auth != null && request.auth.token.admin == true;
-      return true;
+      // For now, we allow broad access for demonstration.
+      return request.auth != null;
     }
 
-    // Mentees: Allow anyone to create their own profile.
+    // Mentees: Logged-in users can manage their own profile.
     match /mentees/{menteeId} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null && request.auth.uid == menteeId;
     }
 
     // Mentors: Publicly readable, admin-only writes.
@@ -26,9 +26,9 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    // Reviews: Anyone can read or create, admins can delete.
+    // Reviews: Logged-in users can read/create, admins can delete.
     match /reviews/{reviewId} {
-       allow read, create: if true;
+       allow read, create: if request.auth != null;
        allow update, delete: if isAdmin();
     }
     
@@ -38,13 +38,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    // Admin-only collections
+    // --- Admin-only or user-specific subcollections ---
+
     match /disbursements/{disbursementId} {
       allow read, write: if isAdmin();
     }
 
     match /mentees/{menteeId}/transactions/{transactionId} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null && request.auth.uid == menteeId;
     }
     
     match /mentors/{mentorId}/payouts/{payoutId} {
