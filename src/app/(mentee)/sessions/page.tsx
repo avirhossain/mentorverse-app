@@ -12,24 +12,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit, orderBy, getDoc, doc } from 'firebase/firestore';
+import { collection, query, where, limit, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect, useState } from 'react';
-
-type SessionWithMentorName = Session & { mentorName: string };
 
 export default function SessionsPage() {
   const firestore = useFirestore();
-  const [sessionsWithMentors, setSessionsWithMentors] = useState<SessionWithMentorName[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
 
   const sessionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
       collection(firestore, 'sessions'),
-      where('status', 'in', ['pending', 'confirmed']),
-      where('sessionType', 'in', ['Free', 'Paid']),
+      where('isActive', '==', true),
       orderBy('scheduledDate', 'asc'),
       limit(20)
     );
@@ -37,53 +30,10 @@ export default function SessionsPage() {
 
   const {
     data: sessions,
-    isLoading: sessionsLoading,
-    error: sessionsError,
+    isLoading,
+    error,
   } = useCollection<Session>(sessionsQuery);
 
-  useEffect(() => {
-    if (sessionsLoading) {
-      setIsLoading(true);
-      return;
-    }
-    if (sessionsError) {
-      setError(sessionsError);
-      setIsLoading(false);
-      return;
-    }
-
-    if (!sessions || !firestore) {
-      setIsLoading(false);
-      setSessionsWithMentors([]);
-      return;
-    }
-
-    const fetchMentorNames = async () => {
-      setIsLoading(true);
-      try {
-        const enrichedSessions = await Promise.all(
-          sessions.map(async (session) => {
-            let mentorName = session.mentorName || '...'; // Use existing if available
-            if (!session.mentorName && session.mentorId) {
-              const mentorRef = doc(firestore, 'mentors', session.mentorId);
-              const mentorSnap = await getDoc(mentorRef);
-              if (mentorSnap.exists()) {
-                mentorName = mentorSnap.data().name || 'Mentor';
-              }
-            }
-            return { ...session, mentorName };
-          })
-        );
-        setSessionsWithMentors(enrichedSessions);
-      } catch (e: any) {
-        setError(e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMentorNames();
-  }, [sessions, sessionsLoading, sessionsError, firestore]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -100,13 +50,13 @@ export default function SessionsPage() {
       return <p className="text-center text-destructive">Error: {error.message}</p>
     }
 
-    if(sessionsWithMentors.length === 0) {
+    if(!sessions || sessions.length === 0) {
       return <p className="text-center text-muted-foreground">No sessions found.</p>
     }
 
     return (
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {sessionsWithMentors.map((session) => (
+        {sessions.map((session) => (
           <SessionCard key={session.id} session={session} />
         ))}
       </div>
@@ -157,3 +107,5 @@ export default function SessionsPage() {
     </div>
   );
 }
+
+    

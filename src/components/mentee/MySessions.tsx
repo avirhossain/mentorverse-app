@@ -1,6 +1,6 @@
 'use client';
 import { SessionCard } from './SessionCard';
-import type { Session } from '@/lib/types';
+import type { Booking } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where, limit, orderBy } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
@@ -10,22 +10,22 @@ export function MySessions() {
   const firestore = useFirestore();
   const { user } = useUser();
 
-  const sessionsQuery = useMemoFirebase(() => {
+  const bookingsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
-      collection(firestore, 'sessions'),
+      collection(firestore, 'bookings'),
       where('menteeId', '==', user.uid),
-      where('status', 'in', ['confirmed', 'pending']),
+      where('status', '==', 'confirmed'),
       orderBy('scheduledDate', 'asc'),
       limit(3)
     );
   }, [firestore, user]);
 
   const {
-    data: sessions,
+    data: bookings,
     isLoading,
     error,
-  } = useCollection<Session & { mentorName: string }>(sessionsQuery);
+  } = useCollection<Booking>(bookingsQuery);
 
   const renderContent = () => {
     if (isLoading) {
@@ -46,7 +46,7 @@ export function MySessions() {
       );
     }
 
-    if (!sessions || sessions.length === 0) {
+    if (!bookings || bookings.length === 0) {
       return (
         <CardDescription>
           You have no upcoming sessions booked.
@@ -56,12 +56,26 @@ export function MySessions() {
 
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {sessions.map((session) => (
-          <SessionCard
-            key={session.id}
-            session={{ ...session, mentorName: session.mentorName || '...' }}
-          />
-        ))}
+        {bookings.map((booking) => {
+          // Adapt the booking object to the SessionCard props
+          const sessionLike = {
+            ...booking,
+            name: booking.sessionName,
+            // These fields might not exist on booking, provide defaults
+            tag: undefined, 
+            offerings: undefined,
+            bestSuitedFor: undefined,
+            requirements: undefined,
+            sessionType: booking.sessionFee === 0 ? 'Free' : 'Paid',
+          };
+          return (
+            <SessionCard
+              key={booking.id}
+              session={sessionLike}
+              isBooking
+            />
+          );
+        })}
       </div>
     );
   };
@@ -77,3 +91,5 @@ export function MySessions() {
     </Card>
   );
 }
+
+    

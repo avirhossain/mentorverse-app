@@ -40,30 +40,39 @@ export interface Session {
   id: string; // Corresponds to document ID
   mentorId: string;
   mentorName: string; // denormalized for easier display
-  menteeId: string;
   name: string;
   tag?: string;
   offerings?: string;
   bestSuitedFor?: string;
   requirements?: string;
   sessionType: 'Free' | 'Paid' | 'Exclusive';
+  scheduledDate: string; // YYYY-MM-DD
+  scheduledTime: string; // HH:mm
+  sessionFee: number;
+  isActive?: boolean;
+}
+
+export interface Booking {
+  id: string; // Corresponds to document ID
+  sessionId: string;
+  sessionName: string; // Denormalized name of the session.
+  mentorId: string;
+  mentorName: string;
+  menteeId: string;
+  menteeName: string;
   bookingTime: string; // ISO 8601 date string
   scheduledDate: string; // YYYY-MM-DD
   scheduledTime: string; // HH:mm
-  bookedSlotId?: string;
-  status: 'pending' | 'confirmed' | 'started' | 'completed' | 'cancelled';
+  status: 'confirmed' | 'started' | 'completed' | 'cancelled';
   meetingUrl?: string;
-  meetingStartedAt?: string; // ISO 8601 date string
-  meetingEndedAt?: string; // ISO 8601 date string
-  mentorNotes?: string;
-  menteeReviewId?: string;
   sessionFee: number;
   adminDisbursementStatus: 'pending' | 'paid';
 }
 
+
 export interface Review {
   id: string; // Corresponds to document ID
-  sessionId: string;
+  bookingId: string;
   mentorId: string;
   menteeId: string;
   rating: number;
@@ -85,7 +94,7 @@ export interface Disbursement {
   id: string; // Corresponds to document ID
   mentorId: string;
   totalAmount: number;
-  sessions: string[]; // Array of session IDs
+  bookingIds: string[]; // Array of booking IDs
   status: 'pending' | 'paid';
   paidAt?: string; // ISO 8601 date string
   createdAt: string; // ISO 8601 date string
@@ -108,3 +117,5 @@ export interface Payout {
   amount: number;
   createdAt: string; // ISO 8601 date string
 }
+
+    

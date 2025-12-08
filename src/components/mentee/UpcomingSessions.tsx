@@ -2,24 +2,17 @@
 import { SessionCard } from './SessionCard';
 import type { Session } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit, orderBy, getDoc, doc } from 'firebase/firestore';
+import { collection, query, where, limit, orderBy } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
-import { useEffect, useState } from 'react';
-
-type SessionWithMentorName = Session & { mentorName: string };
 
 export function UpcomingSessions() {
   const firestore = useFirestore();
-  const [sessionsWithMentors, setSessionsWithMentors] = useState<SessionWithMentorName[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
 
   const sessionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
       collection(firestore, 'sessions'),
-      where('status', 'in', ['pending', 'confirmed']),
-      where('sessionType', 'in', ['Free', 'Paid']),
+      where('isActive', '==', true),
       orderBy('scheduledDate', 'asc'),
       limit(6)
     );
@@ -27,53 +20,9 @@ export function UpcomingSessions() {
 
   const {
     data: sessions,
-    isLoading: sessionsLoading,
-    error: sessionsError,
+    isLoading,
+    error,
   } = useCollection<Session>(sessionsQuery);
-
-  useEffect(() => {
-    if (sessionsLoading) {
-      setIsLoading(true);
-      return;
-    }
-    if (sessionsError) {
-      setError(sessionsError);
-      setIsLoading(false);
-      return;
-    }
-
-    if (!sessions || !firestore) {
-      setIsLoading(false);
-      setSessionsWithMentors([]);
-      return;
-    }
-
-    const fetchMentorNames = async () => {
-      setIsLoading(true);
-      try {
-        const enrichedSessions = await Promise.all(
-          sessions.map(async (session) => {
-            let mentorName = '...';
-            if (session.mentorId) {
-              const mentorRef = doc(firestore, 'mentors', session.mentorId);
-              const mentorSnap = await getDoc(mentorRef);
-              if (mentorSnap.exists()) {
-                mentorName = mentorSnap.data().name || 'Mentor';
-              }
-            }
-            return { ...session, mentorName };
-          })
-        );
-        setSessionsWithMentors(enrichedSessions);
-      } catch (e: any) {
-        setError(e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMentorNames();
-  }, [sessions, sessionsLoading, sessionsError, firestore]);
 
 
   const renderContent = () => {
@@ -95,7 +44,7 @@ export function UpcomingSessions() {
       );
     }
 
-    if (sessionsWithMentors.length === 0) {
+    if (!sessions || sessions.length === 0) {
       return (
         <p className="mt-10 text-center text-muted-foreground">
           No upcoming sessions scheduled. Check back soon!
@@ -105,7 +54,7 @@ export function UpcomingSessions() {
 
     return (
       <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {sessionsWithMentors.map((session) => (
+        {sessions.map((session) => (
           <SessionCard
             key={session.id}
             session={session}
@@ -129,3 +78,5 @@ export function UpcomingSessions() {
     </section>
   );
 }
+
+    

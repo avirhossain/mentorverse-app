@@ -126,7 +126,7 @@
     },
     "session": {
       "title": "Session",
-      "description": "Represents a booked session between a mentor and a mentee.",
+      "description": "Represents a session offering created by an Admin. This is a template for what can be booked.",
       "type": "object",
       "properties": {
         "id": {
@@ -139,12 +139,9 @@
           "type": "string",
           "description": "Denormalized mentor name for easier querying and display."
         },
-        "menteeId": {
-          "type": "string"
-        },
         "name": {
           "type": "string",
-          "description": "The name of the session."
+          "description": "The name of the session offering."
         },
         "tag": {
           "type": "string",
@@ -170,6 +167,62 @@
             "Exclusive"
           ]
         },
+        "scheduledDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "scheduledTime": {
+          "type": "string",
+          "format": "time"
+        },
+        "sessionFee": {
+          "type": "number"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the session offering is active and bookable."
+        }
+      },
+      "required": [
+        "id",
+        "mentorId",
+        "mentorName",
+        "name",
+        "sessionType",
+        "scheduledDate",
+        "scheduledTime",
+        "sessionFee"
+      ]
+    },
+    "booking": {
+      "title": "Booking",
+      "description": "Represents a confirmed booking of a session by a mentee.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique ID for the booking."
+        },
+        "sessionId": {
+          "type": "string",
+          "description": "ID of the session template that was booked."
+        },
+        "sessionName": {
+          "type": "string",
+          "description": "Denormalized name of the session."
+        },
+        "mentorId": {
+          "type": "string"
+        },
+        "mentorName": {
+          "type": "string"
+        },
+        "menteeId": {
+          "type": "string"
+        },
+        "menteeName": {
+          "type": "string"
+        },
         "bookingTime": {
           "type": "string",
           "format": "date-time"
@@ -182,13 +235,9 @@
           "type": "string",
           "format": "time"
         },
-        "bookedSlotId": {
-          "type": "string"
-        },
         "status": {
           "type": "string",
           "enum": [
-            "pending",
             "confirmed",
             "started",
             "completed",
@@ -198,20 +247,6 @@
         "meetingUrl": {
           "type": "string",
           "format": "uri"
-        },
-        "meetingStartedAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "meetingEndedAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "mentorNotes": {
-          "type": "string"
-        },
-        "menteeReviewId": {
-          "type": "string"
         },
         "sessionFee": {
           "type": "number"
@@ -226,16 +261,14 @@
       },
       "required": [
         "id",
+        "sessionId",
         "mentorId",
-        "mentorName",
         "menteeId",
         "bookingTime",
         "scheduledDate",
         "scheduledTime",
         "status",
-        "sessionFee",
-        "name",
-        "sessionType"
+        "sessionFee"
       ]
     },
     "review": {
@@ -246,8 +279,9 @@
         "id": {
           "type": "string"
         },
-        "sessionId": {
-          "type": "string"
+        "bookingId": {
+          "type": "string",
+          "description": "The ID of the booking being reviewed."
         },
         "mentorId": {
           "type": "string"
@@ -268,7 +302,7 @@
       },
       "required": [
         "id",
-        "sessionId",
+        "bookingId",
         "mentorId",
         "menteeId",
         "rating"
@@ -324,11 +358,12 @@
         "totalAmount": {
           "type": "number"
         },
-        "sessions": {
+        "bookingIds": {
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "description": "Array of booking IDs included in this disbursement."
         },
         "status": {
           "type": "string",
@@ -349,7 +384,7 @@
         "id",
         "mentorId",
         "totalAmount",
-        "sessions",
+        "bookingIds",
         "status",
         "adminId"
       ]
@@ -450,7 +485,13 @@
       "schema": {
         "$ref": "#/entities/session"
       },
-      "description": "Stores all session bookings."
+      "description": "Stores all available session templates. Managed by admins."
+    },
+    "/bookings/{bookingId}": {
+      "schema": {
+        "$ref": "#/entities/booking"
+      },
+      "description": "Stores all confirmed bookings by mentees."
     },
     "/reviews/{reviewId}": {
       "schema": {
@@ -472,3 +513,5 @@
     }
   }
 }
+
+    

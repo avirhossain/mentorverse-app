@@ -23,6 +23,7 @@ import type {
   Mentee,
   Mentor,
   Session,
+  Booking,
   Review,
   Tip,
   Disbursement,
@@ -118,17 +119,21 @@ export const MentorsAPI = {
   },
 };
 
-// ------------------ SESSIONS ------------------
+// ------------------ SESSIONS (Templates managed by Admin) ------------------
 export const SessionsAPI = {
-  bookSession: (db: Firestore, data: WithFieldValue<Session>) => {
+  getSession: (db: Firestore, id: string) => {
+    return getDoc(doc(db, 'sessions', id));
+  },
+  
+  listSessions: (db: Firestore) => {
+    return getDocs(collection(db, 'sessions'));
+  },
+
+  createSession: (db: Firestore, data: WithFieldValue<Session>) => {
     const sessionsCol = collection(db, 'sessions');
     addDoc(sessionsCol, data).catch(() => {
       emitPermissionError(sessionsCol.path, 'create', data);
     });
-  },
-
-  getSession: (db: Firestore, id: string) => {
-    return getDoc(doc(db, 'sessions', id));
   },
 
   updateSession: (
@@ -141,17 +146,50 @@ export const SessionsAPI = {
       emitPermissionError(sessionRef.path, 'update', data);
     });
   },
+  
+   deleteSession: (db: Firestore, id: string) => {
+    const sessionRef = doc(db, 'sessions', id);
+    deleteDoc(sessionRef).catch(() => {
+      emitPermissionError(sessionRef.path, 'delete');
+    });
+  },
+};
 
-  listSessionsForMentee: (db: Firestore, menteeId: string) => {
-    const q = query(collection(db, 'sessions'), where('menteeId', '==', menteeId));
+// ------------------ BOOKINGS ------------------
+export const BookingsAPI = {
+  createBooking: (db: Firestore, data: WithFieldValue<Booking>) => {
+    const bookingRef = doc(db, 'bookings', data.id);
+    setDoc(bookingRef, data).catch(() => {
+      emitPermissionError(bookingRef.path, 'create', data);
+    });
+  },
+
+  getBooking: (db: Firestore, id: string) => {
+    return getDoc(doc(db, 'bookings', id));
+  },
+
+  updateBooking: (
+    db: Firestore,
+    id: string,
+    data: Partial<WithFieldValue<Booking>>
+  ) => {
+    const bookingRef = doc(db, 'bookings', id);
+    updateDoc(bookingRef, data).catch(() => {
+      emitPermissionError(bookingRef.path, 'update', data);
+    });
+  },
+
+  listBookingsForMentee: (db: Firestore, menteeId: string) => {
+    const q = query(collection(db, 'bookings'), where('menteeId', '==', menteeId));
     return getDocs(q);
   },
 
-  listSessionsForMentor: (db: Firestore, mentorId: string) => {
-    const q = query(collection(db, 'sessions'), where('mentorId', '==', mentorId));
+  listBookingsForMentor: (db: Firestore, mentorId: string) => {
+    const q = query(collection(db, 'bookings'), where('mentorId', '==', mentorId));
     return getDocs(q);
   },
 };
+
 
 // ------------------ REVIEWS ------------------
 export const ReviewsAPI = {
@@ -205,8 +243,10 @@ export const DisbursementAPI = {
     });
   },
 
-  listForSession: (db: Firestore, sessionId: string) => {
-    const q = query(collection(db, 'disbursements'), where('sessions', 'array-contains', sessionId));
+  listForBooking: (db: Firestore, bookingId: string) => {
+    const q = query(collection(db, 'disbursements'), where('bookingIds', 'array-contains', bookingId));
     return getDocs(q);
   },
 };
+
+    

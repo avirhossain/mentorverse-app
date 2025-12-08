@@ -26,6 +26,15 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
+    // Bookings: Mentees can create their own bookings and read them.
+    // Admins can read all bookings.
+    match /bookings/{bookingId} {
+      allow get: if request.auth != null && (request.auth.uid == resource.data.menteeId || isAdmin());
+      allow list: if request.auth != null && (request.auth.uid == request.query.where.menteeId || isAdmin());
+      allow create: if request.auth != null && request.resource.data.menteeId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
     // Reviews: Publicly readable, logged-in users can create. Admins have full control.
     match /reviews/{reviewId} {
        allow get, list: if true;
@@ -54,3 +63,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
