@@ -39,51 +39,25 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { MentorForm } from '@/components/admin/MentorForm';
 import type { Mentor } from '@/lib/types';
-
-// Placeholder data
-const placeholderMentors: Mentor[] = [
-  {
-    id: 'M01',
-    name: 'Dr. Evelyn Reed',
-    email: 'evelyn.reed@example.com',
-    expertise: ['Quantum Physics', 'Astrobiology'],
-    totalSessions: 120,
-    ratingAvg: 4.9,
-    ratingCount: 45,
-    isActive: true,
-    createdAt: '2023-01-15T09:30:00Z',
-  },
-  {
-    id: 'M02',
-    name: 'Dr. Samuel Cortez',
-    email: 'samuel.cortez@example.com',
-    expertise: ['AI Ethics', 'Machine Learning'],
-    totalSessions: 85,
-    ratingAvg: 4.8,
-    ratingCount: 30,
-    isActive: true,
-    createdAt: '2023-02-20T11:00:00Z',
-  },
-  {
-    id: 'M03',
-    name: 'Alicia Chen',
-    email: 'alicia.chen@example.com',
-    expertise: ['Product Management', 'UX/UI Design'],
-    totalSessions: 210,
-    ratingAvg: 4.9,
-    ratingCount: 78,
-    isActive: false,
-    createdAt: '2022-11-10T14:00:00Z',
-  },
-];
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { MentorsAPI } from '@/lib/firebase-adapter';
+import { useToast } from '@/hooks/use-toast';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MentorsPage() {
-  const [mentors, setMentors] =
-    React.useState<Mentor[]>(placeholderMentors);
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
   const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [selectedMentor, setSelectedMentor] = React.useState<Mentor | null>(
-    null
-  );
+  const [selectedMentor, setSelectedMentor] = React.useState<Mentor | null>(null);
+
+  const mentorsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'mentors'), orderBy('createdAt', 'desc'));
+  }, [firestore]);
+
+  const { data: mentors, isLoading, error } = useCollection<Mentor>(mentorsQuery);
 
   const handleCreateNew = () => {
     setSelectedMentor(null);
@@ -95,11 +69,102 @@ export default function MentorsPage() {
     setIsFormOpen(true);
   };
 
+  const handleDelete = (mentorId: string) => {
+    if (!firestore) return;
+    MentorsAPI.deleteMentor(firestore, mentorId);
+    toast({ title: 'Mentor Deleted' });
+  };
+
   const handleFormSubmit = (data: Partial<Mentor>) => {
-    console.log('Form submitted', data);
-    // Here you would handle the actual data submission (create or update)
+    if (!firestore) return;
+    if (selectedMentor) {
+      MentorsAPI.updateMentor(firestore, selectedMentor.id, data);
+      toast({
+        title: 'Mentor Updated',
+        description: `${data.name}'s profile has been updated.`,
+      });
+    } else {
+      MentorsAPI.createMentor(firestore, data as Mentor);
+      toast({
+        title: 'Mentor Created',
+        description: `A new profile for ${data.name} has been created.`,
+      });
+    }
     setIsFormOpen(false);
   };
+
+  const renderTableBody = () => {
+    if (isLoading) {
+      return Array.from({ length: 3 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell colSpan={6}>
+            <Skeleton className="h-8 w-full" />
+          </TableCell>
+        </TableRow>
+      ));
+    }
+    
+    if (error) {
+       return <TableRow><TableCell colSpan={6} className="text-center text-destructive">Error loading mentors: {error.message}</TableCell></TableRow>
+    }
+    
+    if (!mentors || mentors.length === 0) {
+      return <TableRow><TableCell colSpan={6} className="text-center">No mentors found. Create one to get started.</TableCell></TableRow>
+    }
+    
+    return mentors.map((mentor) => (
+      <TableRow key={mentor.id}>
+        <TableCell className="font-medium">{mentor.name}</TableCell>
+        <TableCell>
+          <Badge variant={mentor.isActive ? 'default' : 'secondary'}>
+            {mentor.isActive ? 'Active' : 'Inactive'}
+          </Badge>
+        </TableCell>
+        <TableCell>
+          <div className="flex gap-1 flex-wrap">
+            {mentor.expertise?.slice(0, 2).map((exp) => (
+              <Badge key={exp} variant="outline">
+                {exp}
+              </Badge>
+            ))}
+          </div>
+        </TableCell>
+        <TableCell className="text-right">
+          {mentor.totalSessions || 0}
+        </TableCell>
+        <TableCell className="text-right">
+          {mentor.ratingAvg?.toFixed(1) || 'N/A'}
+        </TableCell>
+        <TableCell>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                aria-haspopup="true"
+                size="icon"
+                variant="ghost"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleEdit(mentor)}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => handleDelete(mentor.id)}
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+      </TableRow>
+    ))
+  }
 
   return (
     <>
@@ -123,7 +188,7 @@ export default function MentorsPage() {
           </DropdownMenu>
           <Button size="sm" variant="outline" className="h-8 gap-1">
             <File className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+            <span className="sr-only sm:not-sr-only sm:whitespace-rap">
               Export
             </span>
           </Button>
@@ -177,61 +242,18 @@ export default function MentorsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mentors.map((mentor) => (
-                <TableRow key={mentor.id}>
-                  <TableCell className="font-medium">{mentor.name}</TableCell>
-                  <TableCell>
-                    <Badge variant={mentor.isActive ? 'default' : 'secondary'}>
-                      {mentor.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1 flex-wrap">
-                      {mentor.expertise?.slice(0, 2).map((exp) => (
-                        <Badge key={exp} variant="outline">
-                          {exp}
-                        </Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {mentor.totalSessions}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {mentor.ratingAvg?.toFixed(1)}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          aria-haspopup="true"
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEdit(mentor)}>
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {renderTableBody()}
             </TableBody>
           </Table>
         </CardContent>
-        <CardFooter>
-          <div className="text-xs text-muted-foreground">
-            Showing <strong>1-{mentors.length}</strong> of{' '}
-            <strong>{mentors.length}</strong> mentors
-          </div>
-        </CardFooter>
+        {mentors && (
+            <CardFooter>
+            <div className="text-xs text-muted-foreground">
+                Showing <strong>1-{mentors.length}</strong> of{' '}
+                <strong>{mentors.length}</strong> mentors
+            </div>
+            </CardFooter>
+        )}
       </Card>
     </>
   );
