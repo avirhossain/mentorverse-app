@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter, usePathname } from 'next/navigation';
@@ -12,6 +12,15 @@ export function AuthListener({ children }: AuthListenerProps) {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    // If the user is loaded, is logged in, and is on the login page,
+    // redirect them to the home page.
+    if (!isUserLoading && user && pathname === '/login') {
+      router.push('/');
+    }
+  }, [user, isUserLoading, pathname, router]);
+
 
   // If the user is loading, show a generic skeleton loader.
   if (isUserLoading) {
@@ -28,11 +37,9 @@ export function AuthListener({ children }: AuthListenerProps) {
     );
   }
 
-  // If the user is logged in and tries to access the login page,
-  // redirect them to the home page.
+  // If a redirect is in progress, render null.
   if (user && pathname === '/login') {
-    router.push('/');
-    return null; // Render nothing while redirecting
+    return null;
   }
 
   // If the user is not logged in, show the children (e.g., the AuthForm).
