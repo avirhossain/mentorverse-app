@@ -2,66 +2,14 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper functions
-    function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
-    }
-    
+
     function isAdmin() {
-      // Check for the 'admin' custom claim on the user's token.
       return request.auth != null && request.auth.token.admin == true;
     }
 
-    // MENTORS: Public can read, Admins can write
-    match /mentors/{mentorId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-    
-    // MENTEES: Users can read/write their own data. Admins can read all.
-    match /mentees/{menteeId} {
-      allow get: if isOwner(menteeId) || isAdmin();
-      allow create, update: if isOwner(menteeId);
-      allow list: if isAdmin();
-      allow delete: if false; // Nobody can delete a mentee record from the client
-    }
-    
-    // SESSIONS: Public can read, Admins can write
     match /sessions/{sessionId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
-    }
-
-    // REVIEWS: Users can create. Admins can moderate. Public can read.
-    match /reviews/{reviewId} {
-      allow get, list: if true;
-      allow create: if request.auth != null; // Any signed-in user can create
-      allow update, delete: if isAdmin();
-    }
-    
-    // TIPS: Public can read, Admins can write
-    match /tips/{tipId} {
-       allow get, list: if true;
-       allow create, update, delete: if isAdmin();
-    }
-    
-    // DISBURSEMENTS: Admin-only access
-    match /disbursements/{disbursementId} {
-      allow read, write: if isAdmin();
-    }
-    
-    // TRANSACTIONS: Subcollection, only owner and admins can access
-    match /mentees/{menteeId}/transactions/{transactionId} {
-      allow read, list: if isOwner(menteeId) || isAdmin();
-      allow create: if isOwner(menteeId); // Transactions are created for the user
-      allow update, delete: if false; // Never mutable from client
-    }
-    
-     // PAYOUTS: Subcollection, only mentor (via backend) and admins can access
-    match /mentors/{mentorId}/payouts/{payoutId} {
-      allow read, list: if isAdmin(); // For now, only admins can view payouts
-      allow write: if false; // Payouts should be created via a secure backend process
+      allow get, list: if true;           // anyone can read
+      allow create, update, delete: if isAdmin();  // only admins can write
     }
   }
 }
