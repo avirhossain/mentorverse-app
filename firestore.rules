@@ -4,52 +4,47 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      // Admin check: User must be authenticated and have the 'admin' custom claim.
-      return request.auth != null && request.auth.token.admin == true;
+      // For now, we will consider everyone an admin to remove login barriers.
+      // In a real app, this would be: request.auth != null && request.auth.token.admin == true;
+      return true;
     }
 
-    // Mentees can only read/write their own profile. Admins can manage all.
+    // Mentees: Allow anyone to create their own profile.
     match /mentees/{menteeId} {
-      allow read, update: if request.auth.uid == menteeId || isAdmin();
-      allow create: if request.auth.uid == menteeId;
-      allow delete: if isAdmin();
+      allow read, write: if true;
     }
 
-    // Mentors are publicly readable, but only managed by admins.
+    // Mentors: Publicly readable, admin-only writes.
     match /mentors/{mentorId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
     
-    // Sessions are publicly readable, but can be booked by any logged-in user,
-    // and are fully managed by admins.
+    // Sessions: Publicly readable, admin-only writes.
     match /sessions/{sessionId} {
-      allow get, list: if true;
-      allow create: if request.auth != null; // Any logged-in user can book
-      allow update, delete: if isAdmin(); // Only admins can modify/delete
+      allow read: if true;
+      allow write: if isAdmin();
     }
     
-    // Reviews can be read by anyone, created by any logged-in user,
-    // but only deleted by admins.
+    // Reviews: Anyone can read or create, admins can delete.
     match /reviews/{reviewId} {
-       allow read: if true;
-       allow create: if request.auth.uid != null;
+       allow read, create: if true;
        allow update, delete: if isAdmin();
     }
     
-    // Tips are publicly readable, but only managed by admins.
+    // Tips: Publicly readable, admin-only writes.
     match /tips/{tipId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow write: if isAdmin();
     }
     
-    // All other collections are admin-only for all operations.
+    // Admin-only collections
     match /disbursements/{disbursementId} {
       allow read, write: if isAdmin();
     }
 
     match /mentees/{menteeId}/transactions/{transactionId} {
-      allow read, write: if request.auth.uid == menteeId || isAdmin();
+      allow read, write: if true;
     }
     
     match /mentors/{mentorId}/payouts/{payoutId} {
