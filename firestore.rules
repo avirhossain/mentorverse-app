@@ -188,7 +188,7 @@ service cloud.firestore {
      * @path /tips/{tipId}
      */
     match /tips/{tipId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create, update, delete: if isAdmin();
     }
 
