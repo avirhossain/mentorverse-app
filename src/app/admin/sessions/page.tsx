@@ -56,6 +56,10 @@ const getTypeBadgeVariant = (type: Session['sessionType']) => {
 }
 
 const getStatus = (session: Session): { text: string; variant: "default" | "secondary" | "destructive" } => {
+    // Ensure date and time are valid before parsing
+    if (!session.scheduledDate || !session.scheduledTime) {
+        return { text: 'Invalid Date', variant: 'destructive' };
+    }
     const sessionDate = parseISO(`${session.scheduledDate}T${session.scheduledTime}`);
     if (isPast(sessionDate)) {
         return { text: 'Expired', variant: 'destructive' };
@@ -88,7 +92,7 @@ export default function SessionsPage() {
     if (!firestore) return null;
     return query(collection(firestore, 'mentors'), where('isActive', '==', true));
   }, [firestore]);
-  const { data: mentors } = useCollection<Mentor>(mentorsQuery);
+  const { data: mentors, isLoading: isLoadingMentors } = useCollection<Mentor>(mentorsQuery);
 
 
   const handleCreateNew = () => {
@@ -126,7 +130,7 @@ export default function SessionsPage() {
     if (isLoading) {
       return Array.from({ length: 5 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell colSpan={6}>
+          <TableCell colSpan={7}>
             <Skeleton className="h-8 w-full" />
           </TableCell>
         </TableRow>
@@ -134,11 +138,11 @@ export default function SessionsPage() {
     }
     
     if (error) {
-       return <TableRow><TableCell colSpan={6} className="text-center text-destructive">Error loading sessions: {error.message}</TableCell></TableRow>
+       return <TableRow><TableCell colSpan={7} className="text-center text-destructive">Error loading sessions: {error.message}</TableCell></TableRow>
     }
     
     if (!sessions || sessions.length === 0) {
-      return <TableRow><TableCell colSpan={6} className="text-center">No sessions found.</TableCell></TableRow>
+      return <TableRow><TableCell colSpan={7} className="text-center">No sessions found.</TableCell></TableRow>
     }
     
     return sessions.map((session) => {
@@ -150,7 +154,7 @@ export default function SessionsPage() {
           </TableCell>
           <TableCell>{session.mentorName}</TableCell>
           <TableCell>
-            {format(new Date(session.scheduledDate), 'MMM d, yyyy')} at {session.scheduledTime}
+            {session.scheduledDate ? format(new Date(session.scheduledDate), 'MMM d, yyyy') : 'N/A'} at {session.scheduledTime}
           </TableCell>
           <TableCell>
              <Badge variant={getTypeBadgeVariant(session.sessionType)}>
