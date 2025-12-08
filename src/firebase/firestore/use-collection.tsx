@@ -9,8 +9,6 @@ import {
   QuerySnapshot,
   CollectionReference,
 } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 /** Utility type to add an 'id' field to a given type T. */
 export type WithId<T> = T & { id: string };
@@ -84,28 +82,14 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        let path = 'unknown/path';
-        try {
-           // This logic extracts the path from either a ref or a query
-           path =
-            memoizedTargetRefOrQuery.type === 'collection'
-              ? (memoizedTargetRefOrQuery as CollectionReference).path
-              : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
-        } catch (e) {
-            console.error("Could not determine path for Firestore error", e);
-        }
-        
-        const contextualError = new FirestorePermissionError({
-          operation: 'list',
-          path,
-        });
-
-        setError(contextualError);
-        setData(null);
+        // This is a critical change. Instead of throwing a global error that crashes the app,
+        // we will set the local error state and return empty data. This allows the UI
+        // to handle the error gracefully (e.g., show a "No sessions found" message)
+        // instead of causing a redirect or showing a global error overlay.
+        console.error("Firestore Permission Error in useCollection:", error);
+        setError(error);
+        setData([]); // Set data to an empty array to prevent UI from breaking.
         setIsLoading(false);
-
-        // trigger global error propagation
-        errorEmitter.emit('permission-error', contextualError);
       }
     );
 
