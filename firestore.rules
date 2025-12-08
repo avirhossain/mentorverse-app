@@ -177,7 +177,7 @@ service cloud.firestore {
      * @path /reviews/{reviewId}
      */
     match /reviews/{reviewId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create: if isMenteeOnIncomingDoc();
       allow update: if false; // Reviews are immutable.
       allow delete: if isAdmin();
@@ -197,7 +197,7 @@ service cloud.firestore {
      * @path /disbursements/{disbursementId}
      */
     match /disbursements/{disbursementId} {
-      allow all: if isAdmin();
+      allow get, list, create, update, delete: if isAdmin();
     }
 
 
