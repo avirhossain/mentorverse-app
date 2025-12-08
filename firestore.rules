@@ -146,8 +146,7 @@ service cloud.firestore {
      */
     match /mentors/{mentorId} {
       allow get, list: if true;
-      allow create: if isAdmin();
-      allow update, delete: if isAdmin() && isExistingDoc();
+      allow create, update, delete: if isAdmin();
 
       // Subcollection rules for payouts
       match /payouts/{payoutId} {
