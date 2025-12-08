@@ -15,7 +15,7 @@
  *
  * @structure
  * - Data Structure: The data is organized into top-level collections. User-specific data is
- *   sandboxed under `/users/{userId}`. Shared and public data like `/mentors`, `/sessions`,
+ *   sandboxed under `/mentees/{menteeId}`. Shared and public data like `/mentors`, `/sessions`,
  *   and `/recommendations` are in separate top-level collections to facilitate different
  *   access patterns.
  *
@@ -36,7 +36,7 @@
  *   which is critical for performance and scalability.
  *
  * @segregation
- * - Structural Segregation: Private mentee profiles (`/users`) are stored separately from
+ * - Structural Segregation: Private mentee profiles (`/mentees`) are stored separately from
  *   publicly readable mentor profiles (`/mentors`). This clear separation simplifies rules and
  *   makes it easy to grant broad read access to mentor data while keeping mentee data strictly private.
  */
@@ -97,20 +97,16 @@ service cloud.firestore {
     }
 
     /**
-     * Validates that the `id` field on an incoming user document matches the document's path ID (`userId`).
+     * Validates that the `id` field on an incoming user document matches the document's path ID (`menteeId`).
      * Enforces data consistency between the path and the document content on creation.
      */
-    function newUserDataIsValid(userId) {
-      return request.resource.data.id == userId;
+    function newMenteeDataIsValid(menteeId) {
+      return request.resource.data.id == menteeId;
     }
 
     /**
      * Ensures critical relational IDs cannot be changed after a document has been created.
      */
-    function isUserIdImmutable() {
-      return request.resource.data.id == resource.data.id;
-    }
-    
     function isMenteeIdImmutable() {
       return request.resource.data.menteeId == resource.data.menteeId;
     }
@@ -119,18 +115,25 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     /**
-     * @description Rules for the `users` collection, which stores mentee profile data.
-     * @path /users/{userId}
-     * @allow A mentee (auth.uid=`user_abc`) creating their own profile at `/users/user_abc`. (create)
-     * @deny Another user (auth.uid=`user_xyz`) trying to read the profile at `/users/user_abc`. (get)
+     * @description Rules for the `mentees` collection, which stores mentee profile data.
+     * @path /mentees/{menteeId}
+     * @allow A mentee (auth.uid=`user_abc`) creating their own profile at `/mentees/user_abc`. (create)
+     * @deny Another user (auth.uid=`user_xyz`) trying to read the profile at `/mentees/user_abc`. (get)
      * @principle Restricts access to a user's own data tree, enforcing strict ownership.
      */
-    match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false; // Disallow listing/querying the users collection to protect privacy.
-      allow create: if isOwner(userId) && newUserDataIsValid(userId);
-      allow update: if isOwner(userId) && isExistingDoc() && isUserIdImmutable();
-      allow delete: if isOwner(userId) && isExistingDoc();
+    match /mentees/{menteeId} {
+      allow get: if isOwner(menteeId) || isAdmin();
+      allow list: if isAdmin(); // Only admins can list all mentees.
+      allow create: if isOwner(menteeId) && newMenteeDataIsValid(menteeId);
+      allow update: if (isOwner(menteeId) || isAdmin()) && isExistingDoc();
+      allow delete: if isAdmin() && isExistingDoc();
+
+      // Subcollection rules for transactions
+      match /transactions/{transactionId} {
+        allow get, list: if isOwner(menteeId) || isAdmin();
+        allow create: if isOwner(menteeId) || isAdmin();
+        allow update, delete: if isAdmin();
+      }
     }
 
     /**
@@ -145,6 +148,11 @@ service cloud.firestore {
       allow get, list: if isSignedIn();
       allow create: if isAdmin();
       allow update, delete: if isAdmin() && isExistingDoc();
+
+      // Subcollection rules for payouts
+      match /payouts/{payoutId} {
+        allow get, list, create, update, delete: if isAdmin();
+      }
     }
 
     /**
@@ -165,19 +173,34 @@ service cloud.firestore {
     }
     
     /**
-     * @description Rules for mentor recommendations. Recommendations can be read by the
-     *   associated mentee or any admin. All write operations are restricted to admins.
-     * @path /recommendations/{recommendationId}
-     * @allow An admin reading any recommendation document. (get)
-     * @deny A mentee trying to create their own recommendation. (create)
-     * @principle Secures data that is managed by admins but selectively readable by users.
+     * @description Rules for reviews. Reviews can be read by anyone, but only created
+     *   by the mentee associated with the session. Admins can delete reviews.
+     * @path /reviews/{reviewId}
      */
-    match /recommendations/{recommendationId} {
-      allow get: if isAdmin() || isMenteeOnExistingDoc();
-      allow list: if isAdmin(); // Only admins can list all recommendations.
-      allow create: if isAdmin();
-      allow update, delete: if isAdmin() && isExistingDoc();
+    match /reviews/{reviewId} {
+      allow get, list: if isSignedIn();
+      allow create: if isMenteeOnIncomingDoc();
+      allow update: if false; // Reviews are immutable.
+      allow delete: if isAdmin();
     }
+    
+    /**
+     * @description Rules for tips. Tips are managed by admins but readable by all signed-in users.
+     * @path /tips/{tipId}
+     */
+    match /tips/{tipId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Rules for disbursements. Fully admin-controlled.
+     * @path /disbursements/{disbursementId}
+     */
+    match /disbursements/{disbursementId} {
+      allow all: if isAdmin();
+    }
+
 
     /**
      * @description Security rules for the admin roles collection.
