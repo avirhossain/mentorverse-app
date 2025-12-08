@@ -4,9 +4,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isAdmin() {
-      // This rule checks if a user has the email 'avirhossain@gmail.com'.
+      // This rule checks if a user has an admin email.
       // For production, it's recommended to use custom claims instead of hardcoding emails.
-      return request.auth != null && request.auth.token.email == 'avirhossain@gmail.com';
+      return request.auth != null && (request.auth.token.email == 'avirhossain@gmail.com' || request.auth.token.email == 'sabina@gmail.com');
     }
 
     // Mentees: Can only read/write their own profile.

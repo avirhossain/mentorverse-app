@@ -31,7 +31,7 @@ export const useAdminUser = (): AdminAuthState => {
 
     // For development, we are checking the email directly.
     // In production, it's highly recommended to use custom claims.
-    const isAdminEmail = user.email === 'avirhossain@gmail.com';
+    const isAdminEmail = user.email === 'avirhossain@gmail.com' || user.email === 'sabina@gmail.com';
     setIsAdmin(isAdminEmail);
     setIsCheckingAdmin(false);
 
