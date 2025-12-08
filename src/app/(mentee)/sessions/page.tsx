@@ -14,22 +14,19 @@ import { Search } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, limit, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
 
 export default function SessionsPage() {
   const firestore = useFirestore();
-  const today = format(new Date(), 'yyyy-MM-dd');
 
   const sessionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
       collection(firestore, 'sessions'),
       where('isActive', '==', true),
-      where('scheduledDate', '>=', today),
       orderBy('scheduledDate', 'desc'),
       limit(20)
     );
-  }, [firestore, today]);
+  }, [firestore]);
 
   const {
     data: sessions,
