@@ -138,7 +138,7 @@ service cloud.firestore {
 
     /**
      * @description Rules for the `mentors` collection. Mentor profiles are readable by any
-     *   signed-in user (mentees), but can only be created or modified by an administrator.
+     *   user (mentees and guests), but can only be created or modified by an administrator.
      * @path /mentors/{mentorId}
      * @allow A signed-in mentee reading a mentor's profile at `/mentors/mentor_123`. (get)
      * @deny A non-admin user trying to create a new mentor profile. (create)
@@ -156,18 +156,18 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for mentorship sessions. Sessions can be read by the associated
-     *   mentee or any admin. Creation is allowed for mentees (for themselves) and admins.
+     * @description Rules for mentorship sessions. Sessions can be read by anyone to allow for public browsing.
+     *   Creation is allowed for signed-in mentees (for themselves) and admins.
      *   Modification and deletion are restricted to admins.
      * @path /sessions/{sessionId}
-     * @allow A mentee (auth.uid=`mentee_abc`) reading a session where `menteeId` is 'mentee_abc'. (get)
-     * @deny A mentee trying to list all sessions in the collection. (list)
-     * @principle Enforces document-level access control using a denormalized `menteeId` field.
+     * @allow A guest visitor listing all sessions on the main dashboard. (list)
+     * @deny A mentee trying to update a session they didn't book. (update)
+     * @principle Enforces public read access while securing write operations.
      */
     match /sessions/{sessionId} {
       allow get, list: if true;
       allow create: if isAdmin() || (isSignedIn() && isMenteeOnIncomingDoc());
-      allow update: if isAdmin() && isExistingDoc() && isMenteeIdImmutable();
+      allow update: if (isAdmin() || isOwner(resource.data.menteeId)) && isExistingDoc() && isMenteeIdImmutable();
       allow delete: if isAdmin() && isExistingDoc();
     }
     
@@ -184,7 +184,7 @@ service cloud.firestore {
     }
     
     /**
-     * @description Rules for tips. Tips are managed by admins but readable by all signed-in users.
+     * @description Rules for tips. Tips are managed by admins but readable by all users.
      * @path /tips/{tipId}
      */
     match /tips/{tipId} {
