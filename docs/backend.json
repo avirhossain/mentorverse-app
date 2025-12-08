@@ -1,391 +1,239 @@
-
 {
   "entities": {
-    "mentor": {
-      "title": "Mentor",
-      "description": "A mentor user with a full profile, availability, and rating.",
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Mentor's full name."
-        },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "description": "Mentor's email address."
-        },
-        "phone": {
-          "type": "string",
-          "description": "Mentor's phone number."
-        },
-        "photoUrl": {
-          "type": "string",
-          "format": "uri",
-          "description": "URL of the mentor's profile picture."
-        },
-        "bio": {
-          "type": "string",
-          "description": "A short biography of the mentor."
-        },
-        "expertise": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "A list of the mentor's areas of expertise."
-        },
-        "education": {
-          "type": "string",
-          "description": "Mentor's educational background."
-        },
-        "experienceYears": {
-          "type": "number",
-          "description": "Number of years of experience."
-        },
-        "ratingAvg": {
-          "type": "number",
-          "description": "The mentor's average rating."
-        },
-        "ratingCount": {
-          "type": "number",
-          "description": "Total number of ratings received."
-        },
-        "totalSessions": {
-          "type": "number",
-          "description": "Total number of sessions completed."
-        },
-        "hourlyRate": {
-          "type": "number",
-          "description": "The mentor's hourly rate for sessions."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of when the mentor profile was created."
-        },
-        "isActive": {
-          "type": "boolean",
-          "description": "Whether the mentor's profile is currently active."
-        },
-        "availability": {
-          "type": "array",
-          "description": "Mentor's weekly availability slots.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "day": {
-                "type": "string",
-                "enum": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-              },
-              "slots": {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "format": "time"
-                }
-              }
-            }
-          }
-        }
-      },
-      "required": ["name", "email", "isActive"]
-    },
-    "mentee": {
+    "Mentee": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Mentee",
-      "description": "A mentee user account with balance and basic information.",
       "type": "object",
+      "description": "Represents a mentee in the MentorVerse application.",
       "properties": {
-        "name": {
+        "id": {
           "type": "string",
-          "description": "Mentee's full name."
+          "description": "Unique identifier for the mentee."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the mentee."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the mentee."
         },
         "email": {
           "type": "string",
-          "format": "email",
-          "description": "Mentee's email address."
+          "description": "Email address of the mentee.",
+          "format": "email"
         },
-        "phone": {
+        "mentorshipGoal": {
           "type": "string",
-          "description": "Mentee's phone number."
-        },
-        "photoUrl": {
-          "type": "string",
-          "format": "uri",
-          "description": "URL of the mentee's profile picture."
-        },
-        "accountBalance": {
-          "type": "number",
-          "description": "The mentee's current account balance."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of when the mentee account was created."
-        },
-        "isActive": {
-          "type": "boolean",
-          "description": "Whether the mentee's account is currently active."
-        },
-        "totalSessionsBooked": {
-          "type": "number",
-          "description": "Total number of sessions booked by the mentee."
+          "description": "The mentee's stated goal for the mentorship."
         }
       },
-      "required": ["name", "email", "accountBalance", "isActive"]
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "mentorshipGoal"
+      ]
     },
-    "session": {
+    "Mentor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Mentor",
+      "type": "object",
+      "description": "Represents a mentor in the MentorVerse application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the mentor."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the mentor."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the mentor."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the mentor.",
+          "format": "email"
+        },
+        "profile": {
+          "type": "string",
+          "description": "Mentor profile information"
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "profile"
+      ]
+    },
+    "Session": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Session",
-      "description": "A booked session between a mentor and a mentee.",
       "type": "object",
+      "description": "Represents a mentorship session.",
       "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the session."
+        },
         "mentorId": {
           "type": "string",
-          "description": "ID of the mentor for this session."
+          "description": "Reference to Mentor. (Relationship: Mentor 1:N Session)"
         },
         "menteeId": {
           "type": "string",
-          "description": "ID of the mentee for this session."
+          "description": "Reference to Mentee. (Relationship: Mentee 1:N Session)"
         },
-        "bookingTime": {
+        "startTime": {
           "type": "string",
-          "format": "date-time",
-          "description": "Timestamp when the user booked the session."
+          "description": "Start time of the session.",
+          "format": "date-time"
         },
-        "scheduledDate": {
+        "endTime": {
           "type": "string",
-          "format": "date",
-          "description": "The scheduled date of the session."
+          "description": "End time of the session.",
+          "format": "date-time"
         },
-        "scheduledTime": {
-          "type": "string",
-          "format": "time",
-          "description": "The scheduled time of the session."
-        },
-        "bookedSlotId": {
-          "type": "string",
-          "description": "Identifier for the specific availability slot that was booked."
-        },
-        "status": {
-          "type": "string",
-          "enum": ["pending", "confirmed", "started", "completed", "cancelled"],
-          "description": "The current status of the session."
-        },
-        "meetingUrl": {
-          "type": "string",
-          "format": "uri",
-          "description": "The URL for the video meeting (e.g., Jitsi)."
-        },
-        "meetingStartedAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp when the meeting was started by the admin."
-        },
-        "meetingEndedAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp when the meeting ended."
-        },
-        "mentorNotes": {
-          "type": "string",
-          "description": "Notes taken by the mentor during the session."
-        },
-        "menteeReviewId": {
-          "type": "string",
-          "description": "ID of the review left by the mentee."
-        },
-        "sessionFee": {
+        "cost": {
           "type": "number",
-          "description": "The fee charged for this session."
-        },
-        "adminDisbursementStatus": {
-          "type": "string",
-          "enum": ["pending", "paid"],
-          "description": "Status of the payment to the mentor."
+          "description": "Cost of the session."
         }
       },
-      "required": ["mentorId", "menteeId", "bookingTime", "scheduledDate", "scheduledTime", "status", "sessionFee"]
+      "required": [
+        "id",
+        "mentorId",
+        "menteeId",
+        "startTime",
+        "endTime",
+        "cost"
+      ]
     },
-    "review": {
-      "title": "Review",
-      "description": "A review of a completed session.",
+    "Recommendation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Recommendation",
       "type": "object",
+      "description": "Represents a mentor recommendation for a mentee.",
       "properties": {
-        "sessionId": {
-          "type": "string"
-        },
-        "mentorId": {
-          "type": "string"
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the recommendation."
         },
         "menteeId": {
-          "type": "string"
-        },
-        "rating": {
-          "type": "number"
-        },
-        "reviewText": {
-          "type": "string"
-        },
-        "createdAt": {
           "type": "string",
-          "format": "date-time"
-        }
-      },
-      "required": ["sessionId", "mentorId", "menteeId", "rating", "createdAt"]
-    },
-    "tip": {
-      "title": "Tip",
-      "description": "Short advice for mentees, managed by admins.",
-      "type": "object",
-      "properties": {
-        "title": {
-          "type": "string"
+          "description": "Reference to Mentee. (Relationship: Mentee 1:N Recommendation)"
         },
-        "description": {
-          "type": "string"
-        },
-        "imageUrl": {
-          "type": "string",
-          "format": "uri"
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "adminId": {
-          "type": "string"
-        },
-        "isActive": {
-          "type": "boolean"
-        }
-      },
-      "required": ["title", "description", "createdAt", "adminId", "isActive"]
-    },
-    "disbursement": {
-      "title": "Disbursement",
-      "description": "Tracks payment settlements to mentors.",
-      "type": "object",
-      "properties": {
         "mentorId": {
-          "type": "string"
-        },
-        "totalAmount": {
-          "type": "number"
-        },
-        "sessions": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "status": {
           "type": "string",
-          "enum": ["pending", "paid"]
+          "description": "Reference to Mentor. (Relationship: Mentor 1:N Recommendation)"
         },
-        "paidAt": {
+        "reason": {
           "type": "string",
-          "format": "date-time"
-        },
-        "adminId": {
-          "type": "string"
+          "description": "Reason for the recommendation."
         }
       },
-      "required": ["mentorId", "totalAmount", "sessions", "status", "adminId"]
-    },
-    "transaction": {
-      "title": "Transaction",
-      "description": "A record of a mentee's account balance change.",
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": ["topup", "booking", "refund"]
-        },
-        "amount": {
-          "type": "number"
-        },
-        "description": {
-          "type": "string"
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        }
-      },
-      "required": ["type", "amount", "createdAt"]
-    },
-    "payout": {
-      "title": "Payout",
-      "description": "A record of a payout made to a mentor.",
-      "type": "object",
-      "properties": {
-        "disbursementId": {
-          "type": "string"
-        },
-        "amount": {
-          "type": "number"
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        }
-      },
-      "required": ["disbursementId", "amount", "createdAt"]
+      "required": [
+        "id",
+        "menteeId",
+        "mentorId",
+        "reason"
+      ]
     }
   },
   "auth": {
-    "providers": []
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
-    "/mentors/{mentorId}": {
-      "schema": {
-        "$ref": "#/entities/mentor"
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "Mentee",
+          "schema": {
+            "$ref": "#/backend/entities/Mentee"
+          },
+          "description": "Stores mentee profile data. Path-based ownership ensures only the authenticated user (mentee) can access their own profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the mentee."
+            }
+          ]
+        }
       },
-      "description": "Stores mentor profiles."
-    },
-    "/mentees/{menteeId}": {
-      "schema": {
-        "$ref": "#/entities/mentee"
+      {
+        "path": "/mentors/{mentorId}",
+        "definition": {
+          "entityName": "Mentor",
+          "schema": {
+            "$ref": "#/backend/entities/Mentor"
+          },
+          "description": "Stores mentor profile data. Accessible by admins.",
+          "params": [
+            {
+              "name": "mentorId",
+              "description": "The unique identifier for the mentor."
+            }
+          ]
+        }
       },
-      "description": "Stores mentee user accounts."
-    },
-    "/sessions/{sessionId}": {
-      "schema": {
-        "$ref": "#/entities/session"
+      {
+        "path": "/sessions/{sessionId}",
+        "definition": {
+          "entityName": "Session",
+          "schema": {
+            "$ref": "#/backend/entities/Session"
+          },
+          "description": "Stores mentorship session data. Includes denormalized 'menteeId' for authorization independence.  Admins have full access; mentees can only access sessions where 'menteeId' matches their UID.",
+          "params": [
+            {
+              "name": "sessionId",
+              "description": "The unique identifier for the session."
+            }
+          ]
+        }
       },
-      "description": "Stores all booked sessions."
-    },
-    "/reviews/{reviewId}": {
-      "schema": {
-        "$ref": "#/entities/review"
+      {
+        "path": "/recommendations/{recommendationId}",
+        "definition": {
+          "entityName": "Recommendation",
+          "schema": {
+            "$ref": "#/backend/entities/Recommendation"
+          },
+          "description": "Stores mentor recommendations for mentees. Includes denormalized 'menteeId' for authorization independence. Admins have full access; mentees can only access recommendations where 'menteeId' matches their UID.",
+          "params": [
+            {
+              "name": "recommendationId",
+              "description": "The unique identifier for the recommendation."
+            }
+          ]
+        }
       },
-      "description": "Stores reviews for completed sessions."
-    },
-    "/tips/{tipId}": {
-      "schema": {
-        "$ref": "#/entities/tip"
-      },
-      "description": "Stores tips for mentees, managed by admins."
-    },
-    "/disbursements/{disbursementId}": {
-      "schema": {
-        "$ref": "#/entities/disbursement"
-      },
-      "description": "Tracks mentor payment settlements."
-    },
-    "/mentees/{menteeId}/transactions/{transactionId}": {
-      "schema": {
-        "$ref": "#/entities/transaction"
-      },
-      "description": "Subcollection for a mentee's account balance history."
-    },
-    "/mentors/{mentorId}/payouts/{payoutId}": {
-      "schema": {
-        "$ref": "#/entities/payout"
-      },
-      "description": "Subcollection for a mentor's payout history."
-    }
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "admin",
+          "schema": {
+            "$ref": "#/backend/entities/Mentee"
+          },
+          "description": "Used for determining admin access. Existence of a document at this path grants admin privileges.  Content is irrelevant.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the admin user."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore structure is designed to support the MentorVerse application, focusing on security, scalability, and ease of maintenance. It leverages denormalization for authorization independence, structural segregation for simplified security rules, and consistent access modeling.  \n\n**Authorization Independence:**  The structure avoids `get()` calls in security rules by denormalizing authorization data. The primary method for this is storing the menteeId in each session and recommendation to ensure the mentee can only access sessions and recommendations related to them. This applies to the `/sessions` and `/recommendations` collections. Additionally, roles are managed via document existence in `/roles_admin/{uid}`.\n\n**Structural Segregation:** Data with different access requirements are stored in separate collections. Mentees have path-based ownership of their profile data under `/users/{userId}`. This keeps mentee profile data separate from mentor data and admin-managed data.\n\n**Access Modeling:**  Path-based ownership is used for mentee profiles. Collaborative data access for sessions and recommendations is managed using the menteeId within the document.  Admins are granted full access via document existence in the `/roles_admin/{uid}` collection.\n\n**QAPs (Rules are not Filters):** The structure supports secure `list` operations.  Mentees can list only their sessions and recommendations because the security rules will verify the `menteeId` matches the requesting user's ID.  Admin access is granted at the collection level (e.g., can list all mentors), while mentee access is constrained by the mentee's user ID."
   }
 }
-
-    

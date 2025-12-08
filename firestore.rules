@@ -1,8 +1,193 @@
+/**
+ * @fileoverview Firestore Security Rules for the MentorVerse application.
+ *
+ * @description
+ * This ruleset enforces a security model with two primary user roles: Mentees and Admins.
+ * Mentors are data entities managed by Admins and do not have login credentials.
+ * The rules are designed for security and performance, leveraging data denormalization to
+ * avoid costly and complex lookups during authorization checks.
+ *
+ * @philosophy
+ * - Core Philosophy: A hybrid model of user ownership and role-based access. Mentees have strict
+ *   control over their personal profile data. Admins, identified by a document in the
+ *   `/roles_admin` collection, have privileged access to manage application-wide data such as
+ *   mentor profiles, sessions, and recommendations.
+ *
+ * @structure
+ * - Data Structure: The data is organized into top-level collections. User-specific data is
+ *   sandboxed under `/users/{userId}`. Shared and public data like `/mentors`, `/sessions`,
+ *   and `/recommendations` are in separate top-level collections to facilitate different
+ *   access patterns.
+ *
+ * @decisions
+ * - Key Security Decisions:
+ *   - Admin roles are determined by the existence of a document at `/roles_admin/{userId}`,
+ *     which is a highly performant pattern. This collection is not client-readable or writable.
+ *   - Mentees can only read shared documents (like sessions) if their UID is denormalized
+ *     onto the document itself (e.g., a `menteeId` field).
+ *   - Listing users is disallowed to protect user privacy.
+ *   - Listing shared collections like `/sessions` is restricted to Admins to prevent data leakage.
+ *     Mentees should fetch individual documents by known IDs.
+ *
+ * @denormalization
+ * - Denormalization for Authorization: To ensure fast and secure access checks, documents in
+ *   `/sessions` and `/recommendations` must contain a `menteeId` field. This allows rules to
+ *   grant access to a mentee without needing to perform extra `get()` calls to other documents,
+ *   which is critical for performance and scalability.
+ *
+ * @segregation
+ * - Structural Segregation: Private mentee profiles (`/users`) are stored separately from
+ *   publicly readable mentor profiles (`/mentors`). This clear separation simplifies rules and
+ *   makes it easy to grant broad read access to mentor data while keeping mentee data strictly private.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Lock down all access by default
-    match /{document=**} {
+
+    // Helper Functions
+    // -------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the given userId.
+     * This is the foundation of the user-ownership model.
+     *
+     * @param userId The UID to check against the authenticated user.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if the document being accessed already exists in Firestore.
+     * Crucial for securing update and delete operations.
+     */
+    function isExistingDoc() {
+      return resource != null;
+    }
+
+    /**
+     * Checks if the authenticated user is an administrator.
+     * Admin status is granted by the existence of a document in the `roles_admin` collection.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * Validates that the `menteeId` field of an incoming document matches the authenticated user's UID.
+     * Used to ensure a mentee can only create documents for themselves.
+     */
+    function isMenteeOnIncomingDoc() {
+      return isSignedIn() && request.resource.data.menteeId == request.auth.uid;
+    }
+    
+    /**
+     * Validates that the `menteeId` field of an existing document matches the authenticated user's UID.
+     * Used to grant read access to existing documents.
+     */
+    function isMenteeOnExistingDoc() {
+      return isSignedIn() && isExistingDoc() && resource.data.menteeId == request.auth.uid;
+    }
+
+    /**
+     * Validates that the `id` field on an incoming user document matches the document's path ID (`userId`).
+     * Enforces data consistency between the path and the document content on creation.
+     */
+    function newUserDataIsValid(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * Ensures critical relational IDs cannot be changed after a document has been created.
+     */
+    function isUserIdImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+    
+    function isMenteeIdImmutable() {
+      return request.resource.data.menteeId == resource.data.menteeId;
+    }
+
+    // Collection Rules
+    // -------------------------------------------------------------------------
+
+    /**
+     * @description Rules for the `users` collection, which stores mentee profile data.
+     * @path /users/{userId}
+     * @allow A mentee (auth.uid=`user_abc`) creating their own profile at `/users/user_abc`. (create)
+     * @deny Another user (auth.uid=`user_xyz`) trying to read the profile at `/users/user_abc`. (get)
+     * @principle Restricts access to a user's own data tree, enforcing strict ownership.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Disallow listing/querying the users collection to protect privacy.
+      allow create: if isOwner(userId) && newUserDataIsValid(userId);
+      allow update: if isOwner(userId) && isExistingDoc() && isUserIdImmutable();
+      allow delete: if isOwner(userId) && isExistingDoc();
+    }
+
+    /**
+     * @description Rules for the `mentors` collection. Mentor profiles are readable by any
+     *   signed-in user (mentees), but can only be created or modified by an administrator.
+     * @path /mentors/{mentorId}
+     * @allow A signed-in mentee reading a mentor's profile at `/mentors/mentor_123`. (get)
+     * @deny A non-admin user trying to create a new mentor profile. (create)
+     * @principle Implements a "public-read, admin-write" pattern for application data.
+     */
+    match /mentors/{mentorId} {
+      allow get, list: if isSignedIn();
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin() && isExistingDoc();
+    }
+
+    /**
+     * @description Rules for mentorship sessions. Sessions can be read by the associated
+     *   mentee or any admin. Creation is allowed for mentees (for themselves) and admins.
+     *   Modification and deletion are restricted to admins.
+     * @path /sessions/{sessionId}
+     * @allow A mentee (auth.uid=`mentee_abc`) reading a session where `menteeId` is 'mentee_abc'. (get)
+     * @deny A mentee trying to list all sessions in the collection. (list)
+     * @principle Enforces document-level access control using a denormalized `menteeId` field.
+     */
+    match /sessions/{sessionId} {
+      allow get: if isAdmin() || isMenteeOnExistingDoc();
+      allow list: if isAdmin(); // Only admins can list all sessions to prevent data leakage.
+      allow create: if isAdmin() || (isSignedIn() && isMenteeOnIncomingDoc());
+      allow update: if isAdmin() && isExistingDoc() && isMenteeIdImmutable();
+      allow delete: if isAdmin() && isExistingDoc();
+    }
+    
+    /**
+     * @description Rules for mentor recommendations. Recommendations can be read by the
+     *   associated mentee or any admin. All write operations are restricted to admins.
+     * @path /recommendations/{recommendationId}
+     * @allow An admin reading any recommendation document. (get)
+     * @deny A mentee trying to create their own recommendation. (create)
+     * @principle Secures data that is managed by admins but selectively readable by users.
+     */
+    match /recommendations/{recommendationId} {
+      allow get: if isAdmin() || isMenteeOnExistingDoc();
+      allow list: if isAdmin(); // Only admins can list all recommendations.
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin() && isExistingDoc();
+    }
+
+    /**
+     * @description Security rules for the admin roles collection.
+     * @path /roles_admin/{userId}
+     * @allow A rule check `exists(/databases/$(database)/documents/roles_admin/admin_uid)`. (internal)
+     * @deny Any client attempting to read or write directly to this collection. (get, list, create, etc.)
+     * @principle This collection is a lookup table for internal rule logic only. It must be locked
+     *   down completely from all client-side access to prevent privilege escalation.
+     */
+    match /roles_admin/{userId} {
       allow read, write: if false;
     }
   }
