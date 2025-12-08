@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser } from '@/firebase';
-import { User, getIdTokenResult } from 'firebase/auth';
+import { User } from 'firebase/auth';
 
 export interface AdminAuthState {
   user: User | null;
@@ -29,21 +29,12 @@ export const useAdminUser = (): AdminAuthState => {
       return;
     }
 
-    // User is available, now check for the admin custom claim.
-    getIdTokenResult(user)
-      .then((idTokenResult) => {
-        // The 'admin' claim is a custom claim set on the user's token.
-        // It must be set via the Firebase Admin SDK on a backend.
-        const isAdminClaim = idTokenResult.claims.admin === true;
-        setIsAdmin(isAdminClaim);
-      })
-      .catch((error) => {
-        console.error('Error getting ID token result:', error);
-        setIsAdmin(false);
-      })
-      .finally(() => {
-        setIsCheckingAdmin(false);
-      });
+    // For development, we are checking the email directly.
+    // In production, it's highly recommended to use custom claims.
+    const isAdminEmail = user.email === 'avirhossain@gmail.com';
+    setIsAdmin(isAdminEmail);
+    setIsCheckingAdmin(false);
+
   }, [user, isUserLoading]);
 
   return {
