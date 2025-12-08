@@ -1,13 +1,10 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
-import { Toaster } from '@/components/ui/toaster';
-import { FirebaseClientProvider } from '@/firebase';
-import { Footer } from '@/components/common/Footer';
 
 export const metadata: Metadata = {
-  title: 'Mentees',
-  description: 'Find your perfect mentor match with AI-powered recommendations.',
+  title: 'New App',
+  description: 'A new application built in Firebase Studio',
 };
 
 export default function RootLayout({
@@ -22,14 +19,8 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
-      <body className="antialiased flex flex-col min-h-screen">
-        <FirebaseClientProvider>
-          <div className="flex-grow">
-            {children}
-          </div>
-          <Toaster />
-          <Footer />
-        </FirebaseClientProvider>
+      <body className="antialiased">
+        {children}
       </body>
     </html>
   );
