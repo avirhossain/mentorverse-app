@@ -157,12 +157,11 @@ service cloud.firestore {
 
     /**
      * @description Rules for mentorship sessions. Sessions can be read by anyone to allow for public browsing.
-     *   Creation is allowed for signed-in mentees (for themselves) and admins.
-     *   Modification and deletion are restricted to admins.
+     *   Creation is allowed for admins only. Updates are allowed by the mentee who booked it or an admin.
      * @path /sessions/{sessionId}
      * @allow A guest visitor listing all sessions on the main dashboard. (list)
-     * @deny A mentee trying to update a session they didn't book. (update)
-     * @principle Enforces public read access while securing write operations.
+     * @deny A mentee trying to create a session from scratch. (create)
+     * @principle Enforces public read access while securing write operations. Admins manage content, users manage their own bookings.
      */
     match /sessions/{sessionId} {
       allow get, list: if true;
