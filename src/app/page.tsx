@@ -1,10 +1,15 @@
 'use client';
+
 import React from 'react';
+import { AuthForm } from '@/components/mentee/AuthForm';
+import { AuthListener } from '@/components/common/AuthListener';
 
 export default function HomePage() {
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <h1 className="text-4xl font-bold">Welcome to your new app!</h1>
+    <div className="flex min-h-screen items-center justify-center bg-muted/40">
+       <AuthListener>
+        <AuthForm />
+      </AuthListener>
     </div>
   );
 }
