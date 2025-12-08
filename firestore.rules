@@ -145,7 +145,7 @@ service cloud.firestore {
      * @principle Implements a "public-read, admin-write" pattern for application data.
      */
     match /mentors/{mentorId} {
-      allow get, list: if isSignedIn();
+      allow get, list: if true;
       allow create: if isAdmin();
       allow update, delete: if isAdmin() && isExistingDoc();
 
