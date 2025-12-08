@@ -15,8 +15,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const navLinks = [
-  { href: '/#mentors', label: 'Mentors' },
-  { href: '/#sessions', label: 'Sessions' },
+  { href: '/mentors', label: 'Mentors' },
+  { href: '/sessions', label: 'Sessions' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
 ];
@@ -46,7 +46,7 @@ export function MenteeHeader() {
             xmlns="http://www.w3.org/2000/svg"
             width="24"
             height="24"
-            viewBox="0 0 24 24"
+            viewBox="0 0 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
