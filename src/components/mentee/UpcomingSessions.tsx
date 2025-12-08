@@ -2,52 +2,27 @@
 import { SessionCard } from './SessionCard';
 import type { Session } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
-
-// Placeholder data, admin-managed sessions will be fetched in a real app
-const placeholderSessions: Session[] = [
-  {
-    "id": "SES01",
-    "mentorId": "MEN01",
-    "mentorName": "Dr. Evelyn Reed",
-    "name": "Intro to Quantum Computing",
-    "sessionType": "Paid",
-    "scheduledDate": "2024-08-15",
-    "scheduledTime": "14:00",
-    "sessionFee": 50,
-    "isActive": true,
-    "tag": "Tech",
-  },
-  {
-    "id": "SES02",
-    "mentorId": "MEN02",
-    "mentorName": "Dr. Samuel Cortez",
-    "name": "Fundamentals of UX Design",
-    "sessionType": "Free",
-    "scheduledDate": "2024-08-20",
-    "scheduledTime": "11:00",
-    "sessionFee": 0,
-    "isActive": true,
-    "tag": "Design"
-  },
-  {
-    "id": "SES03",
-    "mentorId": "MEN03",
-    "mentorName": "Alicia Chen",
-    "name": "Advanced Tailwind CSS",
-    "sessionType": "Paid",
-    "scheduledDate": "2024-09-01",
-    "scheduledTime": "16:00",
-    "sessionFee": 75,
-    "isActive": true,
-    "tag": "Web Dev"
-  }
-];
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 
 export function UpcomingSessions() {
-  const sessions = placeholderSessions;
-  const isLoading = false;
-  const error = null;
+  const firestore = useFirestore();
 
+  const sessionsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'sessions'),
+      where('isActive', '==', true),
+      orderBy('scheduledDate', 'desc'),
+      limit(3)
+    );
+  }, [firestore]);
+
+  const {
+    data: sessions,
+    isLoading,
+    error,
+  } = useCollection<Session>(sessionsQuery);
 
   const renderContent = () => {
     if (isLoading) {
@@ -63,7 +38,7 @@ export function UpcomingSessions() {
     if (error) {
       return (
         <p className="mt-10 text-center text-destructive">
-          Error loading sessions.
+          Error loading sessions: {error.message}
         </p>
       );
     }
@@ -79,10 +54,7 @@ export function UpcomingSessions() {
     return (
       <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {sessions.map((session) => (
-          <SessionCard
-            key={session.id}
-            session={session}
-          />
+          <SessionCard key={session.id} session={session} />
         ))}
       </div>
     );
