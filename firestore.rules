@@ -33,7 +33,7 @@ service cloud.firestore {
       allow get: if request.auth != null && (request.auth.uid == resource.data.menteeId || isAdmin());
       
       // A mentee can only list their own bookings. Admins can list all.
-      allow list: if request.auth != null && (resource == null || request.auth.uid == request.query.filters[0][2] || isAdmin());
+      allow list: if request.auth != null && (resource == null || request.auth.uid == request.query.get("where")[0][2] || isAdmin());
 
       // Allow a mentee to create a booking for themselves.
       allow create: if request.auth != null && request.resource.data.menteeId == request.auth.uid;
