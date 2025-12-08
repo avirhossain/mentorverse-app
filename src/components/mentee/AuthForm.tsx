@@ -30,6 +30,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { useRouter } from 'next/navigation';
 
 const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -51,6 +52,7 @@ export function AuthForm() {
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
 
   const createMenteeProfile = async (userCred: UserCredential) => {
     const { user } = userCred;
@@ -87,7 +89,7 @@ export function AuthForm() {
         title: activeTab === 'login' ? 'Login Successful' : 'Account Created',
         description: "Welcome to MentorVerse! You're now logged in.",
       });
-      // The AuthListener will handle the UI change.
+      router.push('/');
     } catch (error: any) {
       console.error('Auth Error:', error);
       toast({
@@ -122,6 +124,7 @@ export function AuthForm() {
             title: 'Login Successful',
             description: "Welcome to MentorVerse! You're now logged in.",
         });
+        router.push('/');
     } catch (error: any) {
          console.error('Google Sign-In Error:', error);
         toast({
@@ -143,6 +146,7 @@ export function AuthForm() {
             title: 'Signed In Anonymously',
             description: 'You can explore the app. Create an account to save your progress.',
         });
+        router.push('/');
      } catch(error: any) {
         console.error('Anonymous Sign-In Error:', error);
         toast({
