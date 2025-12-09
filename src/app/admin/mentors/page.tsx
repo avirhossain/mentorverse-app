@@ -13,12 +13,13 @@ import {
 } from '@/components/ui/card';
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import {
   Table,
@@ -42,8 +43,10 @@ import type { Mentor } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { MentorsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, where, Query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+
+type StatusFilter = "all" | "active" | "inactive";
 
 export default function MentorsPage() {
   const firestore = useFirestore();
@@ -51,11 +54,24 @@ export default function MentorsPage() {
 
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedMentor, setSelectedMentor] = React.useState<Mentor | null>(null);
+  const [statusFilter, setStatusFilter] = React.useState<StatusFilter>('all');
+
 
   const mentorsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'mentors'), orderBy('createdAt', 'desc'));
-  }, [firestore]);
+    
+    let q: Query = collection(firestore, 'mentors');
+
+    if (statusFilter === 'active') {
+      q = query(q, where('isActive', '==', true));
+    } else if (statusFilter === 'inactive') {
+      q = query(q, where('isActive', '==', false));
+    }
+    
+    q = query(q, orderBy('createdAt', 'desc'));
+    
+    return q;
+  }, [firestore, statusFilter]);
 
   const { data: mentors, isLoading, error } = useCollection<Mentor>(mentorsQuery);
 
@@ -118,7 +134,7 @@ export default function MentorsPage() {
     }
     
     if (!mentors || mentors.length === 0) {
-      return <TableRow><TableCell colSpan={6} className="text-center">No mentors found. Create one to get started.</TableCell></TableRow>
+      return <TableRow><TableCell colSpan={6} className="text-center">No mentors found for the selected filter.</TableCell></TableRow>
     }
     
     return mentors.map((mentor) => (
@@ -192,10 +208,13 @@ export default function MentorsPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Filter by</DropdownMenuLabel>
+              <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuCheckboxItem checked>Active</DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem>Inactive</DropdownMenuCheckboxItem>
+              <DropdownMenuRadioGroup value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
+                <DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="active">Active</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="inactive">Inactive</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button size="sm" variant="outline" className="h-8 gap-1">
