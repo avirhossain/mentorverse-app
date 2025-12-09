@@ -6,7 +6,7 @@ import type { Mentor } from '@/lib/types';
 import { Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 
 export default function MentorsPage() {
   const firestore = useFirestore();
@@ -15,7 +15,6 @@ export default function MentorsPage() {
     if (!firestore) return null;
     return query(
       collection(firestore, 'mentors'),
-      where('isActive', '==', true),
       orderBy('createdAt', 'desc')
     );
   }, [firestore]);

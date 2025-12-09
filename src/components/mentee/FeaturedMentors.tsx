@@ -10,7 +10,7 @@ import { MentorCard } from './MentorCard';
 import type { Mentor } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 
 
 export function FeaturedMentors() {
@@ -20,7 +20,6 @@ export function FeaturedMentors() {
     if (!firestore) return null;
     return query(
       collection(firestore, 'mentors'),
-      where('isActive', '==', true),
       orderBy('createdAt', 'desc'),
       limit(5)
     );

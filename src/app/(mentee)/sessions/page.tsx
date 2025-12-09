@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 
 
 export default function SessionsPage() {
@@ -16,7 +16,6 @@ export default function SessionsPage() {
     if (!firestore) return null;
     return query(
       collection(firestore, 'sessions'),
-      where('isActive', '==', true),
       orderBy('scheduledDate', 'desc')
     );
   }, [firestore]);
