@@ -60,7 +60,10 @@ export const SessionForm: React.FC<SessionFormProps> = ({
 }) => {
   const form = useForm<SessionFormValues>({
     resolver: zodResolver(sessionFormSchema),
-    defaultValues: {
+    defaultValues: session ? {
+        ...session,
+        scheduledDate: session.scheduledDate ? new Date(session.scheduledDate) : new Date(),
+    } : {
       name: '',
       mentorId: '',
       sessionType: 'Paid',
@@ -74,27 +77,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({
     },
   });
 
-  useEffect(() => {
-    if (session) {
-      form.reset({
-        ...session,
-        scheduledDate: session.scheduledDate ? new Date(session.scheduledDate) : undefined,
-      });
-    } else {
-      form.reset({
-        name: '',
-        mentorId: '',
-        sessionType: 'Paid',
-        scheduledDate: undefined,
-        scheduledTime: '',
-        sessionFee: 0,
-        tag: '',
-        offerings: '',
-        bestSuitedFor: '',
-        requirements: '',
-      });
-    }
-  }, [session, form.reset]);
 
   const handleFormSubmit = (values: SessionFormValues) => {
     onSubmit({
