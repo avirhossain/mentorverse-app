@@ -32,50 +32,87 @@ import { Badge } from '@/components/ui/badge';
 import type { Mentee } from '@/lib/types';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
-
-// Placeholder data for mentees
-const placeholderMentees: Mentee[] = [
-  {
-    id: 'UM10001',
-    name: 'Alex Johnson',
-    email: 'alex.j@example.com',
-    accountBalance: 150,
-    totalSessionsBooked: 5,
-    isActive: true,
-    createdAt: '2023-08-15T10:00:00Z',
-  },
-  {
-    id: 'UM10002',
-    name: 'Ben Carter',
-    email: 'ben.c@example.com',
-    accountBalance: 25,
-    totalSessionsBooked: 2,
-    isActive: true,
-    createdAt: '2023-09-01T11:30:00Z',
-  },
-  {
-    id: 'UM10003',
-    name: 'Chloe Davis',
-    email: 'chloe.d@example.com',
-    accountBalance: 500,
-    totalSessionsBooked: 12,
-    isActive: true,
-    createdAt: '2023-05-20T09:00:00Z',
-  },
-  {
-    id: 'UM10004',
-    name: 'Diana Prince',
-    email: 'diana.p@example.com',
-    accountBalance: 0,
-    totalSessionsBooked: 1,
-    isActive: false,
-    createdAt: '2024-01-10T14:00:00Z',
-  },
-];
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, orderBy, query } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MenteesPage() {
-  const [mentees, setMentees] =
-    React.useState<Mentee[]>(placeholderMentees);
+  const firestore = useFirestore();
+  const menteesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'mentees'), orderBy('createdAt', 'desc'));
+  }, [firestore]);
+
+  const { data: mentees, isLoading, error } = useCollection<Mentee>(menteesQuery);
+
+  const renderTableBody = () => {
+    if (isLoading) {
+      return Array.from({ length: 4 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell colSpan={6}>
+            <Skeleton className="h-8 w-full" />
+          </TableCell>
+        </TableRow>
+      ));
+    }
+
+    if (error) {
+      return <TableRow><TableCell colSpan={6} className="text-center text-destructive">Error loading mentees: {error.message}</TableCell></TableRow>
+    }
+
+    if (!mentees || mentees.length === 0) {
+      return <TableRow><TableCell colSpan={6} className="text-center">No mentees found.</TableCell></TableRow>
+    }
+
+    return mentees.map((mentee) => (
+      <TableRow key={mentee.id}>
+        <TableCell>
+            <div className="font-medium">{mentee.name}</div>
+            <div className="text-sm text-muted-foreground">{mentee.email} ({mentee.id})</div>
+        </TableCell>
+        <TableCell>
+          <Badge variant={mentee.isActive ? 'default' : 'secondary'}>
+            {mentee.isActive ? 'Active' : 'Inactive'}
+          </Badge>
+        </TableCell>
+        <TableCell>{mentee.totalSessionsBooked || 0}</TableCell>
+         <TableCell>
+          {mentee.createdAt ? format(new Date(mentee.createdAt), 'MMM d, yyyy') : 'N/A'}
+        </TableCell>
+        <TableCell className="text-right">
+          {formatCurrency(mentee.accountBalance || 0)}
+        </TableCell>
+        <TableCell>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                aria-haspopup="true"
+                size="icon"
+                variant="ghost"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem>
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                View Session History
+              </DropdownMenuItem>
+               <DropdownMenuSeparator />
+               <DropdownMenuItem className="text-destructive">
+                  Suspend Account
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+      </TableRow>
+    ));
+  };
+
 
   return (
     <>
@@ -128,62 +165,18 @@ export default function MenteesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mentees.map((mentee) => (
-                <TableRow key={mentee.id}>
-                  <TableCell>
-                      <div className="font-medium">{mentee.name}</div>
-                      <div className="text-sm text-muted-foreground">{mentee.email} ({mentee.id})</div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={mentee.isActive ? 'default' : 'secondary'}>
-                      {mentee.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{mentee.totalSessionsBooked || 0}</TableCell>
-                   <TableCell>
-                    {format(new Date(mentee.createdAt), 'MMM d, yyyy')}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatCurrency(mentee.accountBalance || 0)}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          aria-haspopup="true"
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          View Session History
-                        </DropdownMenuItem>
-                         <DropdownMenuSeparator />
-                         <DropdownMenuItem className="text-destructive">
-                            Suspend Account
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {renderTableBody()}
             </TableBody>
           </Table>
         </CardContent>
-        <CardFooter>
-          <div className="text-xs text-muted-foreground">
-            Showing <strong>1-{mentees.length}</strong> of{' '}
-            <strong>{mentees.length}</strong> mentees
-          </div>
-        </CardFooter>
+        {mentees && (
+            <CardFooter>
+            <div className="text-xs text-muted-foreground">
+                Showing <strong>1-{mentees.length}</strong> of{' '}
+                <strong>{mentees.length}</strong> mentees
+            </div>
+            </CardFooter>
+        )}
       </Card>
     </>
   );
