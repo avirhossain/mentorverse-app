@@ -15,7 +15,6 @@ export interface Mentor {
   totalSessions?: number;
   hourlyRate?: number;
   createdAt: string; // ISO 8601 date string
-  isActive: boolean;
   availability?: AvailabilitySlot[];
 }
 
@@ -117,5 +116,3 @@ export interface Payout {
   amount: number;
   createdAt: string; // ISO 8601 date string
 }
-
-    

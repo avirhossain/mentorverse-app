@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { PlusCircle, File, ListFilter, MoreHorizontal } from 'lucide-react';
+import { PlusCircle, File, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -18,8 +18,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import {
   Table,
@@ -43,10 +41,8 @@ import type { Mentor } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { MentorsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
-import { collection, query, orderBy, where, Query } from 'firebase/firestore';
+import { collection, query, orderBy, Query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-
-type StatusFilter = "all" | "active" | "inactive";
 
 export default function MentorsPage() {
   const firestore = useFirestore();
@@ -54,24 +50,11 @@ export default function MentorsPage() {
 
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedMentor, setSelectedMentor] = React.useState<Mentor | null>(null);
-  const [statusFilter, setStatusFilter] = React.useState<StatusFilter>('all');
-
 
   const mentorsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    
-    let q: Query = collection(firestore, 'mentors');
-
-    if (statusFilter === 'active') {
-      q = query(q, where('isActive', '==', true), orderBy('createdAt', 'desc'));
-    } else if (statusFilter === 'inactive') {
-      q = query(q, where('isActive', '==', false), orderBy('createdAt', 'desc'));
-    } else {
-      q = query(q, orderBy('createdAt', 'desc'));
-    }
-    
-    return q;
-  }, [firestore, statusFilter]);
+    return query(collection(firestore, 'mentors'), orderBy('createdAt', 'desc'));
+  }, [firestore]);
 
   const { data: mentors, isLoading, error } = useCollection<Mentor>(mentorsQuery);
 
@@ -106,7 +89,6 @@ export default function MentorsPage() {
         ...data,
         id: newId,
         createdAt: new Date().toISOString(),
-        isActive: data.isActive ?? true,
       } as Mentor;
 
       MentorsAPI.createMentor(firestore, newMentor);
@@ -122,7 +104,7 @@ export default function MentorsPage() {
     if (isLoading) {
       return Array.from({ length: 3 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell colSpan={6}>
+          <TableCell colSpan={5}>
             <Skeleton className="h-8 w-full" />
           </TableCell>
         </TableRow>
@@ -130,11 +112,11 @@ export default function MentorsPage() {
     }
     
     if (error) {
-       return <TableRow><TableCell colSpan={6} className="text-center text-destructive">Error loading mentors: {error.message}</TableCell></TableRow>
+       return <TableRow><TableCell colSpan={5} className="text-center text-destructive">Error loading mentors: {error.message}</TableCell></TableRow>
     }
     
     if (!mentors || mentors.length === 0) {
-      return <TableRow><TableCell colSpan={6} className="text-center">No mentors found for the selected filter.</TableCell></TableRow>
+      return <TableRow><TableCell colSpan={5} className="text-center">No mentors found.</TableCell></TableRow>
     }
     
     return mentors.map((mentor) => (
@@ -142,11 +124,6 @@ export default function MentorsPage() {
         <TableCell>
           <div className="font-medium">{mentor.name}</div>
           <div className="text-sm text-muted-foreground">{mentor.id}</div>
-        </TableCell>
-        <TableCell>
-          <Badge variant={mentor.isActive ? 'default' : 'secondary'}>
-            {mentor.isActive ? 'Active' : 'Inactive'}
-          </Badge>
         </TableCell>
         <TableCell>
           <div className="flex gap-1 flex-wrap">
@@ -198,25 +175,6 @@ export default function MentorsPage() {
     <>
       <div className="flex items-center">
         <div className="ml-auto flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-1">
-                <ListFilter className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Filter
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuRadioGroup value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
-                <DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="active">Active</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="inactive">Inactive</DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
           <Button size="sm" variant="outline" className="h-8 gap-1">
             <File className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-rap">
@@ -263,7 +221,6 @@ export default function MentorsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead>Expertise</TableHead>
                 <TableHead className="text-right">Total Sessions</TableHead>
                 <TableHead className="text-right">Avg. Rating</TableHead>

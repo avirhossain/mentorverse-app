@@ -16,7 +16,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Switch } from '@/components/ui/switch';
 import type { Mentor } from '@/lib/types';
 
 // Define the validation schema using Zod
@@ -26,7 +25,6 @@ const mentorFormSchema = z.object({
   bio: z.string().optional(),
   expertise: z.string().optional(), // Handled as comma-separated string
   hourlyRate: z.coerce.number().min(0, 'Rate must be non-negative.').optional(),
-  isActive: z.boolean().default(true),
 });
 
 type MentorFormValues = z.infer<typeof mentorFormSchema>;
@@ -45,7 +43,6 @@ export const MentorForm: React.FC<MentorFormProps> = ({ mentor, onSubmit }) => {
       bio: mentor?.bio || '',
       expertise: mentor?.expertise?.join(', ') || '',
       hourlyRate: mentor?.hourlyRate || 0,
-      isActive: mentor?.isActive ?? true,
     },
   });
 
@@ -57,7 +54,6 @@ export const MentorForm: React.FC<MentorFormProps> = ({ mentor, onSubmit }) => {
       bio: mentor?.bio || '',
       expertise: mentor?.expertise?.join(', ') || '',
       hourlyRate: mentor?.hourlyRate || 0,
-      isActive: mentor?.isActive ?? true,
     });
   }, [mentor, form]);
 
@@ -149,29 +145,6 @@ export const MentorForm: React.FC<MentorFormProps> = ({ mentor, onSubmit }) => {
                   <Input type="number" placeholder="50" {...field} />
                 </FormControl>
                 <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="isActive"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Status</FormLabel>
-                 <div className="flex items-center space-x-2 mt-2">
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <Label htmlFor="is-active" className="text-sm font-normal">
-                    {field.value ? 'Active' : 'Inactive'}
-                  </Label>
-                </div>
-                 <FormDescription>
-                  Inactive mentors won't be visible to mentees.
-                </FormDescription>
               </FormItem>
             )}
           />
