@@ -41,7 +41,7 @@ import { SessionForm } from '@/components/admin/SessionForm';
 import type { Session, Mentor } from '@/lib/types';
 import { format, isPast, parseISO } from 'date-fns';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SessionsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
@@ -64,10 +64,9 @@ const getStatus = (session: Session): { text: string; variant: "default" | "seco
     if (isPast(sessionDate)) {
         return { text: 'Expired', variant: 'destructive' };
     }
-    if (session.isActive) {
-        return { text: 'Active', variant: 'default' };
-    }
-    return { text: 'Inactive', variant: 'secondary' };
+    // Since isActive is removed, we just check if it's in the past.
+    // Let's assume all non-expired sessions are 'Active' for display purposes.
+    return { text: 'Active', variant: 'default' };
 };
 
 
@@ -90,7 +89,7 @@ export default function SessionsPage() {
 
   const mentorsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'mentors'), where('isActive', '==', true));
+    return query(collection(firestore, 'mentors'));
   }, [firestore]);
   const { data: mentors, isLoading: isLoadingMentors } = useCollection<Mentor>(mentorsQuery);
 
@@ -222,7 +221,6 @@ export default function SessionsPage() {
               <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem checked>Active</DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem>Inactive</DropdownMenuCheckboxItem>
                <DropdownMenuCheckboxItem>Expired</DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
