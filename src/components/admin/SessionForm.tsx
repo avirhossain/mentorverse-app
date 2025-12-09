@@ -75,15 +75,12 @@ export const SessionForm: React.FC<SessionFormProps> = ({
   });
 
   useEffect(() => {
-    // When the session prop changes (i.e., when opening the dialog for a new or existing session),
-    // reset the form with the appropriate values.
     if (session) {
       form.reset({
         ...session,
         scheduledDate: session.scheduledDate ? new Date(session.scheduledDate) : undefined,
       });
     } else {
-      // If creating a new session, reset to blank defaults.
       form.reset({
         name: '',
         mentorId: '',
@@ -97,7 +94,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
         requirements: '',
       });
     }
-  }, [session, form]);
+  }, [session, form.reset]);
 
   const handleFormSubmit = (values: SessionFormValues) => {
     onSubmit({
