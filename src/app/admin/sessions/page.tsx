@@ -64,8 +64,6 @@ const getStatus = (session: Session): { text: string; variant: "default" | "seco
     if (isPast(sessionDate)) {
         return { text: 'Expired', variant: 'destructive' };
     }
-    // Since isActive is removed, we just check if it's in the past.
-    // Let's assume all non-expired sessions are 'Active' for display purposes.
     return { text: 'Active', variant: 'default' };
 };
 
