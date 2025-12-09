@@ -18,7 +18,7 @@ export default function AdminDashboardPage() {
   const firestore = useFirestore();
 
   const mentorsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'mentors'), where('isActive', '==', true)) : null),
+    () => (firestore ? collection(firestore, 'mentors') : null),
     [firestore]
   );
   const menteesQuery = useMemoFirebase(
