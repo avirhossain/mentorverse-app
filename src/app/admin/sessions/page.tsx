@@ -60,11 +60,15 @@ const getStatus = (session: Session): { text: string; variant: "default" | "seco
     if (!session.scheduledDate || !session.scheduledTime) {
         return { text: 'Invalid Date', variant: 'destructive' };
     }
-    const sessionDate = parseISO(`${session.scheduledDate}T${session.scheduledTime}`);
-    if (isPast(sessionDate)) {
-        return { text: 'Expired', variant: 'destructive' };
+    try {
+        const sessionDate = parseISO(`${session.scheduledDate}T${session.scheduledTime}`);
+        if (isPast(sessionDate)) {
+            return { text: 'Expired', variant: 'destructive' };
+        }
+        return { text: 'Active', variant: 'default' };
+    } catch (e) {
+        return { text: 'Invalid Date', variant: 'destructive' };
     }
-    return { text: 'Active', variant: 'default' };
 };
 
 
@@ -111,11 +115,18 @@ export default function SessionsPage() {
   const handleFormSubmit = (data: Partial<Session>) => {
     if (!firestore) return;
 
+    // The mentorName should be derived from the selected mentorId
+    const selectedMentor = mentors?.find(m => m.id === data.mentorId);
+    const submissionData = {
+        ...data,
+        mentorName: selectedMentor?.name || 'Unknown Mentor',
+    };
+
     if (selectedSession) { // Update
-      SessionsAPI.updateSession(firestore, selectedSession.id, data);
+      SessionsAPI.updateSession(firestore, selectedSession.id, submissionData);
        toast({ title: 'Session Updated', description: `The session "${data.name}" has been updated.` });
     } else { // Create
-      SessionsAPI.createSession(firestore, data as Session);
+      SessionsAPI.createSession(firestore, submissionData as Session);
       toast({ title: 'Session Created', description: `The session "${data.name}" has been created.` });
     }
     
@@ -248,11 +259,14 @@ export default function SessionsPage() {
                     : 'Create a new session template that mentees can book.'}
                 </DialogDescription>
               </DialogHeader>
-              <SessionForm
-                session={selectedSession}
-                mentors={mentors || []}
-                onSubmit={handleFormSubmit}
-              />
+              {isFormOpen && (
+                <SessionForm
+                  key={selectedSession?.id || 'new'}
+                  session={selectedSession}
+                  mentors={mentors || []}
+                  onSubmit={handleFormSubmit}
+                />
+              )}
             </DialogContent>
           </Dialog>
         </div>

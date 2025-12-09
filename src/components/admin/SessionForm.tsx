@@ -61,33 +61,20 @@ export const SessionForm: React.FC<SessionFormProps> = ({
   const form = useForm<SessionFormValues>({
     resolver: zodResolver(sessionFormSchema),
     defaultValues: {
-      name: session?.name || '',
-      mentorId: session?.mentorId || '',
-      sessionType: session?.sessionType || 'Paid',
+      name: '',
+      mentorId: '',
+      sessionType: 'Paid',
+      scheduledDate: undefined,
+      scheduledTime: '',
+      sessionFee: 0,
+      tag: '',
+      offerings: '',
+      bestSuitedFor: '',
+      requirements: '',
+      ...session,
       scheduledDate: session?.scheduledDate ? new Date(session.scheduledDate) : undefined,
-      scheduledTime: session?.scheduledTime || '',
-      sessionFee: session?.sessionFee || 0,
-      tag: session?.tag || '',
-      offerings: session?.offerings || '',
-      bestSuitedFor: session?.bestSuitedFor || '',
-      requirements: session?.requirements || '',
     },
   });
-
-  useEffect(() => {
-    form.reset({
-      name: session?.name || '',
-      mentorId: session?.mentorId || '',
-      sessionType: session?.sessionType || 'Paid',
-      scheduledDate: session?.scheduledDate ? new Date(session.scheduledDate) : undefined,
-      scheduledTime: session?.scheduledTime || '',
-      sessionFee: session?.sessionFee || 0,
-      tag: session?.tag || '',
-      offerings: session?.offerings || '',
-      bestSuitedFor: session?.bestSuitedFor || '',
-      requirements: session?.requirements || '',
-    });
-  }, [session, form]);
 
   const handleFormSubmit = (values: SessionFormValues) => {
     onSubmit({
@@ -97,6 +84,14 @@ export const SessionForm: React.FC<SessionFormProps> = ({
   };
 
   const sessionType = form.watch('sessionType');
+  
+   // Sync sessionFee with sessionType
+  useEffect(() => {
+    if (sessionType === 'Free') {
+      form.setValue('sessionFee', 0);
+    }
+  }, [sessionType, form]);
+
 
   return (
     <Form {...form}>
@@ -128,11 +123,17 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {mentors.map((mentor) => (
-                      <SelectItem key={mentor.id} value={mentor.id}>
-                        {mentor.name}
+                     {mentors.length > 0 ? (
+                      mentors.map((mentor) => (
+                        <SelectItem key={mentor.id} value={mentor.id}>
+                          {mentor.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-mentors" disabled>
+                        No mentors available
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
