@@ -17,7 +17,6 @@ import {
 const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/tips', label: 'Tips' },
-  { href: '/sessions', label: 'Sessions' },
 ];
 
 export function MenteeHeader() {
@@ -68,12 +67,6 @@ export function MenteeHeader() {
               {link.label}
             </Link>
           ))}
-           <Link
-              href="/mentors"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Mentors
-            </Link>
         </nav>
         <div className="ml-auto flex items-center gap-4">
           {isUserLoading ? null : user ? (
