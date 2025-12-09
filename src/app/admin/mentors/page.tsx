@@ -63,12 +63,12 @@ export default function MentorsPage() {
     let q: Query = collection(firestore, 'mentors');
 
     if (statusFilter === 'active') {
-      q = query(q, where('isActive', '==', true));
+      q = query(q, where('isActive', '==', true), orderBy('createdAt', 'desc'));
     } else if (statusFilter === 'inactive') {
-      q = query(q, where('isActive', '==', false));
+      q = query(q, where('isActive', '==', false), orderBy('createdAt', 'desc'));
+    } else {
+      q = query(q, orderBy('createdAt', 'desc'));
     }
-    
-    q = query(q, orderBy('createdAt', 'desc'));
     
     return q;
   }, [firestore, statusFilter]);
