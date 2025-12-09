@@ -47,55 +47,9 @@ import { DisbursementForm } from '@/components/admin/DisbursementForm';
 import type { Disbursement, Mentor } from '@/lib/types';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
-
-// Placeholder data
-const placeholderDisbursements: (Disbursement & { mentorName: string })[] = [
-  {
-    id: 'D01',
-    mentorId: 'M02',
-    mentorName: 'Dr. Samuel Cortez',
-    totalAmount: 350,
-    sessions: ['S05', 'S06'],
-    status: 'paid',
-    paidAt: '2024-05-30T10:00:00Z',
-    createdAt: '2024-05-29T10:00:00Z',
-    adminId: 'A01',
-  },
-  {
-    id: 'D02',
-    mentorId: 'M01',
-    mentorName: 'Dr. Evelyn Reed',
-    totalAmount: 150,
-    sessions: ['S01', 'S04'],
-    status: 'pending',
-    createdAt: '2024-06-01T11:00:00Z',
-    adminId: 'A01',
-  },
-];
-
-const placeholderMentors: Mentor[] = [
-  {
-    id: 'M01',
-    name: 'Dr. Evelyn Reed',
-    email: 'e.reed@example.com',
-    createdAt: '',
-    isActive: true,
-  },
-  {
-    id: 'M02',
-    name: 'Dr. Samuel Cortez',
-    email: 's.cortez@example.com',
-    createdAt: '',
-    isActive: true,
-  },
-  {
-    id: 'M03',
-    name: 'Alicia Chen',
-    email: 'a.chen@example.com',
-    createdAt: '',
-    isActive: true,
-  },
-];
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, where } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getStatusBadgeVariant = (status: Disbursement['status']) => {
   switch (status) {
@@ -109,8 +63,21 @@ const getStatusBadgeVariant = (status: Disbursement['status']) => {
 };
 
 export default function DisbursementsPage() {
+  const firestore = useFirestore();
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<Disbursement | null>(null);
+
+  const disbursementsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'disbursements'), orderBy('createdAt', 'desc'));
+  }, [firestore]);
+  const { data: disbursements, isLoading: loadingDisbursements } = useCollection<Disbursement>(disbursementsQuery);
+
+  const mentorsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'mentors'), where('isActive', '==', true));
+  }, [firestore]);
+  const { data: mentors, isLoading: loadingMentors } = useCollection<Mentor>(mentorsQuery);
 
   const handleCreateNew = () => {
     setSelected(null);
@@ -126,6 +93,74 @@ export default function DisbursementsPage() {
     console.log('Disbursement form submitted', data);
     setIsFormOpen(false);
   };
+
+  const renderTableBody = () => {
+    if (loadingDisbursements) {
+      return Array.from({ length: 2 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell>
+        </TableRow>
+      ));
+    }
+    if (!disbursements || disbursements.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={6} className="text-center">No disbursements found.</TableCell>
+        </TableRow>
+      );
+    }
+
+    return disbursements.map((item) => (
+        <TableRow key={item.id}>
+          <TableCell>
+            <div className="font-medium">{item.mentorId}</div>
+            {/* <div className="text-sm text-muted-foreground">{item.mentorId}</div> */}
+          </TableCell>
+            <TableCell>
+            {format(new Date(item.createdAt), 'MMM d, yyyy')}
+          </TableCell>
+          <TableCell>
+            {item.paidAt
+              ? format(new Date(item.paidAt), 'MMM d, yyyy')
+              : 'N/A'}
+          </TableCell>
+          <TableCell>
+            <Badge variant={getStatusBadgeVariant(item.status)}>
+              {item.status}
+            </Badge>
+          </TableCell>
+          <TableCell className="text-right">
+            {formatCurrency(item.totalAmount)}
+          </TableCell>
+          <TableCell>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-haspopup="true"
+                  size="icon"
+                  variant="ghost"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleEdit(item)}>
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem>View Details</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled={item.status === 'paid'}>
+                  Mark as Paid
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </TableCell>
+        </TableRow>
+      ));
+  };
+
 
   return (
     <>
@@ -185,7 +220,7 @@ export default function DisbursementsPage() {
               </DialogHeader>
               <DisbursementForm
                 disbursement={selected}
-                mentors={placeholderMentors}
+                mentors={mentors || []}
                 onSubmit={handleFormSubmit}
               />
             </DialogContent>
@@ -214,57 +249,7 @@ export default function DisbursementsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {placeholderDisbursements.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <div className="font-medium">{item.mentorName}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {item.mentorId}
-                    </div>
-                  </TableCell>
-                   <TableCell>
-                    {format(new Date(item.createdAt), 'MMM d, yyyy')}
-                  </TableCell>
-                  <TableCell>
-                    {item.paidAt
-                      ? format(new Date(item.paidAt), 'MMM d, yyyy')
-                      : 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(item.status)}>
-                      {item.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatCurrency(item.totalAmount)}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          aria-haspopup="true"
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEdit(item)}>
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem disabled={item.status === 'paid'}>
-                          Mark as Paid
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {renderTableBody()}
             </TableBody>
           </Table>
         </CardContent>

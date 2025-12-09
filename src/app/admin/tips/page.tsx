@@ -44,38 +44,24 @@ import { Badge } from '@/components/ui/badge';
 import { TipForm } from '@/components/admin/TipForm';
 import type { Tip } from '@/lib/types';
 import { format } from 'date-fns';
-
-// Placeholder data
-const placeholderTips: Tip[] = [
-  {
-    id: 'T01',
-    title: 'How to Prepare for Your First Mentorship Session',
-    description: 'A quick guide to get the most out of your meeting.',
-    isActive: true,
-    createdAt: '2024-05-15T10:00:00Z',
-    adminId: 'A01',
-  },
-  {
-    id: 'T02',
-    title: 'Setting Clear Goals with Your Mentor',
-    description: 'Define what you want to achieve.',
-    isActive: true,
-    createdAt: '2024-05-20T11:30:00Z',
-    adminId: 'A01',
-  },
-  {
-    id: 'T03',
-    title: 'The Art of Following Up',
-    description: 'Keep the momentum going after your session ends.',
-    isActive: false,
-    createdAt: '2024-04-10T09:00:00Z',
-    adminId: 'A01',
-  },
-];
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import { TipsAPI } from '@/lib/firebase-adapter';
+import { useToast } from '@/hooks/use-toast';
 
 export default function TipsPage() {
+  const firestore = useFirestore();
+  const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<Tip | null>(null);
+
+  const tipsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'tips'), orderBy('createdAt', 'desc'));
+  }, [firestore]);
+
+  const { data: tips, isLoading, error } = useCollection<Tip>(tipsQuery);
 
   const handleCreateNew = () => {
     setSelected(null);
@@ -87,9 +73,79 @@ export default function TipsPage() {
     setIsFormOpen(true);
   };
 
+  const handleDelete = (tipId: string) => {
+    if (!firestore) return;
+    TipsAPI.deleteTip(firestore, tipId);
+    toast({ title: 'Tip Deleted' });
+  };
+
   const handleFormSubmit = (data: Partial<Tip>) => {
-    console.log('Tip form submitted', data);
+    if (!firestore) return;
+    if (selected) {
+      TipsAPI.updateTip(firestore, selected.id, data);
+      toast({ title: 'Tip Updated' });
+    } else {
+      const newTip: Tip = {
+        ...data,
+        id: '', // Firestore will generate it
+        adminId: 'admin', // Replace with actual admin ID
+        createdAt: new Date().toISOString(),
+        isActive: data.isActive ?? true,
+      } as Tip;
+      TipsAPI.createTip(firestore, newTip);
+      toast({ title: 'Tip Created' });
+    }
     setIsFormOpen(false);
+  };
+
+  const renderTableBody = () => {
+    if (isLoading) {
+      return Array.from({ length: 3 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell colSpan={4}><Skeleton className="h-8 w-full" /></TableCell>
+        </TableRow>
+      ));
+    }
+    if (error) {
+      return <TableRow><TableCell colSpan={4} className="text-center text-destructive">Error: {error.message}</TableCell></TableRow>;
+    }
+    if (!tips || tips.length === 0) {
+      return <TableRow><TableCell colSpan={4} className="text-center">No tips found.</TableCell></TableRow>;
+    }
+    return tips.map((tip) => (
+      <TableRow key={tip.id}>
+        <TableCell className="font-medium">{tip.title}</TableCell>
+        <TableCell>
+          <Badge variant={tip.isActive ? 'default' : 'secondary'}>
+            {tip.isActive ? 'Active' : 'Inactive'}
+          </Badge>
+        </TableCell>
+        <TableCell>
+          {format(new Date(tip.createdAt), 'MMM d, yyyy')}
+        </TableCell>
+        <TableCell>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                aria-haspopup="true"
+                size="icon"
+                variant="ghost"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleEdit(tip)}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDelete(tip.id)}>Delete</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+      </TableRow>
+    ));
   };
 
   return (
@@ -163,40 +219,7 @@ export default function TipsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {placeholderTips.map((tip) => (
-                <TableRow key={tip.id}>
-                  <TableCell className="font-medium">{tip.title}</TableCell>
-                  <TableCell>
-                    <Badge variant={tip.isActive ? 'default' : 'secondary'}>
-                      {tip.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(tip.createdAt), 'MMM d, yyyy')}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          aria-haspopup="true"
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEdit(tip)}>
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {renderTableBody()}
             </TableBody>
           </Table>
         </CardContent>
