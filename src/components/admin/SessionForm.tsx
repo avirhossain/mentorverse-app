@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -71,10 +71,33 @@ export const SessionForm: React.FC<SessionFormProps> = ({
       offerings: '',
       bestSuitedFor: '',
       requirements: '',
-      ...session,
-      scheduledDate: session?.scheduledDate ? new Date(session.scheduledDate) : undefined,
     },
   });
+
+  useEffect(() => {
+    // When the session prop changes (i.e., when opening the dialog for a new or existing session),
+    // reset the form with the appropriate values.
+    if (session) {
+      form.reset({
+        ...session,
+        scheduledDate: session.scheduledDate ? new Date(session.scheduledDate) : undefined,
+      });
+    } else {
+      // If creating a new session, reset to blank defaults.
+      form.reset({
+        name: '',
+        mentorId: '',
+        sessionType: 'Paid',
+        scheduledDate: undefined,
+        scheduledTime: '',
+        sessionFee: 0,
+        tag: '',
+        offerings: '',
+        bestSuitedFor: '',
+        requirements: '',
+      });
+    }
+  }, [session, form]);
 
   const handleFormSubmit = (values: SessionFormValues) => {
     onSubmit({
@@ -116,7 +139,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Mentor</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} defaultValue="">
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a mentor" />
