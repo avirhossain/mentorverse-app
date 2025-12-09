@@ -2,51 +2,24 @@
 import { SessionCard } from './SessionCard';
 import type { Session } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 
-const placeholderSessions: Session[] = [
-  {
-    "id": "SES01",
-    "mentorId": "MEN01",
-    "mentorName": "Dr. Evelyn Reed",
-    "name": "Intro to Quantum Computing",
-    "sessionType": "Paid",
-    "scheduledDate": "2024-08-15",
-    "scheduledTime": "14:00",
-    "sessionFee": 50,
-    "isActive": true,
-    "tag": "Tech",
-  },
-  {
-    "id": "SES02",
-    "mentorId": "MEN02",
-    "mentorName": "Dr. Samuel Cortez",
-    "name": "Fundamentals of UX Design",
-    "sessionType": "Free",
-    "scheduledDate": "2024-08-20",
-    "scheduledTime": "11:00",
-    "sessionFee": 0,
-    "isActive": true,
-    "tag": "Design"
-  },
-  {
-    "id": "SES03",
-    "mentorId": "MEN01",
-    "mentorName": "Dr. Evelyn Reed",
-    "name": "AI Ethics & Governance",
-    "sessionType": "Paid",
-    "scheduledDate": "2024-09-05",
-    "scheduledTime": "16:00",
-    "sessionFee": 75,
-    "isActive": true,
-    "tag": "AI"
-  }
-];
 
 export function UpcomingSessions() {
-  const sessions = placeholderSessions;
-  const isLoading = false;
-  const error = null;
+  const firestore = useFirestore();
 
+  const sessionsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'sessions'),
+      where('isActive', '==', true),
+      orderBy('scheduledDate', 'desc'),
+      limit(3)
+    );
+  }, [firestore]);
+  
+  const { data: sessions, isLoading, error } = useCollection<Session>(sessionsQuery);
 
   const renderContent = () => {
     if (isLoading) {

@@ -21,7 +21,7 @@ export function FeaturedMentors() {
     return query(
       collection(firestore, 'mentors'),
       where('isActive', '==', true),
-      orderBy('ratingAvg', 'desc'),
+      orderBy('createdAt', 'desc'),
       limit(5)
     );
   }, [firestore]);
@@ -104,7 +104,7 @@ export function FeaturedMentors() {
     <section className="bg-muted/40 py-12 sm:py-16">
       <div className="container mx-auto px-4">
         <h2 className="text-center text-3xl font-bold tracking-tight">
-          Meet Our Top Mentors
+          Meet Our Newest Mentors
         </h2>
         <p className="mx-auto mt-2 max-w-2xl text-center text-lg text-muted-foreground">
           Hand-picked experts to help you achieve your goals.

@@ -2,52 +2,26 @@
 
 import { SessionCard } from '@/components/mentee/SessionCard';
 import type { Session } from '@/lib/types';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Placeholder data, admin-managed sessions will be fetched in a real app
-const placeholderSessions: Session[] = [
-  {
-    "id": "SES01",
-    "mentorId": "MEN01",
-    "mentorName": "Dr. Evelyn Reed",
-    "name": "Intro to Quantum Computing",
-    "sessionType": "Paid",
-    "scheduledDate": "2024-08-15",
-    "scheduledTime": "14:00",
-    "sessionFee": 50,
-    "isActive": true,
-    "tag": "Tech",
-  },
-  {
-    "id": "SES02",
-    "mentorId": "MEN02",
-    "mentorName": "Dr. Samuel Cortez",
-    "name": "Fundamentals of UX Design",
-    "sessionType": "Free",
-    "scheduledDate": "2024-08-20",
-    "scheduledTime": "11:00",
-    "sessionFee": 0,
-    "isActive": true,
-    "tag": "Design"
-  }
-];
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 
 
 export default function SessionsPage() {
-  
-  const sessions = placeholderSessions;
-  const isLoading = false;
-  const error = null;
+  const firestore = useFirestore();
 
+  const sessionsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'sessions'),
+      where('isActive', '==', true),
+      orderBy('scheduledDate', 'desc')
+    );
+  }, [firestore]);
+
+  const { data: sessions, isLoading, error } = useCollection<Session>(sessionsQuery);
 
   const renderContent = () => {
     if (isLoading) {
@@ -94,27 +68,6 @@ export default function SessionsPage() {
             placeholder="Search by session or mentor name..."
             className="pl-8"
           />
-        </div>
-        <div className="flex items-center gap-4">
-           <Select>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filter by type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="free">Free</SelectItem>
-              <SelectItem value="paid">Paid</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="date">Newest</SelectItem>
-              <SelectItem value="popular">Popular</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
       {renderContent()}

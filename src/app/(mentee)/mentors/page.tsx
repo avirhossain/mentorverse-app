@@ -2,13 +2,6 @@
 
 import { MentorCard } from '@/components/mentee/MentorCard';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import type { Mentor } from '@/lib/types';
 import { Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -74,18 +67,6 @@ export default function MentorsPage() {
             placeholder="Search by name or expertise..."
             className="pl-8"
           />
-        </div>
-        <div className="flex items-center gap-4">
-          <Select>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="rating">Top Rated</SelectItem>
-              <SelectItem value="experience">Most Experienced</SelectItem>
-              <SelectItem value="newest">Newest</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
       {renderContent()}
