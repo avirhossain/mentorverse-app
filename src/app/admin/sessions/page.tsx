@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { PlusCircle, File, ListFilter, MoreHorizontal, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,6 +46,7 @@ import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SessionsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 const getTypeBadgeVariant = (type: Session['sessionType']) => {
     switch (type) {
@@ -69,6 +71,7 @@ const getStatusBadgeVariant = (status?: Session['status']): "default" | "seconda
 export default function SessionsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
   
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedSession, setSelectedSession] = React.useState<Session | null>(null);
@@ -89,12 +92,6 @@ export default function SessionsPage() {
   }, [firestore]);
   const { data: mentors, isLoading: isLoadingMentors } = useCollection<Mentor>(mentorsQuery);
 
-
-  const handleCreateNew = () => {
-    setSelectedSession(null);
-    setIsFormOpen(true);
-  };
-
   const handleEdit = (session: Session) => {
     setSelectedSession(session);
     setIsFormOpen(true);
@@ -106,23 +103,17 @@ export default function SessionsPage() {
     toast({ title: 'Session deleted' });
   }
 
-  const handleFormSubmit = (data: Partial<Session>) => {
-    if (!firestore) return;
+  const handleEditFormSubmit = (data: Partial<Session>) => {
+    if (!firestore || !selectedSession) return;
 
-    // The mentorName should be derived from the selected mentorId
     const selectedMentor = mentors?.find(m => m.id === data.mentorId);
     const submissionData = {
         ...data,
         mentorName: selectedMentor?.name || 'Unknown Mentor',
     };
 
-    if (selectedSession) { // Update
-      SessionsAPI.updateSession(firestore, selectedSession.id, submissionData);
-       toast({ title: 'Session Updated', description: `The session "${data.name}" has been updated.` });
-    } else { // Create
-      SessionsAPI.createSession(firestore, submissionData as Session);
-      toast({ title: 'Session Created', description: `The session "${data.name}" has been created.` });
-    }
+    SessionsAPI.updateSession(firestore, selectedSession.id, submissionData);
+    toast({ title: 'Session Updated', description: `The session "${data.name}" has been updated.` });
     
     setIsFormOpen(false);
     setSelectedSession(null);
@@ -232,36 +223,14 @@ export default function SessionsPage() {
               Export
             </span>
           </Button>
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="h-8 gap-1" onClick={handleCreateNew}>
-                <PlusCircle className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-rap">
-                  Create Session
-                </span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {selectedSession ? 'Edit Session Offering' : 'Create Session Offering'}
-                </DialogTitle>
-                <DialogDescription>
-                  {selectedSession
-                    ? "Update the session's details."
-                    : 'Create a new session template that mentees can book.'}
-                </DialogDescription>
-              </DialogHeader>
-              {isFormOpen && (
-                <SessionForm
-                  key={selectedSession?.id || 'new'}
-                  session={selectedSession}
-                  mentors={mentors || []}
-                  onSubmit={handleFormSubmit}
-                />
-              )}
-            </DialogContent>
-          </Dialog>
+          <Button asChild size="sm" className="h-8 gap-1">
+            <Link href="/admin/sessions/create">
+              <PlusCircle className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                Create Session
+              </span>
+            </Link>
+          </Button>
         </div>
       </div>
       <Card>
@@ -292,6 +261,28 @@ export default function SessionsPage() {
           </Table>
         </CardContent>
       </Card>
+      
+      {/* Dialog for Editing */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  Edit Session Offering
+                </DialogTitle>
+                <DialogDescription>
+                  Update the session's details.
+                </DialogDescription>
+              </DialogHeader>
+              {selectedSession && (
+                <SessionForm
+                  key={selectedSession.id}
+                  session={selectedSession}
+                  mentors={mentors || []}
+                  onSubmit={handleEditFormSubmit}
+                />
+              )}
+            </DialogContent>
+      </Dialog>
     </>
   );
 }
