@@ -73,7 +73,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
       sessionType: session?.sessionType || 'Paid',
       status: session?.status || 'Draft',
       scheduledDate: session?.scheduledDate
-        ? new Date(`${session.scheduledDate}T00:00:00`)
+        ? new Date(session.scheduledDate + 'T00:00:00')
         : undefined,
       scheduledTime: session?.scheduledTime || '',
       sessionFee: session?.sessionFee || 0,
@@ -208,12 +208,12 @@ export const SessionForm: React.FC<SessionFormProps> = ({
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-           <FormField
-            control={form.control}
-            name="scheduledDate"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Pick a date and time</FormLabel>
+          <FormItem>
+            <FormLabel>Pick a date and time</FormLabel>
+            <Controller
+              name="scheduledDate"
+              control={form.control}
+              render={({ field }) => (
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -228,9 +228,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                           format(field.value, 'PPP')
                         ) : (
                           <span>Pick a date</span>
-                        )}{' '}
-                        {form.watch('scheduledTime') &&
-                          `at ${form.watch('scheduledTime')}`}
+                        )}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
@@ -242,15 +240,15 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                       onSelect={field.onChange}
                       initialFocus
                     />
-                    <div className="border-t p-4">
+                     <div className="border-t p-4">
                       <FormField
                         control={form.control}
                         name="scheduledTime"
-                        render={({ field }) => (
+                        render={({ field: timeField }) => (
                           <FormItem>
                             <FormLabel>Time</FormLabel>
                             <FormControl>
-                              <Input type="time" {...field} />
+                              <Input type="time" {...timeField} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -259,10 +257,11 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                     </div>
                   </PopoverContent>
                 </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              )}
+            />
+             <FormMessage>{form.formState.errors.scheduledDate?.message}</FormMessage>
+          </FormItem>
+
           <FormField
             control={form.control}
             name="status"
