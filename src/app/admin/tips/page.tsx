@@ -6,7 +6,6 @@ import {
   PlusCircle,
   File,
   ListFilter,
-  MoreHorizontal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +19,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -54,15 +52,15 @@ export default function TipsPage() {
     if (isLoading) {
       return Array.from({ length: 3 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell colSpan={4}><Skeleton className="h-8 w-full" /></TableCell>
+          <TableCell colSpan={3}><Skeleton className="h-8 w-full" /></TableCell>
         </TableRow>
       ));
     }
     if (error) {
-      return <TableRow><TableCell colSpan={4} className="text-center text-destructive">Error: {error.message}</TableCell></TableRow>;
+      return <TableRow><TableCell colSpan={3} className="text-center text-destructive">Error: {error.message}</TableCell></TableRow>;
     }
     if (!tips || tips.length === 0) {
-      return <TableRow><TableCell colSpan={4} className="text-center">No tips found.</TableCell></TableRow>;
+      return <TableRow><TableCell colSpan={3} className="text-center">No tips found.</TableCell></TableRow>;
     }
     return tips.map((tip) => (
       <TableRow key={tip.id}>
@@ -74,26 +72,6 @@ export default function TipsPage() {
         </TableCell>
         <TableCell>
           {format(new Date(tip.createdAt), 'MMM d, yyyy')}
-        </TableCell>
-        <TableCell>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                aria-haspopup="true"
-                size="icon"
-                variant="ghost"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem asChild>
-                <Link href={`/admin/tips/${tip.id}`}>View Details</Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </TableCell>
       </TableRow>
     ));
@@ -149,9 +127,6 @@ export default function TipsPage() {
                 <TableHead>Title</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
