@@ -436,6 +436,9 @@
         "description": {
           "type": "string"
         },
+        "reference": {
+          "type": "string"
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time"
@@ -473,6 +476,87 @@
         "amount",
         "createdAt"
       ]
+    },
+    "specialRequest": {
+      "title": "Special Request",
+      "description": "A special session request from a mentee to a mentor.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "menteeId": {
+          "type": "string"
+        },
+        "menteeName": {
+          "type": "string"
+        },
+        "mentorId": {
+          "type": "string"
+        },
+        "mentorName": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "approved",
+            "denied"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "menteeId",
+        "menteeName",
+        "mentorId",
+        "mentorName",
+        "message",
+        "status",
+        "createdAt"
+      ]
+    },
+    "notification": {
+      "title": "Notification",
+      "description": "A notification for a mentee.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "menteeId": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "isRead": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "link": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "menteeId",
+        "message",
+        "isRead",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -506,6 +590,12 @@
       },
       "description": "Subcollection storing account balance history for a specific mentee."
     },
+    "/mentees/{menteeId}/notifications/{notificationId}": {
+      "schema": {
+        "$ref": "#/entities/notification"
+      },
+      "description": "Subcollection storing notifications for a specific mentee."
+    },
     "/sessions/{sessionId}": {
       "schema": {
         "$ref": "#/entities/session"
@@ -535,6 +625,12 @@
         "$ref": "#/entities/disbursement"
       },
       "description": "Tracks mentor payout status, managed by admins."
+    },
+    "/specialRequests/{requestId}": {
+      "schema": {
+        "$ref": "#/entities/specialRequest"
+      },
+      "description": "Stores special session requests from mentees."
     }
   }
 }

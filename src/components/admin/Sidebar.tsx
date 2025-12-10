@@ -8,6 +8,7 @@ import {
   Wallet,
   Settings,
   Lightbulb,
+  Inbox,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -25,6 +26,7 @@ const navItems = [
   { href: '/admin/sessions', icon: Clock, label: 'Sessions' },
   { href: '/admin/disbursements', icon: Wallet, label: 'Disbursements' },
   { href: '/admin/tips', icon: Lightbulb, label: 'Tips' },
+  { href: '/admin/inbox', icon: Inbox, label: 'Inbox' },
 ];
 
 export function Sidebar() {

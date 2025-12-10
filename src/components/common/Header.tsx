@@ -5,7 +5,7 @@ import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { PanelLeft, Home, Users, BookUser, Clock, Wallet, Settings, Lightbulb } from 'lucide-react';
+import { PanelLeft, Home, Users, BookUser, Clock, Wallet, Settings, Lightbulb, Inbox } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +16,7 @@ const navItems = [
   { href: '/admin/sessions', icon: Clock, label: 'Sessions' },
   { href: '/admin/disbursements', icon: Wallet, label: 'Disbursements' },
   { href: '/admin/tips', icon: Lightbulb, label: 'Tips' },
+  { href: '/admin/inbox', icon: Inbox, label: 'Inbox' },
 ];
 
 
@@ -46,7 +47,7 @@ export const Header = () => {
                   href="#"
                   className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
                 >
-                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 transition-all group-hover:scale-110"><path d="M12 3L2 9L12 15L22 9L12 3Z"></path><path d="M2 9V15L12 21L22 15V9"></path></svg>
+                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 transition-all group-hover:scale-110"><path d="M12 3L2 9L12 15L22 9L12 3Z"></path><path d="M2 9V15L12 21L22 15V9"></path></svg>
                   <span className="sr-only">MentorVerse</span>
                 </Link>
                 {navItems.map(item => (

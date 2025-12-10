@@ -73,6 +73,12 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
+    // Special Requests: Mentees can create, Admins can read/update.
+    match /specialRequests/{requestId} {
+      allow get, list, update: if isAdmin();
+      allow create: if request.auth != null && isMenteeActive(request.auth.uid) && isOwner(request.resource.data.menteeId);
+    }
+
     // --- Admin-only or user-specific subcollections ---
 
     match /disbursements/{disbursementId} {
@@ -81,6 +87,10 @@ service cloud.firestore {
 
     match /mentees/{menteeId}/transactions/{transactionId} {
       allow read, write: if (isOwner(menteeId) && isMenteeActive(menteeId)) || isAdmin();
+    }
+
+    match /mentees/{menteeId}/notifications/{notificationId} {
+        allow read, write: if isOwner(menteeId) || isAdmin();
     }
     
     match /mentors/{mentorId}/payouts/{payoutId} {

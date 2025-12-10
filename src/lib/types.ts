@@ -73,7 +73,6 @@ export interface Booking {
   adminDisbursementStatus: 'pending' | 'paid';
 }
 
-
 export interface Review {
   id: string; // Corresponds to document ID
   bookingId: string;
@@ -103,6 +102,26 @@ export interface Disbursement {
   paidAt?: string; // ISO 8601 date string
   createdAt: string; // ISO 8601 date string
   adminId: string;
+}
+
+export interface SpecialRequest {
+    id: string;
+    menteeId: string;
+    menteeName: string;
+    mentorId: string;
+    mentorName: string;
+    message: string;
+    status: 'pending' | 'approved' | 'denied';
+    createdAt: string; // ISO 8601 date string
+}
+
+export interface Notification {
+    id: string;
+    menteeId: string;
+    message: string;
+    isRead: boolean;
+    createdAt: string; // ISO 8601 date string
+    link?: string;
 }
 
 // Subcollection types
