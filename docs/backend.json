@@ -191,6 +191,10 @@
           "type": "string",
           "format": "time"
         },
+        "duration": {
+          "type": "number",
+          "description": "The duration of the session in minutes."
+        },
         "sessionFee": {
           "type": "number"
         },

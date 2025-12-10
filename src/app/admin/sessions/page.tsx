@@ -34,6 +34,7 @@ import { format } from 'date-fns';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatCurrency } from '@/lib/utils';
 
 const getTypeBadgeVariant = (type: Session['sessionType']) => {
     switch (type) {
@@ -107,7 +108,7 @@ export default function SessionsPage() {
               {session.status || 'Draft'}
             </Badge>
           </TableCell>
-          <TableCell className="text-right">${session.sessionFee.toFixed(2)}</TableCell>
+          <TableCell className="text-right">{formatCurrency(session.sessionFee)}</TableCell>
           <TableCell className="text-right">
             <Button asChild variant="outline" size="sm">
               <Link href="#">View</Link>

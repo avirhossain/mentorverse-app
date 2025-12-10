@@ -51,6 +51,7 @@ export interface Session {
   sessionType: 'Free' | 'Paid' | 'Exclusive';
   scheduledDate: string; // YYYY-MM-DD
   scheduledTime: string; // HH:mm
+  duration?: number; // Duration in minutes
   sessionFee: number;
   status?: 'Active' | 'Expired' | 'Draft';
 }

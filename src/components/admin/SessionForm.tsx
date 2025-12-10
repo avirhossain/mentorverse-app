@@ -45,6 +45,7 @@ const sessionFormSchema = z.object({
   scheduledTime: z
     .string()
     .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:mm).'),
+  duration: z.coerce.number().min(1, 'Duration must be greater than 0.').optional(),
   sessionFee: z.coerce.number().min(0).default(0),
   tag: z.string().optional(),
   offerings: z.string().optional(),
@@ -76,6 +77,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
         ? new Date(session.scheduledDate + 'T00:00:00')
         : undefined,
       scheduledTime: session?.scheduledTime || '',
+      duration: session?.duration || 60,
       sessionFee: session?.sessionFee || 0,
       tag: session?.tag || '',
       offerings: session?.offerings || '',
@@ -206,46 +208,46 @@ export const SessionForm: React.FC<SessionFormProps> = ({
             )}
           />
         </div>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-           <Controller
-              control={form.control}
-              name="scheduledDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Scheduled Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={'outline'}
-                          className={cn(
-                            'w-full pl-3 text-left font-normal',
-                            !field.value && 'text-muted-foreground'
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, 'PPP')
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <Controller
+            control={form.control}
+            name="scheduledDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Scheduled Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={'outline'}
+                        className={cn(
+                          'w-full pl-3 text-left font-normal',
+                          !field.value && 'text-muted-foreground'
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, 'PPP')
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="scheduledTime"
@@ -254,6 +256,19 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                 <FormLabel>Scheduled Time</FormLabel>
                 <FormControl>
                   <Input type="time" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="duration"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Duration (minutes)</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="e.g., 60" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
