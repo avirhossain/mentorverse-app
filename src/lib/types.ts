@@ -27,6 +27,7 @@ export interface AvailabilitySlot {
 
 export interface Mentee {
   id: string; // Matches Firebase Auth UID
+  displayId?: string; // Human-readable ID for admin panel
   name: string;
   email: string;
   phone?: string;

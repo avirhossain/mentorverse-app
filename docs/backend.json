@@ -98,6 +98,10 @@
           "type": "string",
           "description": "Matches the Firebase Auth UID."
         },
+        "displayId": {
+          "type": "string",
+          "description": "A human-readable, unique ID for the admin panel."
+        },
         "name": {
           "type": "string"
         },

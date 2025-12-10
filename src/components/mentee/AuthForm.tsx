@@ -97,8 +97,12 @@ export function AuthForm() {
     if (!user) return;
 
     try {
+      // Create a human-readable display ID.
+      const displayId = `U${Date.now().toString().slice(-6)}`;
+      
       await MenteesAPI.createMentee(firestore, user.uid, {
         id: user.uid,
+        displayId: displayId,
         name: name || user.displayName || 'Anonymous User',
         email: user.email || '',
         createdAt: new Date().toISOString(),
