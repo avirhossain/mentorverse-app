@@ -5,7 +5,7 @@ import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { PanelLeft, Home, Users, BookUser, Clock, Wallet, Settings, Lightbulb, Inbox } from 'lucide-react';
+import { PanelLeft, Home, Users, BookUser, Clock, Wallet, Settings, Lightbulb, Inbox, UserPlus } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +17,7 @@ const navItems = [
   { href: '/admin/disbursements', icon: Wallet, label: 'Disbursements' },
   { href: '/admin/tips', icon: Lightbulb, label: 'Tips' },
   { href: '/admin/inbox', icon: Inbox, label: 'Inbox' },
+  { href: '/admin/waitlist', icon: UserPlus, label: 'Waitlist' },
 ];
 
 

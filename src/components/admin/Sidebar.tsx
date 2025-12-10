@@ -9,6 +9,7 @@ import {
   Settings,
   Lightbulb,
   Inbox,
+  UserPlus,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -27,6 +28,7 @@ const navItems = [
   { href: '/admin/disbursements', icon: Wallet, label: 'Disbursements' },
   { href: '/admin/tips', icon: Lightbulb, label: 'Tips' },
   { href: '/admin/inbox', icon: Inbox, label: 'Inbox' },
+  { href: '/admin/waitlist', icon: UserPlus, label: 'Waitlist' },
 ];
 
 export function Sidebar() {
@@ -44,7 +46,7 @@ export function Sidebar() {
               xmlns="http://www.w3.org/2000/svg"
               width="24"
               height="24"
-              viewBox="0 0 24 24"
+              viewBox="0 0 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"

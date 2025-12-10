@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 
 /** Utility type to add an 'id' field to a given type T. */
-export type WithId<T> = T & { id: string };
+export type WithId<T> = T & { id: string, ref: DocumentReference };
 
 /**
  * Interface for the return value of the useCollection hook.
@@ -51,6 +51,7 @@ export interface InternalQuery extends Query<DocumentData> {
  */
 export function useCollection<T = any>(
     memoizedTargetRefOrQuery: ((CollectionReference<DocumentData> | Query<DocumentData>) & {__memo?: boolean})  | null | undefined,
+    bypassMemoizationCheck = false
 ): UseCollectionResult<T> {
   type ResultItemType = WithId<T>;
   type StateDataType = ResultItemType[] | null;
@@ -75,7 +76,7 @@ export function useCollection<T = any>(
       (snapshot: QuerySnapshot<DocumentData>) => {
         const results: ResultItemType[] = [];
         for (const doc of snapshot.docs) {
-          results.push({ ...(doc.data() as T), id: doc.id });
+          results.push({ ...(doc.data() as T), id: doc.id, ref: doc.ref });
         }
         setData(results);
         setError(null);
@@ -99,7 +100,7 @@ export function useCollection<T = any>(
     };
   }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
 
-  if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
+  if(!bypassMemoizationCheck && memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
     throw new Error('useCollection query was not properly memoized using useMemoFirebase. This will cause infinite render loops.');
   }
 
