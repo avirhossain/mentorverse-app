@@ -21,6 +21,7 @@ import {
   UserX,
   UserCheck,
   PlusCircle,
+  PlayCircle,
 } from 'lucide-react';
 import {
   useDoc,
@@ -61,7 +62,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { MenteesAPI } from '@/lib/firebase-adapter';
+import { MenteesAPI, BookingsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { AddBalanceForm, type AddBalanceFormValues } from '@/components/admin/AddBalanceForm';
@@ -144,6 +145,16 @@ export default function MenteeDetailsPage({
     });
     setIsAddBalanceOpen(false);
   };
+  
+  const handleStartMeeting = (bookingId: string) => {
+    if (!firestore) return;
+    BookingsAPI.startMeeting(firestore, bookingId);
+    toast({
+        title: "Meeting Started",
+        description: "The meeting link has been generated and is now active for the mentee.",
+    });
+  };
+
 
   if (isLoading) {
     return (
@@ -306,7 +317,8 @@ export default function MenteeDetailsPage({
                 <TableRow>
                   <TableHead>Session</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Fee</TableHead>
+                  <TableHead>Fee</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -322,14 +334,30 @@ export default function MenteeDetailsPage({
                       <TableCell>
                         {format(new Date(booking.scheduledDate), 'PP')}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell>
                         {formatCurrency(booking.sessionFee)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {booking.status === 'confirmed' && (
+                           <Button size="sm" onClick={() => handleStartMeeting(booking.id)}>
+                            <PlayCircle className="mr-2 h-4 w-4"/>
+                            Start Meeting
+                          </Button>
+                        )}
+                        {booking.status === 'started' && (
+                          <Button size="sm" asChild>
+                            <a href={booking.meetingUrl} target="_blank" rel="noopener noreferrer">Join Meeting</a>
+                          </Button>
+                        )}
+                         {booking.status === 'completed' && (
+                           <Badge variant="secondary">Completed</Badge>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center">
+                    <TableCell colSpan={4} className="text-center">
                       No sessions taken yet.
                     </TableCell>
                   </TableRow>

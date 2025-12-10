@@ -274,6 +274,18 @@ export const BookingsAPI = {
     });
   },
 
+  startMeeting: (db: Firestore, bookingId: string) => {
+    const bookingRef = doc(db, 'bookings', bookingId);
+    const meetingUrl = `https://meet.jit.si/mentorverse-booking-${bookingId}`;
+    const data = {
+      status: 'started',
+      meetingUrl: meetingUrl,
+    };
+    updateDoc(bookingRef, data).catch(() => {
+      emitPermissionError(bookingRef.path, 'update', data);
+    });
+  },
+
   listBookingsForMentee: (db: Firestore, menteeId: string) => {
     const q = query(
       collection(db, 'bookings'),

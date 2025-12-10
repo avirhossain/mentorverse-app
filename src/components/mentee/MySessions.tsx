@@ -15,7 +15,7 @@ export function MySessions() {
     return query(
       collection(firestore, 'bookings'),
       where('menteeId', '==', user.uid),
-      where('status', '==', 'confirmed'),
+      where('status', 'in', ['confirmed', 'started']),
       orderBy('scheduledDate', 'asc'),
       limit(3)
     );
@@ -91,5 +91,3 @@ export function MySessions() {
     </Card>
   );
 }
-
-    

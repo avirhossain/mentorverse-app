@@ -132,7 +132,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
     }
 
     const menteeData = user 
-        ? { id: user.uid, name: user.displayName || 'Anonymous', phone: phoneNumber || user.phone || '' } 
+        ? { id: user.uid, name: user.displayName || 'Anonymous', phone: phoneNumber || (user as any).phoneNumber || '' } 
         : { id: uuidv4(), name, phone: phoneNumber };
 
     SessionsAPI.joinWaitlist(firestore, session.id, menteeData as Mentee, menteeData.phone);
@@ -144,7 +144,16 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
 
   const renderFooter = () => {
     if (isBooking) {
-      return <Button className="w-full">View Details</Button>;
+        // If it's a booking, check the status
+        const booking = session as Booking;
+        if (booking.status === 'started' && booking.meetingUrl) {
+            return (
+                <Button asChild className="w-full">
+                    <a href={booking.meetingUrl} target="_blank" rel="noopener noreferrer">Join Meeting</a>
+                </Button>
+            );
+        }
+        return <Button className="w-full" disabled>Meeting not started</Button>;
     }
 
     if (isFull) {
