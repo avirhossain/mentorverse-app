@@ -9,11 +9,23 @@ service cloud.firestore {
       return request.auth != null && (request.auth.token.email == 'avirhossain@gmail.com' || request.auth.token.email == 'sabina@gmail.com');
     }
 
-    // Mentees: Can only read/write their own profile. Admins can read all profiles.
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    function isMenteeActive(userId) {
+      // Allow access only if the mentee's profile exists and they are active.
+      return exists(/databases/$(database)/documents/mentees/$(userId)) &&
+             get(/databases/$(database)/documents/mentees/$(userId)).data.isActive == true;
+    }
+
+
+    // Mentees: Can only read/write their own profile if their account is active. Admins can read all.
     match /mentees/{menteeId} {
-      allow read: if request.auth != null && (request.auth.uid == menteeId || isAdmin());
-      allow write: if request.auth != null && request.auth.uid == menteeId;
+      allow get: if (isOwner(menteeId) && isMenteeActive(menteeId)) || isAdmin();
       allow list: if isAdmin();
+      allow create: if isOwner(menteeId); // Allow creation before isActive is set.
+      allow update: if isOwner(menteeId); // Admins should not directly update mentee profiles.
     }
 
     // Mentors: Publicly readable, but only admins can write.
@@ -22,40 +34,35 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
-    // Sessions: Publicly readable, but only admins can create/manage them.
+    // Sessions: Readable by active mentees, but only admins can create/manage them.
     match /sessions/{sessionId} {
-      allow get, list: if true;
+      allow get, list: if (request.auth != null && isMenteeActive(request.auth.uid)) || isAdmin();
       allow create, update, delete: if isAdmin();
     }
     
-    // Bookings: Mentees can create their own bookings and read them.
-    // Admins can read all bookings.
+    // Bookings: Active mentees can create/read their own bookings. Admins can read all.
     match /bookings/{bookingId} {
-      // Allow a mentee to read a booking if their UID matches the menteeId in the document.
-      // Allow an admin to read any booking.
-      allow get: if request.auth != null && (request.auth.uid == resource.data.menteeId || isAdmin());
+      allow get: if request.auth != null && ((isOwner(resource.data.menteeId) && isMenteeActive(request.auth.uid)) || isAdmin());
       
-      // A mentee can only list their own bookings. Admins can list all.
-      // Note: This rule is complex and requires the client to query correctly.
-      allow list: if request.auth != null && (isAdmin() || (request.query.get("where") != null && request.query.get("where")[0][0] == "menteeId" && request.query.get("where")[0][2] == request.auth.uid));
+      allow list: if request.auth != null && 
+                     (isAdmin() || 
+                     (isMenteeActive(request.auth.uid) && request.query.get("where") != null && request.query.get("where")[0][0] == "menteeId" && request.query.get("where")[0][2] == request.auth.uid));
 
-      // Allow a mentee to create a booking for themselves.
-      allow create: if request.auth != null && request.resource.data.menteeId == request.auth.uid;
+      allow create: if isOwner(request.resource.data.menteeId) && isMenteeActive(request.auth.uid);
       
-      // Only admins can update or delete bookings.
       allow update, delete: if isAdmin();
     }
 
-    // Reviews: Publicly readable, logged-in users can create. Admins have full control.
+    // Reviews: Readable by active users, can be created by active users. Admins have full control.
     match /reviews/{reviewId} {
        allow get, list: if true;
-       allow create: if request.auth != null;
+       allow create: if request.auth != null && isMenteeActive(request.auth.uid);
        allow update, delete: if isAdmin();
     }
     
-    // Tips: Publicly readable, admin-only writes.
+    // Tips: Readable by active users, admin-only writes.
     match /tips/{tipId} {
-      allow get, list: if true;
+      allow get, list: if (request.auth != null && isMenteeActive(request.auth.uid)) || isAdmin();
       allow create, update, delete: if isAdmin();
     }
     
@@ -66,7 +73,7 @@ service cloud.firestore {
     }
 
     match /mentees/{menteeId}/transactions/{transactionId} {
-      allow read, write: if request.auth != null && request.auth.uid == menteeId;
+      allow read, write: if isOwner(menteeId) && isMenteeActive(menteeId);
     }
     
     match /mentors/{mentorId}/payouts/{payoutId} {
