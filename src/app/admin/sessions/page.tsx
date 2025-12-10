@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { PlusCircle, File, ListFilter, MoreHorizontal, Search } from 'lucide-react';
+import { PlusCircle, File, ListFilter, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -15,7 +15,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -28,23 +27,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { SessionForm } from '@/components/admin/SessionForm';
-import type { Session, Mentor } from '@/lib/types';
+import type { Session } from '@/lib/types';
 import { format } from 'date-fns';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { SessionsAPI } from '@/lib/firebase-adapter';
-import { useToast } from '@/hooks/use-toast';
 
 const getTypeBadgeVariant = (type: Session['sessionType']) => {
     switch (type) {
@@ -68,10 +57,6 @@ const getStatusBadgeVariant = (status?: Session['status']): "default" | "seconda
 
 export default function SessionsPage() {
   const firestore = useFirestore();
-  const { toast } = useToast();
-  
-  const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [selectedSession, setSelectedSession] = React.useState<Session | null>(null);
 
   const sessionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -83,38 +68,6 @@ export default function SessionsPage() {
   }, [firestore]);
   const { data: sessions, isLoading, error } = useCollection<Session>(sessionsQuery);
 
-  const mentorsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'mentors'));
-  }, [firestore]);
-  const { data: mentors, isLoading: isLoadingMentors } = useCollection<Mentor>(mentorsQuery);
-
-  const handleEdit = (session: Session) => {
-    setSelectedSession(session);
-    setIsFormOpen(true);
-  };
-  
-  const handleDelete = (sessionId: string) => {
-    if (!firestore) return;
-    SessionsAPI.deleteSession(firestore, sessionId);
-    toast({ title: 'Session deleted' });
-  }
-
-  const handleEditFormSubmit = (data: Partial<Session>) => {
-    if (!firestore || !selectedSession) return;
-
-    const selectedMentor = mentors?.find(m => m.id === data.mentorId);
-    const submissionData = {
-        ...data,
-        mentorName: selectedMentor?.name || 'Unknown Mentor',
-    };
-
-    SessionsAPI.updateSession(firestore, selectedSession.id, submissionData);
-    toast({ title: 'Session Updated', description: `The session "${data.name}" has been updated.` });
-    
-    setIsFormOpen(false);
-    setSelectedSession(null);
-  };
   
   const renderTableBody = () => {
     if (isLoading) {
@@ -155,29 +108,10 @@ export default function SessionsPage() {
             </Badge>
           </TableCell>
           <TableCell className="text-right">${session.sessionFee.toFixed(2)}</TableCell>
-          <TableCell>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  aria-haspopup="true"
-                  size="icon"
-                  variant="ghost"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only">Toggle menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => handleEdit(session)}>
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                 <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(session.id)}>
-                    Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <TableCell className="text-right">
+            <Button asChild variant="outline" size="sm">
+              <Link href="#">View</Link>
+            </Button>
           </TableCell>
         </TableRow>
       )
@@ -247,9 +181,7 @@ export default function SessionsPage() {
                 <TableHead>Type</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Fee (BDT)</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -258,28 +190,6 @@ export default function SessionsPage() {
           </Table>
         </CardContent>
       </Card>
-      
-      {/* Dialog for Editing */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  Edit Session Offering
-                </DialogTitle>
-                <DialogDescription>
-                  Update the session's details.
-                </DialogDescription>
-              </DialogHeader>
-              {selectedSession && (
-                <SessionForm
-                  key={selectedSession.id}
-                  session={selectedSession}
-                  mentors={mentors || []}
-                  onSubmit={handleEditFormSubmit}
-                />
-              )}
-            </DialogContent>
-      </Dialog>
     </>
   );
 }

@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ChevronLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function CreateSessionPage() {
   const firestore = useFirestore();
@@ -43,13 +44,15 @@ export default function CreateSessionPage() {
     const displayId = `S${String(sessionCount + 1).padStart(2, '0')}`;
 
     const selectedMentor = mentors?.find((m) => m.id === data.mentorId);
-    const submissionData: Partial<Session> = {
+    
+    const newSession: Partial<Session> & {id: string} = {
       ...data,
+      id: uuidv4(),
       displayId: displayId,
       mentorName: selectedMentor?.name || 'Unknown Mentor',
     };
 
-    SessionsAPI.createSession(firestore, submissionData as Session);
+    SessionsAPI.createSession(firestore, newSession as Session);
     toast({
       title: 'Session Created',
       description: `The session "${data.name}" has been created with ID ${displayId}.`,

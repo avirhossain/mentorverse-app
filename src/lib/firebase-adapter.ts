@@ -174,9 +174,9 @@ export const SessionsAPI = {
   },
 
   createSession: (db: Firestore, data: WithFieldValue<Session>) => {
-    const sessionsCol = collection(db, 'sessions');
-    addDoc(sessionsCol, data).catch(() => {
-      emitPermissionError(sessionsCol.path, 'create', data);
+    const sessionRef = doc(db, 'sessions', data.id);
+    setDoc(sessionRef, data).catch(() => {
+      emitPermissionError(sessionRef.path, 'create', data);
     });
   },
 
