@@ -15,18 +15,21 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { formatCurrency } from '@/lib/utils';
+import { Textarea } from '../ui/textarea';
 
 const addBalanceSchema = z.object({
   amount: z.coerce
     .number()
     .positive({ message: 'Amount must be greater than 0.' }),
+  reference: z.string().optional(),
+  description: z.string().min(1, 'A description is required.'),
 });
 
-type AddBalanceFormValues = z.infer<typeof addBalanceSchema>;
+export type AddBalanceFormValues = z.infer<typeof addBalanceSchema>;
 
 interface AddBalanceFormProps {
   currentBalance: number;
-  onSubmit: (amount: number) => void;
+  onSubmit: (values: AddBalanceFormValues) => void;
 }
 
 export const AddBalanceForm: React.FC<AddBalanceFormProps> = ({
@@ -37,11 +40,13 @@ export const AddBalanceForm: React.FC<AddBalanceFormProps> = ({
     resolver: zodResolver(addBalanceSchema),
     defaultValues: {
       amount: 0,
+      reference: '',
+      description: 'Admin top-up',
     },
   });
 
   const handleFormSubmit = (values: AddBalanceFormValues) => {
-    onSubmit(values.amount);
+    onSubmit(values);
   };
 
   const amount = form.watch('amount');
@@ -49,7 +54,10 @@ export const AddBalanceForm: React.FC<AddBalanceFormProps> = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+      <form
+        onSubmit={form.handleSubmit(handleFormSubmit)}
+        className="space-y-4"
+      >
         <FormField
           control={form.control}
           name="amount"
@@ -63,6 +71,36 @@ export const AddBalanceForm: React.FC<AddBalanceFormProps> = ({
             </FormItem>
           )}
         />
+        <FormField
+          control={form.control}
+          name="reference"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Reference (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., Invoice #12345" {...field} />
+              </FormControl>
+              <FormDescription>
+                An optional reference for this transaction.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea placeholder="e.g., Monthly top-up" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormDescription>
           Current Balance: {formatCurrency(currentBalance)}
           <br />

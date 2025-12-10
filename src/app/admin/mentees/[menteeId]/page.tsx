@@ -64,7 +64,7 @@ import {
 import { MenteesAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { AddBalanceForm } from '@/components/admin/AddBalanceForm';
+import { AddBalanceForm, type AddBalanceFormValues } from '@/components/admin/AddBalanceForm';
 
 export default function MenteeDetailsPage({
   params,
@@ -133,12 +133,12 @@ export default function MenteeDetailsPage({
     router.push('/admin/mentees');
   };
 
-  const handleAddBalance = (amount: number) => {
+  const handleAddBalance = (values: AddBalanceFormValues) => {
     if (!firestore || !mentee) return;
-    MenteesAPI.addBalance(firestore, menteeId, amount);
+    MenteesAPI.addBalance(firestore, menteeId, values.amount, values.description, values.reference);
     toast({
       title: 'Balance Updated',
-      description: `${formatCurrency(amount)} was added to ${
+      description: `${formatCurrency(values.amount)} was added to ${
         mentee.name
       }'s account.`,
     });

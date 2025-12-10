@@ -110,6 +110,7 @@ export interface Transaction {
   type: 'topup' | 'booking' | 'refund';
   amount: number;
   description: string;
+  reference?: string; // Optional field for external transaction reference
   createdAt: string; // ISO 8601 date string
 }
 

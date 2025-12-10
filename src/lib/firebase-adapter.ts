@@ -81,7 +81,13 @@ export const MenteesAPI = {
     });
   },
 
-  addBalance: (db: Firestore, uid: string, amount: number) => {
+  addBalance: (
+    db: Firestore,
+    uid: string,
+    amount: number,
+    description: string,
+    reference?: string
+  ) => {
     if (amount <= 0) return;
 
     const batch = writeBatch(db);
@@ -95,7 +101,8 @@ export const MenteesAPI = {
       id: transactionRef.id,
       type: 'topup',
       amount: amount,
-      description: 'Admin top-up',
+      description: description,
+      reference: reference,
       createdAt: new Date().toISOString(),
     };
 
