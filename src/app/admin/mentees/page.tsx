@@ -49,7 +49,7 @@ export default function MenteesPage() {
     if (isLoading) {
       return Array.from({ length: 4 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell colSpan={6}>
+          <TableCell colSpan={7}>
             <Skeleton className="h-8 w-full" />
           </TableCell>
         </TableRow>
@@ -57,18 +57,19 @@ export default function MenteesPage() {
     }
 
     if (error) {
-      return <TableRow><TableCell colSpan={6} className="text-center text-destructive">Error loading mentees: {error.message}</TableCell></TableRow>
+      return <TableRow><TableCell colSpan={7} className="text-center text-destructive">Error loading mentees: {error.message}</TableCell></TableRow>
     }
 
     if (!mentees || mentees.length === 0) {
-      return <TableRow><TableCell colSpan={6} className="text-center">No mentees found.</TableCell></TableRow>
+      return <TableRow><TableCell colSpan={7} className="text-center">No mentees found.</TableCell></TableRow>
     }
 
     return mentees.map((mentee) => (
       <TableRow key={mentee.id}>
+        <TableCell className="font-medium truncate max-w-xs">{mentee.id}</TableCell>
         <TableCell>
             <div className="font-medium">{mentee.name}</div>
-            <div className="text-sm text-muted-foreground">{mentee.email} ({mentee.id})</div>
+            <div className="text-sm text-muted-foreground">{mentee.email}</div>
         </TableCell>
         <TableCell>
           <Badge variant={mentee.isActive ? 'default' : 'secondary'}>
@@ -154,6 +155,7 @@ export default function MenteesPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[200px]">ID</TableHead>
                 <TableHead>Mentee</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Total Sessions</TableHead>

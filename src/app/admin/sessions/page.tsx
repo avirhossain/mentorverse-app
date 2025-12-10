@@ -120,7 +120,7 @@ export default function SessionsPage() {
     if (isLoading) {
       return Array.from({ length: 5 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell colSpan={7}>
+          <TableCell colSpan={8}>
             <Skeleton className="h-8 w-full" />
           </TableCell>
         </TableRow>
@@ -128,19 +128,18 @@ export default function SessionsPage() {
     }
     
     if (error) {
-       return <TableRow><TableCell colSpan={7} className="text-center text-destructive">Error loading sessions: {error.message}</TableCell></TableRow>
+       return <TableRow><TableCell colSpan={8} className="text-center text-destructive">Error loading sessions: {error.message}</TableCell></TableRow>
     }
     
     if (!sessions || sessions.length === 0) {
-      return <TableRow><TableCell colSpan={7} className="text-center">No sessions found.</TableCell></TableRow>
+      return <TableRow><TableCell colSpan={8} className="text-center">No sessions found.</TableCell></TableRow>
     }
     
     return sessions.map((session) => {
       return (
         <TableRow key={session.id}>
-          <TableCell>
-              <div className="font-medium">{session.name}</div>
-          </TableCell>
+          <TableCell className="font-medium truncate max-w-xs">{session.id}</TableCell>
+          <TableCell>{session.name}</TableCell>
           <TableCell>{session.mentorName}</TableCell>
           <TableCell>
             {session.scheduledDate ? format(new Date(session.scheduledDate), 'MMM d, yyyy') : 'N/A'} at {session.scheduledTime}
@@ -241,7 +240,8 @@ export default function SessionsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Session</TableHead>
+                <TableHead className="w-[200px]">Session ID</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Mentor</TableHead>
                 <TableHead>Date & Time</TableHead>
                 <TableHead>Type</TableHead>

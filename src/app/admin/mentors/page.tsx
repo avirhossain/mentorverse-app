@@ -43,6 +43,7 @@ import { MentorsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
 
 export default function MentorsPage() {
   const firestore = useFirestore();
@@ -87,7 +88,7 @@ export default function MentorsPage() {
     if (isLoading) {
       return Array.from({ length: 3 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell colSpan={5}>
+          <TableCell colSpan={6}>
             <Skeleton className="h-8 w-full" />
           </TableCell>
         </TableRow>
@@ -97,7 +98,7 @@ export default function MentorsPage() {
     if (error) {
       return (
         <TableRow>
-          <TableCell colSpan={5} className="text-center text-destructive">
+          <TableCell colSpan={6} className="text-center text-destructive">
             Error loading mentors: {error.message}
           </TableCell>
         </TableRow>
@@ -107,7 +108,7 @@ export default function MentorsPage() {
     if (!mentors || mentors.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={5} className="text-center">
+          <TableCell colSpan={6} className="text-center">
             No mentors found.
           </TableCell>
         </TableRow>
@@ -116,9 +117,10 @@ export default function MentorsPage() {
 
     return mentors.map((mentor) => (
       <TableRow key={mentor.id}>
+        <TableCell className="font-medium">{mentor.id}</TableCell>
+        <TableCell>{mentor.name}</TableCell>
         <TableCell>
-          <div className="font-medium">{mentor.name}</div>
-          <div className="text-sm text-muted-foreground">{mentor.id}</div>
+          {format(new Date(mentor.createdAt), 'MMM d, yyyy')}
         </TableCell>
         <TableCell>
           <div className="flex flex-wrap gap-1">
@@ -191,7 +193,9 @@ export default function MentorsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>ID</TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>Joined On</TableHead>
                 <TableHead>Expertise</TableHead>
                 <TableHead className="text-right">Total Sessions</TableHead>
                 <TableHead className="text-right">Avg. Rating</TableHead>
