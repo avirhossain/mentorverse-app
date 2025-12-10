@@ -48,7 +48,12 @@ service cloud.firestore {
     
     match /sessions/{sessionId}/waitlist/{userId} {
         allow create: if isOwner(userId) && isMenteeActive(userId);
-        allow read, update, delete: if isAdmin();
+        allow get, update, delete: if isAdmin();
+    }
+
+    // Rule for Collection Group Query on 'waitlist'
+    match /{path=**}/waitlist/{userId} {
+      allow list: if isAdmin();
     }
 
     // Bookings: Active mentees can create/read their own bookings. Admins can read all.
