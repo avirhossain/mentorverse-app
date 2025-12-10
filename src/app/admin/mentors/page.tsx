@@ -86,6 +86,11 @@ export default function MentorsPage() {
         <TableCell>
           {format(new Date(mentor.createdAt), 'MMM d, yyyy')}
         </TableCell>
+        <TableCell>
+           <Badge variant={mentor.isActive ? 'default' : 'destructive'}>
+            {mentor.isActive ? 'Active' : 'Suspended'}
+          </Badge>
+        </TableCell>
         <TableCell className="text-right">
           {mentor.totalSessions || 0}
         </TableCell>
@@ -146,6 +151,7 @@ export default function MentorsPage() {
                 <TableHead>ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Joined On</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Total Sessions</TableHead>
                 <TableHead className="text-right">Avg. Rating</TableHead>
                 <TableHead>
