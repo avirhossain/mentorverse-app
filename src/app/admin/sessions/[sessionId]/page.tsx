@@ -37,7 +37,7 @@ export default function SessionDetailsPage({
 }: {
   params: { sessionId: string };
 }) {
-  const { sessionId } = params;
+  const { sessionId } = React.use(params);
   const firestore = useFirestore();
   const { toast } = useToast();
 
