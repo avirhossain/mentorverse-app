@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,10 @@ const mentorFormSchema = z.object({
   email: z.string().email('Invalid email address.'),
   bio: z.string().optional(),
   expertise: z.string().optional(), // Handled as comma-separated string
-  hourlyRate: z.coerce.number().min(0, 'Rate must be non-negative.').optional(),
+  education: z.string().optional(),
+  experience: z.string().optional(),
+  awards: z.string().optional(), // Handled as comma-separated string
+  whatToExpect: z.string().optional(),
   isActive: z.boolean().default(true),
 });
 
@@ -43,7 +46,10 @@ export const MentorForm: React.FC<MentorFormProps> = ({ mentor, onSubmit }) => {
       email: mentor?.email || '',
       bio: mentor?.bio || '',
       expertise: mentor?.expertise?.join(', ') || '',
-      hourlyRate: mentor?.hourlyRate || 0,
+      education: mentor?.education || '',
+      experience: mentor?.experience || '',
+      awards: mentor?.awards?.join(', ') || '',
+      whatToExpect: mentor?.whatToExpect || '',
       isActive: mentor?.isActive ?? true,
     },
   });
@@ -55,7 +61,10 @@ export const MentorForm: React.FC<MentorFormProps> = ({ mentor, onSubmit }) => {
       email: mentor?.email || '',
       bio: mentor?.bio || '',
       expertise: mentor?.expertise?.join(', ') || '',
-      hourlyRate: mentor?.hourlyRate || 0,
+      education: mentor?.education || '',
+      experience: mentor?.experience || '',
+      awards: mentor?.awards?.join(', ') || '',
+      whatToExpect: mentor?.whatToExpect || '',
       isActive: mentor?.isActive ?? true,
     });
   }, [mentor, form]);
@@ -63,10 +72,13 @@ export const MentorForm: React.FC<MentorFormProps> = ({ mentor, onSubmit }) => {
   const handleFormSubmit = (values: MentorFormValues) => {
     const expertiseArray =
       values.expertise?.split(',').map((e) => e.trim()).filter(Boolean) || [];
+    const awardsArray =
+      values.awards?.split(',').map((e) => e.trim()).filter(Boolean) || [];
     
     onSubmit({
       ...values,
       expertise: expertiseArray,
+      awards: awardsArray,
     });
   };
 
@@ -137,21 +149,76 @@ export const MentorForm: React.FC<MentorFormProps> = ({ mentor, onSubmit }) => {
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="hourlyRate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Hourly Rate ($)</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="50" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="experience"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Experience</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Describe the mentor's professional experience..."
+                  className="resize-none"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="education"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Education</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="List the mentor's educational background..."
+                  className="resize-none"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+         <FormField
+          control={form.control}
+          name="awards"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Awards</FormLabel>
+              <FormControl>
+                <Input placeholder="Google CEO Award, Nobel Prize" {...field} />
+              </FormControl>
+              <FormDescription>
+                Enter any awards, separated by commas.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="whatToExpect"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>What you can expect from me</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Describe what a mentee can expect from sessions..."
+                  className="resize-none"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}

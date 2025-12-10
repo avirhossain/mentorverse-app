@@ -18,7 +18,6 @@ import type { Mentor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { formatCurrency } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { MentorsAPI } from '@/lib/firebase-adapter';
 import { useRouter } from 'next/navigation';
@@ -163,20 +162,41 @@ export default function MentorDetailsPage({
             <h3 className="font-semibold">Biography</h3>
             <p className="text-sm text-muted-foreground">{mentor.bio || 'N/A'}</p>
           </div>
-
           <Separator />
-
+          <div className="grid gap-2">
+            <h3 className="font-semibold">Experience</h3>
+            <p className="text-sm text-muted-foreground">{mentor.experience || 'N/A'}</p>
+          </div>
+          <Separator />
+           <div className="grid gap-2">
+            <h3 className="font-semibold">Education</h3>
+            <p className="text-sm text-muted-foreground">{mentor.education || 'N/A'}</p>
+          </div>
+          <Separator />
+          <div className="grid gap-2">
+            <h3 className="font-semibold">What You Can Expect</h3>
+            <p className="text-sm text-muted-foreground">{mentor.whatToExpect || 'N/A'}</p>
+          </div>
+          <Separator />
           <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <h3 className="font-semibold">Hourly Rate</h3>
-              <p className="text-sm">
-                {formatCurrency(mentor.hourlyRate || 0)}
-              </p>
-            </div>
             <div className="grid gap-2">
               <h3 className="font-semibold">Total Sessions</h3>
               <p className="text-sm">{mentor.totalSessions || 0}</p>
             </div>
+             <div className="grid gap-2">
+                <h3 className="font-semibold">Awards</h3>
+                <div className="flex flex-wrap gap-2">
+                  {mentor.awards?.length ? (
+                    mentor.awards.map((award) => (
+                      <Badge key={award} variant="secondary">
+                        {award}
+                      </Badge>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">N/A</p>
+                  )}
+                </div>
+              </div>
           </div>
           <div className="grid gap-2">
             <h3 className="font-semibold">Expertise</h3>

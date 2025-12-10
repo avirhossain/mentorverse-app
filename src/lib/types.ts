@@ -9,11 +9,12 @@ export interface Mentor {
   bio?: string;
   expertise?: string[];
   education?: string;
-  experienceYears?: number;
+  experience?: string;
+  awards?: string[];
+  whatToExpect?: string;
   ratingAvg?: number;
   ratingCount?: number;
   totalSessions?: number;
-  hourlyRate?: number;
   createdAt: string; // ISO 8601 date string
   availability?: AvailabilitySlot[];
   isActive: boolean;

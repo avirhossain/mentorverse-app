@@ -35,8 +35,17 @@
         "education": {
           "type": "string"
         },
-        "experienceYears": {
-          "type": "number"
+        "experience": {
+          "type": "string"
+        },
+        "awards": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "whatToExpect": {
+          "type": "string"
         },
         "ratingAvg": {
           "type": "number"
@@ -45,9 +54,6 @@
           "type": "number"
         },
         "totalSessions": {
-          "type": "number"
-        },
-        "hourlyRate": {
           "type": "number"
         },
         "createdAt": {
