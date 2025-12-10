@@ -196,6 +196,10 @@
           "type": "number",
           "description": "The duration of the session in minutes."
         },
+        "participants": {
+          "type": "number",
+          "description": "The number of participants for the session."
+        },
         "sessionFee": {
           "type": "number"
         },

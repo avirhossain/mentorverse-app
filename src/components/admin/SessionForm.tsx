@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -44,6 +44,7 @@ const sessionFormSchema = z.object({
     .string()
     .optional(),
   duration: z.coerce.number().min(1, 'Duration must be greater than 0.').optional(),
+  participants: z.coerce.number().min(1, 'At least one participant is required.').optional(),
   sessionFee: z.coerce.number().min(0).default(0),
   tag: z.string().optional(),
   offerings: z.string().optional(),
@@ -84,6 +85,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
         : undefined,
       scheduledTime: session?.scheduledTime || '',
       duration: session?.duration || 60,
+      participants: session?.participants || 1,
       sessionFee: session?.sessionFee || 0,
       tag: session?.tag || '',
       offerings: session?.offerings || '',
@@ -101,9 +103,12 @@ export const SessionForm: React.FC<SessionFormProps> = ({
 
   const sessionType = form.watch('sessionType');
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (sessionType === 'Free') {
       form.setValue('sessionFee', 0);
+    }
+    if (sessionType === 'Special Request') {
+        form.setValue('participants', 1);
     }
   }, [sessionType, form]);
 
@@ -284,6 +289,38 @@ export const SessionForm: React.FC<SessionFormProps> = ({
             />
           </div>
         )}
+        
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="duration"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Duration (minutes)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="e.g., 60" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="participants"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Participants</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="e.g., 10" {...field} disabled={sessionType === 'Special Request'} />
+                  </FormControl>
+                   <FormDescription>
+                    Max number of participants allowed in the session.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
 
         <FormField
           control={form.control}

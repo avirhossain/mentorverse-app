@@ -53,6 +53,7 @@ export interface Session {
   scheduledDate?: string; // YYYY-MM-DD
   scheduledTime?: string; // HH:mm
   duration?: number; // Duration in minutes
+  participants?: number; // Number of participants
   sessionFee: number;
   status?: 'Active' | 'Expired' | 'Draft';
   availability?: AvailabilitySlot[];
