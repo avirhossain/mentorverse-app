@@ -16,14 +16,12 @@ import { collection, query } from 'firebase/firestore';
 import type { Session, Mentor } from '@/lib/types';
 import { SessionsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CreateSessionPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const router = useRouter();
 
   const mentorsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -45,7 +43,6 @@ export default function CreateSessionPage() {
       title: 'Session Created',
       description: `The session "${data.name}" has been created.`,
     });
-    router.push('/admin/sessions');
   };
 
   return (

@@ -34,7 +34,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -46,7 +45,6 @@ import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SessionsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
 
 const getTypeBadgeVariant = (type: Session['sessionType']) => {
     switch (type) {
@@ -71,7 +69,6 @@ const getStatusBadgeVariant = (status?: Session['status']): "default" | "seconda
 export default function SessionsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const router = useRouter();
   
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedSession, setSelectedSession] = React.useState<Session | null>(null);
@@ -224,7 +221,7 @@ export default function SessionsPage() {
             </span>
           </Button>
           <Button asChild size="sm" className="h-8 gap-1">
-            <Link href="/admin/sessions/create">
+            <Link href="/admin/sessions/createsession">
               <PlusCircle className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                 Create Session
