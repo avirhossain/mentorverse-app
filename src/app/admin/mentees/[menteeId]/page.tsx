@@ -62,7 +62,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { MenteesAPI } from '@/lib/firebase-adapter';
+import { MenteesAPI, SessionBookingsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { AddBalanceForm, type AddBalanceFormValues } from '@/components/admin/AddBalanceForm';
@@ -88,7 +88,7 @@ export default function MenteeDetailsPage({
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
-      collection(firestore, 'bookings'),
+      collection(firestore, 'sessionBookings'),
       where('menteeId', '==', menteeId),
       orderBy('bookingTime', 'desc')
     );
@@ -145,6 +145,15 @@ export default function MenteeDetailsPage({
     });
     setIsAddBalanceOpen(false);
   };
+
+  const handleStartMeeting = (bookingId: string) => {
+    if (!firestore) return;
+    SessionBookingsAPI.startMeeting(firestore, bookingId);
+    toast({
+        title: "Meeting Started",
+        description: "The mentee has been notified."
+    })
+  }
   
 
   if (isLoading) {

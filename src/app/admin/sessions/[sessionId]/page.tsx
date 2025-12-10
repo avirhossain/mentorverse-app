@@ -50,7 +50,7 @@ export default function SessionDetailsPage({
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
-      collection(firestore, 'bookings'),
+      collection(firestore, 'sessionBookings'),
       where('sessionId', '==', sessionId),
       orderBy('bookingTime', 'asc')
     );

@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 import { useUser, useFirestore } from '@/firebase';
-import { BookingsAPI, SessionsAPI } from '@/lib/firebase-adapter';
+import { SessionBookingsAPI, SessionsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import * as React from 'react';
@@ -105,7 +105,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
     };
 
     try {
-      await BookingsAPI.createBooking(firestore, newBooking);
+      await SessionBookingsAPI.createBooking(firestore, newBooking);
       toast({
         title: 'Session Booked!',
         description: `Your booking for "${session.name}" has been confirmed.`,

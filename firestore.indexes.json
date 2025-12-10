@@ -25,7 +25,7 @@
       ]
     },
     {
-      "collectionGroup": "bookings",
+      "collectionGroup": "sessionBookings",
       "queryScope": "COLLECTION",
       "fields": [
         {

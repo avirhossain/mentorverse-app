@@ -226,7 +226,7 @@ export const SessionsAPI = {
 
     // 1. Find all confirmed bookings for the session
     const bookingsQuery = query(
-      collection(db, 'bookings'),
+      collection(db, 'sessionBookings'),
       where('sessionId', '==', sessionId),
       where('status', '==', 'confirmed')
     );
@@ -241,7 +241,7 @@ export const SessionsAPI = {
         const bookingData = bookingDoc.data() as Booking;
 
         // 2. For each booking, update its status and add the meeting URL
-        const bookingRef = doc(db, 'bookings', bookingDoc.id);
+        const bookingRef = doc(db, 'sessionBookings', bookingDoc.id);
         batch.update(bookingRef, { status: 'started' as const, meetingUrl });
 
         // 3. For each booking, create a notification for the mentee
@@ -263,17 +263,17 @@ export const SessionsAPI = {
     } catch (error) {
       console.error("Failed to start meeting for session and send notifications:", error);
       // Emit a generic error, as the specific failure point is hard to determine in a batch
-      emitPermissionError(`/sessions/${sessionId}/bookings`, 'update');
+      emitPermissionError(`/sessions/${sessionId}/sessionBookings`, 'update');
       emitPermissionError(`/mentees/.../notifications`, 'create');
     }
   },
 };
 
-// ------------------ BOOKINGS ------------------
-export const BookingsAPI = {
+// ------------------ SESSION BOOKINGS ------------------
+export const SessionBookingsAPI = {
   createBooking: async (db: Firestore, bookingData: WithFieldValue<Booking>) => {
     const sessionRef = doc(db, 'sessions', bookingData.sessionId);
-    const bookingRef = doc(db, 'bookings', bookingData.id);
+    const bookingRef = doc(db, 'sessionBookings', bookingData.id);
 
     try {
       await runTransaction(db, async (transaction) => {
@@ -309,7 +309,7 @@ export const BookingsAPI = {
   },
 
   getBooking: (db: Firestore, id: string) => {
-    return getDoc(doc(db, 'bookings', id));
+    return getDoc(doc(db, 'sessionBookings', id));
   },
 
   updateBooking: (
@@ -317,7 +317,7 @@ export const BookingsAPI = {
     id: string,
     data: Partial<WithFieldValue<Booking>>
   ) => {
-    const bookingRef = doc(db, 'bookings', id);
+    const bookingRef = doc(db, 'sessionBookings', id);
     updateDoc(bookingRef, data).catch(() => {
       emitPermissionError(bookingRef.path, 'update', data);
     });
@@ -325,7 +325,7 @@ export const BookingsAPI = {
 
   startMeeting: async (db: Firestore, bookingId: string) => {
     const batch = writeBatch(db);
-    const bookingRef = doc(db, 'bookings', bookingId);
+    const bookingRef = doc(db, 'sessionBookings', bookingId);
   
     try {
       // First, get the booking document to retrieve menteeId and sessionName
@@ -369,7 +369,7 @@ export const BookingsAPI = {
 
   listBookingsForMentee: (db: Firestore, menteeId: string) => {
     const q = query(
-      collection(db, 'bookings'),
+      collection(db, 'sessionBookings'),
       where('menteeId', '==', menteeId)
     );
     return getDocs(q);
@@ -377,7 +377,7 @@ export const BookingsAPI = {
 
   listBookingsForMentor: (db: Firestore, mentorId: string) => {
     const q = query(
-      collection(db, 'bookings'),
+      collection(db, 'sessionBookings'),
       where('mentorId', '==', mentorId)
     );
     return getDocs(q);

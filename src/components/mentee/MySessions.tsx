@@ -13,7 +13,7 @@ export function MySessions() {
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
-      collection(firestore, 'bookings'),
+      collection(firestore, 'sessionBookings'),
       where('menteeId', '==', user.uid),
       where('status', 'in', ['confirmed', 'started']),
       orderBy('scheduledDate', 'asc'),

@@ -663,7 +663,7 @@
       },
       "description": "Subcollection storing waitlisted users for a specific session."
     },
-    "/bookings/{bookingId}": {
+    "/sessionBookings/{bookingId}": {
       "schema": {
         "$ref": "#/entities/booking"
       },

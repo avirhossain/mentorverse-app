@@ -63,7 +63,7 @@ export default function MentorDetailsPage({
   // Completed bookings for this mentor
   const bookingsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'bookings'), where('mentorId', '==', mentorId), where('status', '==', 'completed'));
+    return query(collection(firestore, 'sessionBookings'), where('mentorId', '==', mentorId), where('status', '==', 'completed'));
   }, [firestore, mentorId]);
   const { data: bookings, isLoading: loadingBookings } = useCollection<Booking>(bookingsQuery);
   
