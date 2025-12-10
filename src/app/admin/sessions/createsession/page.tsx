@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { SessionForm } from '@/components/admin/SessionForm';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, getDocs, query } from 'firebase/firestore';
 import type { Session, Mentor } from '@/lib/types';
 import { SessionsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
@@ -33,22 +33,30 @@ export default function CreateSessionPage() {
   const { data: mentors, isLoading: isLoadingMentors } =
     useCollection<Mentor>(mentorsQuery);
 
-  const handleFormSubmit = (data: Partial<Session>) => {
+  const handleFormSubmit = async (data: Partial<Session>) => {
     if (!firestore) return;
 
+    // Fetch existing sessions to generate new displayId
+    const sessionsCollection = collection(firestore, 'sessions');
+    const collectionSnapshot = await getDocs(sessionsCollection);
+    const sessionCount = collectionSnapshot.size;
+    const displayId = `S${String(sessionCount + 1).padStart(2, '0')}`;
+
     const selectedMentor = mentors?.find((m) => m.id === data.mentorId);
-    const submissionData = {
+    const submissionData: Partial<Session> = {
       ...data,
+      displayId: displayId,
       mentorName: selectedMentor?.name || 'Unknown Mentor',
     };
 
     SessionsAPI.createSession(firestore, submissionData as Session);
     toast({
       title: 'Session Created',
-      description: `The session "${data.name}" has been created.`,
+      description: `The session "${data.name}" has been created with ID ${displayId}.`,
     });
     // Reset the form by changing the key of the SessionForm component
     setFormKey(Date.now());
+    router.push('/admin/sessions');
   };
 
   return (

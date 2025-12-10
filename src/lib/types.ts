@@ -40,6 +40,7 @@ export interface Mentee {
 
 export interface Session {
   id: string; // Corresponds to document ID
+  displayId?: string; // Human-readable ID for admin panel
   mentorId: string;
   mentorName: string; // denormalized for easier display
   name: string;

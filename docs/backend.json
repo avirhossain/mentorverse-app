@@ -144,6 +144,10 @@
         "id": {
           "type": "string"
         },
+        "displayId": {
+          "type": "string",
+          "description": "A human-readable, unique ID for the admin panel."
+        },
         "mentorId": {
           "type": "string"
         },

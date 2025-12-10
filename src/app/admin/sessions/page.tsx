@@ -138,7 +138,7 @@ export default function SessionsPage() {
     return sessions.map((session) => {
       return (
         <TableRow key={session.id}>
-          <TableCell className="font-medium truncate max-w-xs">{session.id}</TableCell>
+          <TableCell className="font-medium">{session.displayId || session.id}</TableCell>
           <TableCell>{session.name}</TableCell>
           <TableCell>{session.mentorName}</TableCell>
           <TableCell>
@@ -240,7 +240,7 @@ export default function SessionsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Session ID</TableHead>
+                <TableHead className="w-[100px]">Session ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Mentor</TableHead>
                 <TableHead>Date & Time</TableHead>
