@@ -54,6 +54,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [phoneNumber, setPhoneNumber] = React.useState('');
+  const [name, setName] = React.useState('');
 
   const bookedCount = session.bookedCount || 0;
   const participantLimit = session.participants || 1;
@@ -119,14 +120,25 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   };
 
   const handleJoinWaitlist = () => {
-    if (!user || !firestore) {
-      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Database not available.' });
       return;
     }
-    SessionsAPI.joinWaitlist(firestore, session.id, user as Mentee, phoneNumber);
+    
+    // For visitors, name and phone number are required.
+    if (!user && (!name || !phoneNumber)) {
+        toast({ variant: 'destructive', title: 'Information Required', description: 'Please provide your name and phone number to join the waitlist.' });
+        return;
+    }
+
+    const menteeData = user 
+        ? { id: user.uid, name: user.displayName || 'Anonymous', phone: phoneNumber || user.phone || '' } 
+        : { id: uuidv4(), name, phone: phoneNumber };
+
+    SessionsAPI.joinWaitlist(firestore, session.id, menteeData as Mentee, menteeData.phone);
     toast({
       title: 'Waitlist Joined',
-      description: 'We will notify you if a spot opens up!',
+      description: "We'll notify you if a spot opens up!",
     });
   };
 
@@ -147,18 +159,33 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
             <AlertDialogHeader>
               <AlertDialogTitle>Join the Waitlist</AlertDialogTitle>
               <AlertDialogDescription>
-                This session is currently full. Enter your phone number, and we'll
+                This session is currently full. Provide your details below, and we'll
                 notify you if a spot becomes available.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <div className="grid gap-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input 
-                    id="phone" 
-                    placeholder="(optional)"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                />
+            <div className="grid gap-4">
+               {!user && (
+                 <div className="grid gap-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input 
+                        id="name" 
+                        placeholder="Your Name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                    />
+                </div>
+               )}
+                <div className="grid gap-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input 
+                        id="phone" 
+                        placeholder="Your Phone Number"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        required={!user}
+                    />
+                </div>
             </div>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
