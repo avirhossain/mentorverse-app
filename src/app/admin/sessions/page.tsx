@@ -112,7 +112,7 @@ export default function SessionsPage() {
           <TableCell className="text-right">{formatCurrency(session.sessionFee)}</TableCell>
           <TableCell className="text-right">
             <Button asChild variant="outline" size="sm">
-              <Link href="#">View</Link>
+              <Link href={`/admin/sessions/${session.id}`}>View</Link>
             </Button>
           </TableCell>
         </TableRow>
