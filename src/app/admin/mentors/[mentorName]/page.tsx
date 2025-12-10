@@ -349,5 +349,4 @@ const MentorDetailsSkeleton = () => (
     </div>
   </div>
 );
-
     
