@@ -315,7 +315,7 @@ export const BookingsAPI = {
       console.error("Failed to start meeting and send notification:", error);
       emitPermissionError(bookingRef.path, 'update', { status: 'started' });
       // We don't know the notification ID, but we can signal the intent
-      emitPermissionError(`/mentees/${bookingRef.id}/notifications`, 'create');
+      emitPermissionError(`/mentees/${bookingData.menteeId}/notifications`, 'create');
     }
   },
 

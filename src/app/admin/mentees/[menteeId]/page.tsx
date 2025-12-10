@@ -151,7 +151,7 @@ export default function MenteeDetailsPage({
     BookingsAPI.startMeeting(firestore, bookingId);
     toast({
         title: "Meeting Started",
-        description: "The meeting link has been generated and is now active for the mentee.",
+        description: "The meeting link has been generated and a notification has been sent to the mentee.",
     });
   };
 
