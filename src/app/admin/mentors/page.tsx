@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { PlusCircle, File, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,7 +34,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { MentorForm } from '@/components/admin/MentorForm';
@@ -41,15 +41,17 @@ import type { Mentor } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { MentorsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
-import { collection, query, orderBy, Query } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MentorsPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [selectedMentor, setSelectedMentor] = React.useState<Mentor | null>(null);
+  const [isEditFormOpen, setIsEditFormOpen] = React.useState(false);
+  const [selectedMentor, setSelectedMentor] = React.useState<Mentor | null>(
+    null
+  );
 
   const mentorsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -58,14 +60,9 @@ export default function MentorsPage() {
 
   const { data: mentors, isLoading, error } = useCollection<Mentor>(mentorsQuery);
 
-  const handleCreateNew = () => {
-    setSelectedMentor(null);
-    setIsFormOpen(true);
-  };
-
   const handleEdit = (mentor: Mentor) => {
     setSelectedMentor(mentor);
-    setIsFormOpen(true);
+    setIsEditFormOpen(true);
   };
 
   const handleDelete = (mentorId: string) => {
@@ -74,30 +71,16 @@ export default function MentorsPage() {
     toast({ title: 'Mentor Deleted' });
   };
 
-  const handleFormSubmit = (data: Partial<Mentor>) => {
-    if (!firestore) return;
-    if (selectedMentor) {
-      MentorsAPI.updateMentor(firestore, selectedMentor.id, data);
-      toast({
-        title: 'Mentor Updated',
-        description: `${data.name}'s profile has been updated.`,
-      });
-    } else {
-      const mentorCount = mentors?.length || 0;
-      const newId = `MEN${(mentorCount + 1).toString().padStart(2, '0')}`;
-      const newMentor: Mentor = {
-        ...data,
-        id: newId,
-        createdAt: new Date().toISOString(),
-      } as Mentor;
+  const handleEditFormSubmit = (data: Partial<Mentor>) => {
+    if (!firestore || !selectedMentor) return;
 
-      MentorsAPI.createMentor(firestore, newMentor);
-      toast({
-        title: 'Mentor Created',
-        description: `A new profile for ${data.name} has been created with ID ${newId}.`,
-      });
-    }
-    setIsFormOpen(false);
+    MentorsAPI.updateMentor(firestore, selectedMentor.id, data);
+    toast({
+      title: 'Mentor Updated',
+      description: `${data.name}'s profile has been updated.`,
+    });
+
+    setIsEditFormOpen(false);
   };
 
   const renderTableBody = () => {
@@ -110,15 +93,27 @@ export default function MentorsPage() {
         </TableRow>
       ));
     }
-    
+
     if (error) {
-       return <TableRow><TableCell colSpan={5} className="text-center text-destructive">Error loading mentors: {error.message}</TableCell></TableRow>
+      return (
+        <TableRow>
+          <TableCell colSpan={5} className="text-center text-destructive">
+            Error loading mentors: {error.message}
+          </TableCell>
+        </TableRow>
+      );
     }
-    
+
     if (!mentors || mentors.length === 0) {
-      return <TableRow><TableCell colSpan={5} className="text-center">No mentors found.</TableCell></TableRow>
+      return (
+        <TableRow>
+          <TableCell colSpan={5} className="text-center">
+            No mentors found.
+          </TableCell>
+        </TableRow>
+      );
     }
-    
+
     return mentors.map((mentor) => (
       <TableRow key={mentor.id}>
         <TableCell>
@@ -126,7 +121,7 @@ export default function MentorsPage() {
           <div className="text-sm text-muted-foreground">{mentor.id}</div>
         </TableCell>
         <TableCell>
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex flex-wrap gap-1">
             {mentor.expertise?.slice(0, 2).map((exp) => (
               <Badge key={exp} variant="outline">
                 {exp}
@@ -134,20 +129,14 @@ export default function MentorsPage() {
             ))}
           </div>
         </TableCell>
-        <TableCell className="text-right">
-          {mentor.totalSessions || 0}
-        </TableCell>
+        <TableCell className="text-right">{mentor.totalSessions || 0}</TableCell>
         <TableCell className="text-right">
           {mentor.ratingAvg?.toFixed(1) || 'N/A'}
         </TableCell>
         <TableCell>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                aria-haspopup="true"
-                size="icon"
-                variant="ghost"
-              >
+              <Button aria-haspopup="true" size="icon" variant="ghost">
                 <MoreHorizontal className="h-4 w-4" />
                 <span className="sr-only">Toggle menu</span>
               </Button>
@@ -168,8 +157,8 @@ export default function MentorsPage() {
           </DropdownMenu>
         </TableCell>
       </TableRow>
-    ))
-  }
+    ));
+  };
 
   return (
     <>
@@ -181,32 +170,14 @@ export default function MentorsPage() {
               Export
             </span>
           </Button>
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="h-8 gap-1" onClick={handleCreateNew}>
-                <PlusCircle className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Create Mentor
-                </span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[625px]">
-              <DialogHeader>
-                <DialogTitle>
-                  {selectedMentor ? 'Edit Mentor' : 'Create Mentor'}
-                </DialogTitle>
-                <DialogDescription>
-                  {selectedMentor
-                    ? "Update the mentor's profile information."
-                    : 'Fill in the details to add a new mentor.'}
-                </DialogDescription>
-              </DialogHeader>
-              <MentorForm
-                mentor={selectedMentor}
-                onSubmit={handleFormSubmit}
-              />
-            </DialogContent>
-          </Dialog>
+          <Button asChild size="sm" className="h-8 gap-1">
+            <Link href="/admin/mentors/creatementor">
+              <PlusCircle className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                Create Mentor
+              </span>
+            </Link>
+          </Button>
         </div>
       </div>
       <Card>
@@ -229,20 +200,31 @@ export default function MentorsPage() {
                 </TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {renderTableBody()}
-            </TableBody>
+            <TableBody>{renderTableBody()}</TableBody>
           </Table>
         </CardContent>
         {mentors && (
-            <CardFooter>
+          <CardFooter>
             <div className="text-xs text-muted-foreground">
-                Showing <strong>1-{mentors.length}</strong> of{' '}
-                <strong>{mentors.length}</strong> mentors
+              Showing <strong>1-{mentors.length}</strong> of{' '}
+              <strong>{mentors.length}</strong> mentors
             </div>
-            </CardFooter>
+          </CardFooter>
         )}
       </Card>
+
+      {/* Dialog for Editing */}
+      <Dialog open={isEditFormOpen} onOpenChange={setIsEditFormOpen}>
+        <DialogContent className="sm:max-w-[625px]">
+          <DialogHeader>
+            <DialogTitle>Edit Mentor</DialogTitle>
+            <DialogDescription>
+              Update the mentor's profile information.
+            </DialogDescription>
+          </DialogHeader>
+          <MentorForm mentor={selectedMentor} onSubmit={handleEditFormSubmit} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
