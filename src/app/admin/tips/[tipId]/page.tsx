@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { Tip } from '@/lib/types';
-import { ChevronLeft, Edit, Trash2 } from 'lucide-react';
+import { ChevronLeft, Edit, Trash2, Ban, CheckCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -80,6 +80,24 @@ export default function TipDetailsPage({ params }: TipDetailsPageProps) {
     toast({ title: 'Tip Updated' });
     setIsFormOpen(false);
   };
+  
+  const handleDeactivate = () => {
+    if (!firestore || !tip) return;
+    TipsAPI.updateTip(firestore, tip.id, { isActive: false });
+    toast({
+      title: 'Tip Deactivated',
+      description: `The tip "${tip.title}" is now hidden.`,
+    });
+  };
+
+  const handleActivate = () => {
+    if (!firestore || !tip) return;
+    TipsAPI.updateTip(firestore, tip.id, { isActive: true });
+    toast({
+      title: 'Tip Activated',
+      description: `The tip "${tip.title}" is now visible.`,
+    });
+  };
 
 
   if (isLoading) {
@@ -137,9 +155,20 @@ export default function TipDetailsPage({ params }: TipDetailsPageProps) {
                   <TipForm tip={tip} onSubmit={handleFormSubmit} />
                 </DialogContent>
             </Dialog>
+             {tip.isActive ? (
+                <Button variant="destructive" onClick={handleDeactivate}>
+                    <Ban className="mr-2 h-4 w-4" />
+                    Deactivate
+                </Button>
+                ) : (
+                <Button variant="secondary" onClick={handleActivate}>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Activate
+                </Button>
+                )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive">
+                <Button variant="destructive" className="bg-red-800 hover:bg-red-900">
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
                 </Button>

@@ -6,7 +6,6 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import {
   Form,
   FormControl,
@@ -17,6 +16,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import type { Mentor } from '@/lib/types';
+import { Switch } from '../ui/switch';
 
 // Define the validation schema using Zod
 const mentorFormSchema = z.object({
@@ -25,6 +25,7 @@ const mentorFormSchema = z.object({
   bio: z.string().optional(),
   expertise: z.string().optional(), // Handled as comma-separated string
   hourlyRate: z.coerce.number().min(0, 'Rate must be non-negative.').optional(),
+  isActive: z.boolean().default(true),
 });
 
 type MentorFormValues = z.infer<typeof mentorFormSchema>;
@@ -43,6 +44,7 @@ export const MentorForm: React.FC<MentorFormProps> = ({ mentor, onSubmit }) => {
       bio: mentor?.bio || '',
       expertise: mentor?.expertise?.join(', ') || '',
       hourlyRate: mentor?.hourlyRate || 0,
+      isActive: mentor?.isActive ?? true,
     },
   });
 
@@ -54,6 +56,7 @@ export const MentorForm: React.FC<MentorFormProps> = ({ mentor, onSubmit }) => {
       bio: mentor?.bio || '',
       expertise: mentor?.expertise?.join(', ') || '',
       hourlyRate: mentor?.hourlyRate || 0,
+      isActive: mentor?.isActive ?? true,
     });
   }, [mentor, form]);
 
@@ -149,6 +152,27 @@ export const MentorForm: React.FC<MentorFormProps> = ({ mentor, onSubmit }) => {
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="isActive"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+              <div className="space-y-0.5">
+                <FormLabel>Status</FormLabel>
+                <FormDescription>
+                  Inactive mentors won't be visible in the mentee app.
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
 
         <div className="pt-4">
           <Button type="submit">

@@ -26,6 +26,8 @@ import {
   Activity,
   Trash2,
   Edit,
+  Ban,
+  CheckCircle,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -84,7 +86,7 @@ export default function MentorDetailsPage({ params }: MentorDetailsPageProps) {
     });
     router.push('/admin/mentors');
   };
-  
+
   const handleEditFormSubmit = (data: Partial<Mentor>) => {
     if (!firestore || !mentor) return;
     MentorsAPI.updateMentor(firestore, mentor.id, data);
@@ -93,6 +95,24 @@ export default function MentorDetailsPage({ params }: MentorDetailsPageProps) {
       description: `${data.name}'s profile has been updated.`,
     });
     setIsEditFormOpen(false);
+  };
+  
+  const handleSuspend = () => {
+    if (!firestore || !mentor) return;
+    MentorsAPI.updateMentor(firestore, mentor.id, { isActive: false });
+    toast({
+      title: 'Mentor Suspended',
+      description: `${mentor.name}'s profile has been suspended and will be hidden.`,
+    });
+  };
+
+  const handleReactivate = () => {
+    if (!firestore || !mentor) return;
+    MentorsAPI.updateMentor(firestore, mentor.id, { isActive: true });
+    toast({
+      title: 'Mentor Reactivated',
+      description: `${mentor.name}'s profile is now active and visible.`,
+    });
   };
 
   if (isLoading) {
@@ -132,14 +152,20 @@ export default function MentorDetailsPage({ params }: MentorDetailsPageProps) {
               <div className="flex-1">
                 <CardTitle className="text-3xl">{mentor.name}</CardTitle>
                 <CardDescription>{mentor.id}</CardDescription>
-                 <div className="mt-2 flex flex-wrap gap-2">
-                    {mentor.expertise?.map((exp) => (
-                      <Badge key={exp} variant="secondary">
-                        {exp}
-                      </Badge>
-                    ))}
-                  </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {mentor.expertise?.map((exp) => (
+                    <Badge key={exp} variant="secondary">
+                      {exp}
+                    </Badge>
+                  ))}
+                </div>
               </div>
+               <Badge
+                variant={mentor.isActive ? 'default' : 'destructive'}
+                className="ml-auto"
+              >
+                {mentor.isActive ? 'Active' : 'Suspended'}
+              </Badge>
             </div>
           </CardHeader>
           <CardContent className="mt-4 grid gap-6 md:grid-cols-2">
@@ -158,11 +184,13 @@ export default function MentorDetailsPage({ params }: MentorDetailsPageProps) {
               <InfoItem
                 icon={Star}
                 label="Average Rating"
-                value={`${mentor.ratingAvg?.toFixed(1) || 'N/A'} (${mentor.ratingCount || 0} reviews)`}
+                value={`${mentor.ratingAvg?.toFixed(1) || 'N/A'} (${
+                  mentor.ratingCount || 0
+                } reviews)`}
               />
             </div>
             <div className="space-y-4">
-               <InfoItem
+              <InfoItem
                 icon={Activity}
                 label="Total Sessions"
                 value={mentor.totalSessions || 0}
@@ -175,32 +203,66 @@ export default function MentorDetailsPage({ params }: MentorDetailsPageProps) {
             </div>
           </CardContent>
           <CardFooter className="flex justify-end gap-2 border-t px-6 py-4">
-             <Dialog open={isEditFormOpen} onOpenChange={setIsEditFormOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="outline"><Edit className="mr-2 h-4 w-4" />Edit Profile</Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[625px]">
-                  <DialogHeader>
-                    <DialogTitle>Edit Mentor</DialogTitle>
-                    <DialogDescription>
-                      Update the mentor's profile information.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <MentorForm mentor={mentor} onSubmit={handleEditFormSubmit} />
-                </DialogContent>
+            <Dialog open={isEditFormOpen} onOpenChange={setIsEditFormOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[625px]">
+                <DialogHeader>
+                  <DialogTitle>Edit Mentor</DialogTitle>
+                  <DialogDescription>
+                    Update the mentor's profile information.
+                  </DialogDescription>
+                </DialogHeader>
+                <MentorForm mentor={mentor} onSubmit={handleEditFormSubmit} />
+              </DialogContent>
             </Dialog>
+             {mentor.isActive ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    <Ban className="mr-2 h-4 w-4" />
+                    Suspend Mentor
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will suspend {mentor.name}'s profile and hide it from the mentee app.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleSuspend}>
+                      Yes, Suspend
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : (
+              <Button variant="secondary" onClick={handleReactivate}>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Reactivate Mentor
+              </Button>
+            )}
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive">
+                <Button variant="destructive" className="bg-red-800 hover:bg-red-900">
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Profile
+                  Delete
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete {mentor.name}'s profile.
+                    This action cannot be undone. This will permanently delete{' '}
+                    {mentor.name}'s profile.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -233,7 +295,11 @@ const InfoItem = ({
     {Icon && <Icon className="mt-1 h-5 w-5 text-muted-foreground" />}
     <div className={!Icon ? 'w-full' : ''}>
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
-      <p className={`text-base font-semibold ${isBlock ? 'mt-1 whitespace-pre-wrap' : ''}`}>
+      <p
+        className={`text-base font-semibold ${
+          isBlock ? 'mt-1 whitespace-pre-wrap' : ''
+        }`}
+      >
         {value}
       </p>
     </div>

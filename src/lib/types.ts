@@ -16,6 +16,7 @@ export interface Mentor {
   hourlyRate?: number;
   createdAt: string; // ISO 8601 date string
   availability?: AvailabilitySlot[];
+  isActive: boolean;
 }
 
 export interface AvailabilitySlot {

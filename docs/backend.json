@@ -70,12 +70,17 @@
               }
             }
           }
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Controls if the mentor is visible in the mentee app."
         }
       },
       "required": [
         "id",
         "name",
-        "email"
+        "email",
+        "isActive"
       ]
     },
     "mentee": {

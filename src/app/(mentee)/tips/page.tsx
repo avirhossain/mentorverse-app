@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Lightbulb } from "lucide-react";
 import type { Tip } from "@/lib/types";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, orderBy, query } from "firebase/firestore";
+import { collection, orderBy, query, where } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function TipsPage() {
@@ -11,7 +11,7 @@ export default function TipsPage() {
 
   const tipsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'tips'), orderBy('createdAt', 'desc'));
+    return query(collection(firestore, 'tips'), where('isActive', '==', true), orderBy('createdAt', 'desc'));
   }, [firestore]);
 
   const { data: tips, isLoading, error } = useCollection<Tip>(tipsQuery);

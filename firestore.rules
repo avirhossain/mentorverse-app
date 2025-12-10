@@ -24,13 +24,17 @@ service cloud.firestore {
     match /mentees/{menteeId} {
       allow get: if (isOwner(menteeId) && isMenteeActive(menteeId)) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isOwner(menteeId); // Allow creation before isActive is set.
-      allow update: if isOwner(menteeId); // Admins should not directly update mentee profiles.
+      // Allow creation before isActive is set, but ensure it's set to true initially.
+      allow create: if isOwner(menteeId) && request.resource.data.isActive == true; 
+      allow update: if isOwner(menteeId) || isAdmin(); // allow admin to update isActive
     }
 
-    // Mentors: Publicly readable, but only admins can write.
+    // Mentors: Active mentors are publicly readable. Admins can write.
     match /mentors/{mentorId} {
-      allow get, list: if true;
+      // Allow read only if mentor is active, or if user is an admin.
+      allow get: if (resource.data.isActive == true) || isAdmin();
+      // Allow list only for active mentors (client-side query must filter by isActive == true).
+      allow list: if request.auth != null; 
       allow create, update, delete: if isAdmin();
     }
     
@@ -60,9 +64,12 @@ service cloud.firestore {
        allow update, delete: if isAdmin();
     }
     
-    // Tips: Readable by active users, admin-only writes.
+    // Tips: Active tips are readable by active users. Admins have write access.
     match /tips/{tipId} {
-      allow get, list: if (request.auth != null && isMenteeActive(request.auth.uid)) || isAdmin();
+      // Allow read only if tip is active, or if user is an admin.
+      allow get: if (resource.data.isActive == true) || isAdmin();
+       // Allow list for any authenticated user, client must filter by isActive.
+      allow list: if request.auth != null;
       allow create, update, delete: if isAdmin();
     }
     
