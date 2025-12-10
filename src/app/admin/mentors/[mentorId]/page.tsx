@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -14,8 +15,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, limit } from 'firebase/firestore';
 import type { Mentor } from '@/lib/types';
 import {
   ChevronLeft,
@@ -58,7 +59,7 @@ import {
 
 interface MentorDetailsPageProps {
   params: {
-    mentorId: string;
+    mentorName: string;
   };
 }
 
@@ -66,16 +67,17 @@ export default function MentorDetailsPage({ params }: MentorDetailsPageProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
-  const { mentorId } = React.use(params);
+  const mentorName = decodeURIComponent(params.mentorName);
 
   const [isEditFormOpen, setIsEditFormOpen] = React.useState(false);
 
-  const mentorRef = useMemoFirebase(() => {
-    if (!firestore || !mentorId) return null;
-    return doc(firestore, 'mentors', mentorId);
-  }, [firestore, mentorId]);
+  const mentorQuery = useMemoFirebase(() => {
+    if (!firestore || !mentorName) return null;
+    return query(collection(firestore, 'mentors'), where('name', '==', mentorName), limit(1));
+  }, [firestore, mentorName]);
 
-  const { data: mentor, isLoading, error } = useDoc<Mentor>(mentorRef);
+  const { data: mentors, isLoading, error } = useCollection<Mentor>(mentorQuery);
+  const mentor = mentors?.[0];
 
   const handleDelete = () => {
     if (!firestore || !mentor) return;

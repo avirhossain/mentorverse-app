@@ -82,8 +82,7 @@ export default function MentorsPage() {
 
     return mentors.map((mentor) => (
       <TableRow key={mentor.id}>
-        <TableCell className="font-medium max-w-xs truncate">{mentor.id}</TableCell>
-        <TableCell>{mentor.name}</TableCell>
+        <TableCell className="font-medium">{mentor.name}</TableCell>
         <TableCell>
           {format(new Date(mentor.createdAt), 'MMM d, yyyy')}
         </TableCell>
@@ -109,7 +108,7 @@ export default function MentorsPage() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem asChild>
-                 <Link href={`/admin/mentors/${mentor.id}`}>View</Link>
+                 <Link href={`/admin/mentors/${encodeURIComponent(mentor.name)}`}>View</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -149,7 +148,6 @@ export default function MentorsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Joined On</TableHead>
                 <TableHead>Status</TableHead>
