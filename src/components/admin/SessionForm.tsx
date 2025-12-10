@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
@@ -97,7 +98,8 @@ export const SessionForm: React.FC<SessionFormProps> = ({
   const handleFormSubmit = (values: SessionFormValues) => {
     onSubmit({
       ...values,
-      scheduledDate: values.scheduledDate ? format(values.scheduledDate, 'yyyy-MM-dd') : undefined,
+      // Fix: Ensure scheduledDate is either a formatted string or null, never undefined.
+      scheduledDate: values.scheduledDate ? format(values.scheduledDate, 'yyyy-MM-dd') : null,
     });
   };
 

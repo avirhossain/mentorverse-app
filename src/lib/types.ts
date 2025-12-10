@@ -50,7 +50,7 @@ export interface Session {
   bestSuitedFor?: string;
   requirements?: string;
   sessionType: 'Free' | 'Paid' | 'Exclusive' | 'Special Request';
-  scheduledDate?: string; // YYYY-MM-DD
+  scheduledDate?: string | null; // YYYY-MM-DD or null
   scheduledTime?: string; // HH:mm
   duration?: number; // Duration in minutes
   participants?: number; // Number of participants
