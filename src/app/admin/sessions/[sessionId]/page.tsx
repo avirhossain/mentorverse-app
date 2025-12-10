@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { BookingsAPI } from '@/lib/firebase-adapter';
+import { SessionsAPI } from '@/lib/firebase-adapter';
 import { format } from 'date-fns';
 
 export default function SessionDetailsPage({
@@ -58,15 +58,24 @@ export default function SessionDetailsPage({
   const { data: bookings, isLoading: loadingBookings } =
     useCollection<Booking>(bookingsQuery);
 
-  const handleStartMeeting = (bookingId: string) => {
-    if (!firestore) return;
-    BookingsAPI.startMeeting(firestore, bookingId);
+  const handleStartMeeting = () => {
+    if (!firestore || !session) return;
+    SessionsAPI.startMeetingForSession(firestore, session.id);
     toast({
       title: 'Meeting Started',
       description:
-        'The meeting link has been generated and a notification has been sent to the mentee.',
+        'A meeting link has been generated and notifications have been sent to all mentees.',
     });
   };
+
+  const hasConfirmedBookings = React.useMemo(() => {
+    return bookings?.some(b => b.status === 'confirmed');
+  }, [bookings]);
+
+  const isMeetingActive = React.useMemo(() => {
+    return bookings?.some(b => b.status === 'started');
+  }, [bookings]);
+
 
   const renderBookings = () => {
     if (loadingBookings) {
@@ -101,23 +110,9 @@ export default function SessionDetailsPage({
           <Badge variant={booking.status === 'completed' ? 'secondary' : 'default'}>{booking.status}</Badge>
         </TableCell>
         <TableCell className="text-right">
-          {booking.status === 'confirmed' && (
-            <Button size="sm" onClick={() => handleStartMeeting(booking.id)}>
-              <PlayCircle className="mr-2 h-4 w-4" />
-              Start Meeting
-            </Button>
-          )}
-          {booking.status === 'started' && (
-            <Button size="sm" asChild>
-              <a
-                href={booking.meetingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Join Meeting
-              </a>
-            </Button>
-          )}
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/admin/mentees/${booking.menteeId}`}>View Mentee</Link>
+          </Button>
         </TableCell>
       </TableRow>
     ));
@@ -135,9 +130,24 @@ export default function SessionDetailsPage({
         <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
           Session Details
         </h1>
-        <Button asChild size="sm">
-            <Link href={`/admin/sessions/${sessionId}/edit`}>Edit Session</Link>
-        </Button>
+        <div className="ml-auto flex items-center gap-2">
+            {session && hasConfirmedBookings && !isMeetingActive && (
+                 <Button size="sm" onClick={handleStartMeeting}>
+                    <PlayCircle className="mr-2 h-4 w-4" />
+                    Start Meeting for All
+                 </Button>
+            )}
+            {isMeetingActive && (
+                <Button size="sm" asChild>
+                    <a href={bookings?.find(b => b.status === 'started')?.meetingUrl} target="_blank" rel="noopener noreferrer">
+                        Join Active Meeting
+                    </a>
+                </Button>
+            )}
+            <Button asChild size="sm" variant="outline">
+                <Link href={`/admin/sessions/${sessionId}/edit`}>Edit Session</Link>
+            </Button>
+        </div>
       </div>
 
       {loadingSession ? (
@@ -168,8 +178,7 @@ export default function SessionDetailsPage({
             <CardHeader>
               <CardTitle>Booked Mentees</CardTitle>
               <CardDescription>
-                Manage and start meetings for mentees who have booked this
-                session.
+                Mentees who have booked this session.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -177,7 +186,7 @@ export default function SessionDetailsPage({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Mentee</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Booking Status</TableHead>
                     <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>

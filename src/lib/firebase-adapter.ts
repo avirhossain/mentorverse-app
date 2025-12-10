@@ -219,6 +219,54 @@ export const SessionsAPI = {
       emitPermissionError(waitlistRef.path, 'create', data);
     });
   },
+
+  startMeetingForSession: async (db: Firestore, sessionId: string) => {
+    const batch = writeBatch(db);
+    const meetingUrl = `https://meet.jit.si/mentorverse-session-${sessionId}-${uuidv4()}`;
+
+    // 1. Find all confirmed bookings for the session
+    const bookingsQuery = query(
+      collection(db, 'bookings'),
+      where('sessionId', '==', sessionId),
+      where('status', '==', 'confirmed')
+    );
+
+    try {
+      const bookingSnapshots = await getDocs(bookingsQuery);
+      if (bookingSnapshots.empty) {
+        throw new Error("No confirmed bookings to start a meeting for.");
+      }
+
+      bookingSnapshots.forEach(bookingDoc => {
+        const bookingData = bookingDoc.data() as Booking;
+
+        // 2. For each booking, update its status and add the meeting URL
+        const bookingRef = doc(db, 'bookings', bookingDoc.id);
+        batch.update(bookingRef, { status: 'started' as const, meetingUrl });
+
+        // 3. For each booking, create a notification for the mentee
+        const notificationRef = doc(collection(db, 'mentees', bookingData.menteeId, 'notifications'));
+        const notificationData: Notification = {
+          id: notificationRef.id,
+          menteeId: bookingData.menteeId,
+          message: `Your session "${bookingData.sessionName}" has started!`,
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          link: meetingUrl,
+        };
+        batch.set(notificationRef, notificationData);
+      });
+
+      // 4. Commit all the updates and creations at once
+      await batch.commit();
+
+    } catch (error) {
+      console.error("Failed to start meeting for session and send notifications:", error);
+      // Emit a generic error, as the specific failure point is hard to determine in a batch
+      emitPermissionError(`/sessions/${sessionId}/bookings`, 'update');
+      emitPermissionError(`/mentees/.../notifications`, 'create');
+    }
+  },
 };
 
 // ------------------ BOOKINGS ------------------
