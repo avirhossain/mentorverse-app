@@ -65,9 +65,9 @@ export default function MenteesPage() {
       return <TableRow><TableCell colSpan={7} className="text-center">No mentees found.</TableCell></TableRow>
     }
 
-    return mentees.map((mentee) => (
+    return mentees.map((mentee, index) => (
       <TableRow key={mentee.id}>
-        <TableCell className="font-medium">{mentee.displayId || mentee.id}</TableCell>
+        <TableCell className="font-medium">{index + 1}</TableCell>
         <TableCell>
             <div className="font-medium">{mentee.name}</div>
             <div className="text-sm text-muted-foreground">{mentee.email}</div>
@@ -134,7 +134,7 @@ export default function MenteesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px]">Mentee ID</TableHead>
+                <TableHead className="w-[50px]">SL</TableHead>
                 <TableHead>Mentee</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Total Sessions</TableHead>
