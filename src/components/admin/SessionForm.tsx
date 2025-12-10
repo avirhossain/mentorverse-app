@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -69,7 +69,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
       mentorId: '',
       sessionType: 'Paid',
       status: 'Active',
-      scheduledDate: new Date(),
+      scheduledDate: undefined,
       scheduledTime: '',
       sessionFee: 0,
       tag: '',
