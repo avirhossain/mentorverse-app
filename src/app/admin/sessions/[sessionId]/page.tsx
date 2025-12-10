@@ -10,24 +10,14 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   useDoc,
-  useCollection,
   useFirestore,
   useMemoFirebase,
 } from '@/firebase';
-import { doc, collection, query, orderBy } from 'firebase/firestore';
-import type { Session, Waitlist } from '@/lib/types';
+import { doc } from 'firebase/firestore';
+import type { Session } from '@/lib/types';
 import { ChevronLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
 
 export default function SessionDetailsPage({
   params,
@@ -42,51 +32,6 @@ export default function SessionDetailsPage({
     [firestore, sessionId]
   );
   const { data: session, isLoading: loadingSession } = useDoc<Session>(sessionRef);
-
-  const waitlistQuery = useMemoFirebase(
-    () =>
-      firestore
-        ? query(
-            collection(firestore, `sessions/${sessionId}/waitlist`),
-            orderBy('createdAt', 'desc')
-          )
-        : null,
-    [firestore, sessionId]
-  );
-  const { data: waitlist, isLoading: loadingWaitlist } =
-    useCollection<Waitlist>(waitlistQuery);
-
-  const isLoading = loadingSession || loadingWaitlist;
-
-  const renderWaitlist = () => {
-    if (loadingWaitlist) {
-      return Array.from({ length: 2 }).map((_, i) => (
-        <TableRow key={i}>
-          <TableCell colSpan={3}>
-            <Skeleton className="h-8 w-full" />
-          </TableCell>
-        </TableRow>
-      ));
-    }
-
-    if (!waitlist || waitlist.length === 0) {
-      return (
-        <TableRow>
-          <TableCell colSpan={3} className="text-center">
-            The waitlist is empty.
-          </TableCell>
-        </TableRow>
-      );
-    }
-
-    return waitlist.map((entry) => (
-      <TableRow key={entry.menteeId}>
-        <TableCell>{entry.menteeName}</TableCell>
-        <TableCell>{entry.phoneNumber || 'Not provided'}</TableCell>
-        <TableCell>{format(new Date(entry.createdAt), 'PPp')}</TableCell>
-      </TableRow>
-    ));
-  };
 
   return (
     <div className="grid flex-1 auto-rows-max gap-4">
@@ -108,15 +53,22 @@ export default function SessionDetailsPage({
             <Skeleton className="h-8 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
           </CardHeader>
+           <CardContent>
+            <Skeleton className="h-20 w-full" />
+          </CardContent>
         </Card>
       ) : session ? (
         <Card>
           <CardHeader>
             <CardTitle>{session.name}</CardTitle>
             <CardDescription>
-              Session ID: {session.displayId || session.id}
+              Session ID: {session.displayId || session.id} <br/>
+              Mentor: {session.mentorName}
             </CardDescription>
           </CardHeader>
+          <CardContent>
+             <p className="text-muted-foreground">{session.offerings}</p>
+          </CardContent>
         </Card>
       ) : (
         <Card>
@@ -125,27 +77,6 @@ export default function SessionDetailsPage({
           </CardHeader>
         </Card>
       )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Waitlist</CardTitle>
-          <CardDescription>
-            Users who will be notified if a spot opens up.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Mentee Name</TableHead>
-                <TableHead>Phone Number</TableHead>
-                <TableHead>Date Joined</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>{renderWaitlist()}</TableBody>
-          </Table>
-        </CardContent>
-      </Card>
     </div>
   );
 }

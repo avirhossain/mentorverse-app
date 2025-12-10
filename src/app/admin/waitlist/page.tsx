@@ -42,7 +42,7 @@ export default function WaitlistPage() {
     );
   }, [firestore]);
 
-  const { data: waitlist, isLoading } = useCollection<Waitlist>(waitlistQuery, true); // Added a flag to bypass memoization check for collectionGroup
+  const { data: waitlist, isLoading } = useCollection<Waitlist>(waitlistQuery, true); // bypassMemoizationCheck for collectionGroup
 
   // 2. Enrich waitlist entries with session names
   React.useEffect(() => {
