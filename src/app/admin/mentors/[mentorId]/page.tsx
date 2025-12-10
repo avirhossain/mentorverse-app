@@ -66,7 +66,7 @@ export default function MentorDetailsPage({ params }: MentorDetailsPageProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
-  const mentorId = params.mentorId;
+  const { mentorId } = React.use(params);
 
   const [isEditFormOpen, setIsEditFormOpen] = React.useState(false);
 
