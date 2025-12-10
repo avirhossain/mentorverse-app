@@ -52,7 +52,7 @@ export default function MentorsPage() {
     if (isLoading) {
       return Array.from({ length: 3 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell colSpan={7}>
+          <TableCell colSpan={6}>
             <Skeleton className="h-8 w-full" />
           </TableCell>
         </TableRow>
@@ -62,7 +62,7 @@ export default function MentorsPage() {
     if (error) {
       return (
         <TableRow>
-          <TableCell colSpan={7} className="text-center text-destructive">
+          <TableCell colSpan={6} className="text-center text-destructive">
             Error loading mentors: {error.message}
           </TableCell>
         </TableRow>
@@ -72,7 +72,7 @@ export default function MentorsPage() {
     if (!mentors || mentors.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={7} className="text-center">
+          <TableCell colSpan={6} className="text-center">
             No mentors found.
           </TableCell>
         </TableRow>
@@ -85,15 +85,6 @@ export default function MentorsPage() {
         <TableCell>{mentor.name}</TableCell>
         <TableCell>
           {format(new Date(mentor.createdAt), 'MMM d, yyyy')}
-        </TableCell>
-        <TableCell>
-          <div className="flex flex-wrap gap-1">
-            {mentor.expertise?.slice(0, 2).map((exp) => (
-              <Badge key={exp} variant="outline">
-                {exp}
-              </Badge>
-            ))}
-          </div>
         </TableCell>
         <TableCell className="text-right">
           {mentor.totalSessions || 0}
@@ -112,7 +103,7 @@ export default function MentorsPage() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem asChild>
-                 <Link href={`/admin/mentors/${mentor.id}`}>View Details</Link>
+                 <Link href={`/admin/mentors/${mentor.id}`}>View</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -155,7 +146,6 @@ export default function MentorsPage() {
                 <TableHead>ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Joined On</TableHead>
-                <TableHead>Expertise</TableHead>
                 <TableHead className="text-right">Total Sessions</TableHead>
                 <TableHead className="text-right">Avg. Rating</TableHead>
                 <TableHead>
