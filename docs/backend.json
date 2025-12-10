@@ -54,9 +54,6 @@
           "type": "string",
           "format": "date-time"
         },
-        "isActive": {
-          "type": "boolean"
-        },
         "availability": {
           "type": "array",
           "items": {
@@ -178,9 +175,14 @@
         "sessionFee": {
           "type": "number"
         },
-        "isActive": {
-          "type": "boolean",
-          "description": "Whether the session offering is active and bookable."
+        "status": {
+          "type": "string",
+          "enum": [
+            "Active",
+            "Expired",
+            "Draft"
+          ],
+          "description": "The manually set status of the session, controlled by an admin."
         }
       },
       "required": [
@@ -513,5 +515,3 @@
     }
   }
 }
-
-    

@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,7 @@ const sessionFormSchema = z.object({
   name: z.string().min(3, 'Session name must be at least 3 characters.'),
   mentorId: z.string().min(1, 'A mentor must be selected.'),
   sessionType: z.enum(['Free', 'Paid', 'Exclusive']),
+  status: z.enum(['Active', 'Expired', 'Draft']).default('Active'),
   scheduledDate: z.date({
     required_error: 'A date for the session is required.',
   }),
@@ -67,7 +68,8 @@ export const SessionForm: React.FC<SessionFormProps> = ({
       name: '',
       mentorId: '',
       sessionType: 'Paid',
-      scheduledDate: undefined,
+      status: 'Active',
+      scheduledDate: new Date(),
       scheduledTime: '',
       sessionFee: 0,
       tag: '',
@@ -187,7 +189,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="scheduledDate"
@@ -220,9 +222,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) =>
-                          date < new Date(new Date().setHours(0,0,0,0))
-                        }
                         initialFocus
                       />
                       <div className="p-4 border-t">
@@ -242,6 +241,34 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                       </div>
                     </PopoverContent>
                   </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Set the session status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Expired">Expired</SelectItem>
+                      <SelectItem value="Draft">Draft</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Controls the visibility of the session.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

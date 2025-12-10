@@ -39,7 +39,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { SessionForm } from '@/components/admin/SessionForm';
 import type { Session, Mentor } from '@/lib/types';
-import { format, isPast, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -55,20 +55,14 @@ const getTypeBadgeVariant = (type: Session['sessionType']) => {
     }
 }
 
-const getStatus = (session: Session): { text: string; variant: "default" | "secondary" | "destructive" } => {
-    // Ensure date and time are valid before parsing
-    if (!session.scheduledDate || !session.scheduledTime) {
-        return { text: 'Invalid Date', variant: 'destructive' };
+const getStatusBadgeVariant = (status?: Session['status']): "default" | "secondary" | "destructive" => {
+    if (status === 'Expired') {
+        return 'destructive';
     }
-    try {
-        const sessionDate = parseISO(`${session.scheduledDate}T${session.scheduledTime}`);
-        if (isPast(sessionDate)) {
-            return { text: 'Expired', variant: 'destructive' };
-        }
-        return { text: 'Active', variant: 'default' };
-    } catch (e) {
-        return { text: 'Invalid Date', variant: 'destructive' };
+    if (status === 'Active') {
+        return 'default';
     }
+    return 'secondary';
 };
 
 
@@ -154,7 +148,6 @@ export default function SessionsPage() {
     }
     
     return sessions.map((session) => {
-      const status = getStatus(session);
       return (
         <TableRow key={session.id}>
           <TableCell>
@@ -170,8 +163,8 @@ export default function SessionsPage() {
              </Badge>
           </TableCell>
           <TableCell>
-            <Badge variant={status.variant}>
-              {status.text}
+            <Badge variant={getStatusBadgeVariant(session.status)}>
+              {session.status || 'Draft'}
             </Badge>
           </TableCell>
           <TableCell className="text-right">${session.sessionFee.toFixed(2)}</TableCell>

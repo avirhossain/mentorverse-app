@@ -48,7 +48,7 @@ export interface Session {
   scheduledDate: string; // YYYY-MM-DD
   scheduledTime: string; // HH:mm
   sessionFee: number;
-  isActive?: boolean;
+  status?: 'Active' | 'Expired' | 'Draft';
 }
 
 export interface Booking {
