@@ -7,7 +7,6 @@ import {
   PlusCircle,
   File,
   ListFilter,
-  MoreHorizontal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +20,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -77,25 +75,10 @@ export default function TipsPage() {
         <TableCell>
           {format(new Date(tip.createdAt), 'MMM d, yyyy')}
         </TableCell>
-        <TableCell>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  aria-haspopup="true"
-                  size="icon"
-                  variant="ghost"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only">Toggle menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem asChild>
-                  <Link href={`/admin/tips/${tip.id}`}>View Details</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        <TableCell className="text-right">
+           <Button asChild variant="link" size="sm">
+              <Link href={`/admin/tips/${tip.id}`}>View</Link>
+            </Button>
           </TableCell>
       </TableRow>
     ));
@@ -151,9 +134,7 @@ export default function TipsPage() {
                 <TableHead>Title</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
-                 <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
+                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

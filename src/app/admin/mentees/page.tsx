@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { File, ListFilter, MoreHorizontal } from 'lucide-react';
+import { File, ListFilter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -17,7 +17,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -85,25 +84,10 @@ export default function MenteesPage() {
         <TableCell className="text-right">
           {formatCurrency(mentee.accountBalance || 0)}
         </TableCell>
-        <TableCell>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  aria-haspopup="true"
-                  size="icon"
-                  variant="ghost"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only">Toggle menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem asChild>
-                  <Link href={`/admin/mentees/${mentee.id}`}>View Details</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        <TableCell className="text-right">
+            <Button asChild variant="link" size="sm">
+              <Link href={`/admin/mentees/${mentee.id}`}>View</Link>
+            </Button>
           </TableCell>
       </TableRow>
     ));
@@ -156,9 +140,7 @@ export default function MenteesPage() {
                 <TableHead>Total Sessions</TableHead>
                 <TableHead>Joined On</TableHead>
                 <TableHead className="text-right">Account Balance</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

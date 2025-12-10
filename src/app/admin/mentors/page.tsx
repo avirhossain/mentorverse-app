@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { PlusCircle, File, MoreHorizontal } from 'lucide-react';
+import { PlusCircle, File } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -21,13 +21,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import type { Mentor } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
@@ -84,7 +77,7 @@ export default function MentorsPage() {
       <TableRow key={mentor.id}>
         <TableCell className="font-medium">{mentor.name}</TableCell>
         <TableCell>
-          {format(new Date(mentor.createdAt), 'MMM d, yyyy')}
+          {mentor.createdAt ? format(new Date(mentor.createdAt), 'MMM d, yyyy') : 'N/A'}
         </TableCell>
         <TableCell>
            <Badge variant={mentor.isActive ? 'default' : 'destructive'}>
@@ -97,26 +90,11 @@ export default function MentorsPage() {
         <TableCell className="text-right">
           {mentor.ratingAvg?.toFixed(1) || 'N/A'}
         </TableCell>
-        <TableCell>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  aria-haspopup="true"
-                  size="icon"
-                  variant="ghost"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only">Toggle menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem asChild>
-                  <Link href={`/admin/mentors/${mentor.id}`}>View Details</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </TableCell>
+        <TableCell className="text-right">
+            <Button asChild variant="link" size="sm">
+              <Link href={`/admin/mentors/${mentor.id}`}>View</Link>
+            </Button>
+        </TableCell>
       </TableRow>
     ));
   };
@@ -157,9 +135,7 @@ export default function MentorsPage() {
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Total Sessions</TableHead>
                 <TableHead className="text-right">Avg. Rating</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>{renderTableBody()}</TableBody>
