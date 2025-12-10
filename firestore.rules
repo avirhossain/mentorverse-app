@@ -41,9 +41,16 @@ service cloud.firestore {
     // Sessions: Readable by active mentees, but only admins can create/manage them.
     match /sessions/{sessionId} {
       allow get, list: if (request.auth != null && isMenteeActive(request.auth.uid)) || isAdmin();
-      allow create, update, delete: if isAdmin();
+      allow create, delete: if isAdmin();
+      // Allow mentees to update bookedCount, but nothing else
+      allow update: if isAdmin() || (request.auth != null && isMenteeActive(request.auth.uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bookedCount']));
     }
     
+    match /sessions/{sessionId}/waitlist/{userId} {
+        allow create: if isOwner(userId) && isMenteeActive(userId);
+        allow read, update, delete: if isAdmin();
+    }
+
     // Bookings: Active mentees can create/read their own bookings. Admins can read all.
     match /bookings/{bookingId} {
       allow get: if request.auth != null && ((isOwner(resource.data.menteeId) && isMenteeActive(request.auth.uid)) || isAdmin());

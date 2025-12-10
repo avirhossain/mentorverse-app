@@ -200,6 +200,10 @@
           "type": "number",
           "description": "The number of participants for the session."
         },
+        "bookedCount": {
+          "type": "number",
+          "description": "The number of participants who have booked the session."
+        },
         "sessionFee": {
           "type": "number"
         },
@@ -314,6 +318,31 @@
         "scheduledTime",
         "status",
         "sessionFee"
+      ]
+    },
+    "waitlist": {
+      "title": "Waitlist Entry",
+      "description": "A mentee's entry on a waitlist for a full session.",
+      "type": "object",
+      "properties": {
+        "menteeId": {
+          "type": "string"
+        },
+        "menteeName": {
+          "type": "string"
+        },
+        "phoneNumber": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "menteeId",
+        "menteeName",
+        "createdAt"
       ]
     },
     "review": {
@@ -621,6 +650,12 @@
         "$ref": "#/entities/session"
       },
       "description": "Stores all available session templates. Managed by admins."
+    },
+    "/sessions/{sessionId}/waitlist/{userId}": {
+      "schema": {
+        "$ref": "#/entities/waitlist"
+      },
+      "description": "Subcollection storing waitlisted users for a specific session."
     },
     "/bookings/{bookingId}": {
       "schema": {

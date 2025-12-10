@@ -1,5 +1,5 @@
-import { Clock, Calendar, Tag } from 'lucide-react';
-import type { Session, Booking } from '@/lib/types';
+import { Clock, Calendar, Tag, Users } from 'lucide-react';
+import type { Session, Booking, Mentee } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -13,9 +13,23 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 import { useUser, useFirestore } from '@/firebase';
-import { BookingsAPI } from '@/lib/firebase-adapter';
+import { BookingsAPI, SessionsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
+import * as React from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 
 interface SessionCardProps {
   session: Session | (Booking & { sessionName: string });
@@ -39,8 +53,13 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [phoneNumber, setPhoneNumber] = React.useState('');
 
-  const handleBooking = () => {
+  const bookedCount = session.bookedCount || 0;
+  const participantLimit = session.participants || 1;
+  const isFull = bookedCount >= participantLimit;
+
+  const handleBooking = async () => {
     if (!user) {
       toast({
         variant: 'destructive',
@@ -58,6 +77,15 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
       });
       return;
     }
+    
+    if (isFull) {
+        toast({
+            variant: 'destructive',
+            title: 'Session Full',
+            description: 'This session has no available seats.',
+        });
+        return;
+    }
 
     const newBooking: Booking = {
       id: uuidv4(),
@@ -68,19 +96,89 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
       menteeId: user.uid,
       menteeName: user.displayName || 'Anonymous',
       bookingTime: new Date().toISOString(),
-      scheduledDate: session.scheduledDate,
-      scheduledTime: session.scheduledTime,
+      scheduledDate: session.scheduledDate as string,
+      scheduledTime: session.scheduledTime as string,
       status: 'confirmed',
       sessionFee: session.sessionFee,
       adminDisbursementStatus: 'pending',
     };
 
-    BookingsAPI.createBooking(firestore, newBooking);
+    try {
+      await BookingsAPI.createBooking(firestore, newBooking);
+      toast({
+        title: 'Session Booked!',
+        description: `Your booking for "${session.name}" has been confirmed.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Booking Failed',
+        description: error.message || 'Could not complete your booking.',
+      });
+    }
+  };
 
+  const handleJoinWaitlist = () => {
+    if (!user || !firestore) {
+      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
+      return;
+    }
+    SessionsAPI.joinWaitlist(firestore, session.id, user as Mentee, phoneNumber);
     toast({
-      title: 'Session Booked!',
-      description: `Your booking for "${session.name}" has been confirmed.`,
+      title: 'Waitlist Joined',
+      description: 'We will notify you if a spot opens up!',
     });
+  };
+
+  const renderFooter = () => {
+    if (isBooking) {
+      return <Button className="w-full">View Details</Button>;
+    }
+
+    if (isFull) {
+      return (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button className="w-full" variant="secondary">
+              Notify Me
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Join the Waitlist</AlertDialogTitle>
+              <AlertDialogDescription>
+                This session is currently full. Enter your phone number, and we'll
+                notify you if a spot becomes available.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="grid gap-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input 
+                    id="phone" 
+                    placeholder="(optional)"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleJoinWaitlist}>Join Waitlist</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      );
+    }
+
+    return (
+      <div className="flex gap-2">
+        <Button variant="outline" className="w-full">
+          See More
+        </Button>
+        <Button className="w-full" onClick={handleBooking}>
+          Book Session
+        </Button>
+      </div>
+    );
   };
 
   return (
@@ -96,22 +194,38 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
       </CardHeader>
       <CardContent className="flex-grow p-4 pt-0">
         <div className="space-y-2 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            <span>
-              {format(new Date(session.scheduledDate), 'EEEE, MMMM d, yyyy')}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            <span>{session.scheduledTime}</span>
-          </div>
+          {session.scheduledDate && session.scheduledTime && (
+             <>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <span>
+                  {format(new Date(session.scheduledDate), 'EEEE, MMMM d, yyyy')}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span>{session.scheduledTime}</span>
+              </div>
+            </>
+          )}
           {'tag' in session && session.tag && (
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4" />
               <span>{session.tag}</span>
             </div>
           )}
+           {session.participants && session.participants > 1 && (
+            <div className="flex items-center gap-2 font-medium">
+                <Users className="h-4 w-4" />
+                <span>
+                    {isFull ? (
+                        <span className="text-destructive">No Seats Available</span>
+                    ) : (
+                        `${bookedCount}/${participantLimit} Seats Booked`
+                    )}
+                </span>
+            </div>
+           )}
         </div>
       </CardContent>
       <CardFooter className="flex flex-col items-stretch p-4 pt-0">
@@ -120,21 +234,8 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
             ? 'Free'
             : formatCurrency(session.sessionFee)}
         </div>
-        <div className="flex gap-2">
-          {isBooking ? (
-             <Button className="w-full">View Details</Button>
-          ) : (
-            <>
-              <Button variant="outline" className="w-full">
-                See More
-              </Button>
-              <Button className="w-full" onClick={handleBooking}>Book Session</Button>
-            </>
-          )}
-        </div>
+        {renderFooter()}
       </CardFooter>
     </Card>
   );
 }
-
-    

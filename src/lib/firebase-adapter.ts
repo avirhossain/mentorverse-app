@@ -18,6 +18,7 @@ import {
   WithFieldValue,
   increment,
   writeBatch,
+  runTransaction,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -30,6 +31,7 @@ import type {
   Tip,
   Disbursement,
   Transaction,
+  Waitlist,
 } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -197,15 +199,63 @@ export const SessionsAPI = {
       emitPermissionError(sessionRef.path, 'delete');
     });
   },
+  
+  joinWaitlist: (
+    db: Firestore,
+    sessionId: string,
+    mentee: Mentee,
+    phoneNumber?: string
+  ) => {
+    const waitlistRef = doc(db, 'sessions', sessionId, 'waitlist', mentee.id);
+    const data: Waitlist = {
+      menteeId: mentee.id,
+      menteeName: mentee.name,
+      phoneNumber: phoneNumber || mentee.phone,
+      createdAt: new Date().toISOString(),
+    };
+    setDoc(waitlistRef, data).catch(() => {
+      emitPermissionError(waitlistRef.path, 'create', data);
+    });
+  },
 };
 
 // ------------------ BOOKINGS ------------------
 export const BookingsAPI = {
-  createBooking: (db: Firestore, data: WithFieldValue<Booking>) => {
-    const bookingRef = doc(db, 'bookings', data.id);
-    setDoc(bookingRef, data).catch(() => {
-      emitPermissionError(bookingRef.path, 'create', data);
-    });
+  createBooking: async (db: Firestore, bookingData: WithFieldValue<Booking>) => {
+    const sessionRef = doc(db, 'sessions', bookingData.sessionId);
+    const bookingRef = doc(db, 'bookings', bookingData.id);
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        const sessionDoc = await transaction.get(sessionRef);
+        if (!sessionDoc.exists()) {
+          throw 'Session does not exist!';
+        }
+
+        const sessionData = sessionDoc.data() as Session;
+        const currentBookedCount = sessionData.bookedCount || 0;
+        const maxParticipants = sessionData.participants || 1;
+
+        if (currentBookedCount >= maxParticipants) {
+          throw 'Session is already full!';
+        }
+
+        // Perform the writes within the transaction
+        transaction.set(bookingRef, bookingData);
+        transaction.update(sessionRef, { bookedCount: increment(1) });
+      });
+    } catch (error) {
+      console.error('Booking transaction failed: ', error);
+      // Determine which permission error to emit based on the likely failure point
+      if (typeof error === 'string' && error.includes('full')) {
+        // This is a custom error, not a permission error. The UI should handle this.
+        throw error;
+      } else {
+        // It's likely a Firestore permission error
+        emitPermissionError(bookingRef.path, 'create', bookingData);
+        emitPermissionError(sessionRef.path, 'update', { bookedCount: 'increment(1)' });
+      }
+    }
   },
 
   getBooking: (db: Firestore, id: string) => {

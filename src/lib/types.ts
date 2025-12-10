@@ -54,6 +54,7 @@ export interface Session {
   scheduledTime?: string; // HH:mm
   duration?: number; // Duration in minutes
   participants?: number; // Number of participants
+  bookedCount?: number; // Number of booked participants
   sessionFee: number;
   status?: 'Active' | 'Expired' | 'Draft';
   availability?: AvailabilitySlot[];
@@ -142,5 +143,12 @@ export interface Payout {
   id: string; // Corresponds to document ID
   disbursementId: string;
   amount: number;
+  createdAt: string; // ISO 8601 date string
+}
+
+export interface Waitlist {
+  menteeId: string;
+  menteeName: string;
+  phoneNumber?: string;
   createdAt: string; // ISO 8601 date string
 }
