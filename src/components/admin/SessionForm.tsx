@@ -67,26 +67,21 @@ export const SessionForm: React.FC<SessionFormProps> = ({
 }) => {
   const form = useForm<SessionFormValues>({
     resolver: zodResolver(sessionFormSchema),
-    defaultValues: session
-      ? {
-          ...session,
-          scheduledDate: session.scheduledDate
-            ? new Date(session.scheduledDate)
-            : new Date(),
-        }
-      : {
-          name: '',
-          mentorId: '',
-          sessionType: 'Paid',
-          status: 'Draft',
-          scheduledDate: undefined,
-          scheduledTime: '',
-          sessionFee: 0,
-          tag: '',
-          offerings: '',
-          bestSuitedFor: '',
-          requirements: '',
-        },
+    defaultValues: {
+      name: session?.name || '',
+      mentorId: session?.mentorId || '',
+      sessionType: session?.sessionType || 'Paid',
+      status: session?.status || 'Draft',
+      scheduledDate: session?.scheduledDate
+        ? new Date(`${session.scheduledDate}T00:00:00`)
+        : undefined,
+      scheduledTime: session?.scheduledTime || '',
+      sessionFee: session?.sessionFee || 0,
+      tag: session?.tag || '',
+      offerings: session?.offerings || '',
+      bestSuitedFor: session?.bestSuitedFor || '',
+      requirements: session?.requirements || '',
+    },
   });
 
   const handleFormSubmit = (values: SessionFormValues) => {
@@ -213,7 +208,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <FormField
+           <FormField
             control={form.control}
             name="scheduledDate"
             render={({ field }) => (
