@@ -62,7 +62,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { MenteesAPI, BookingsAPI } from '@/lib/firebase-adapter';
+import { MenteesAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { AddBalanceForm, type AddBalanceFormValues } from '@/components/admin/AddBalanceForm';
@@ -146,15 +146,6 @@ export default function MenteeDetailsPage({
     setIsAddBalanceOpen(false);
   };
   
-  const handleStartMeeting = (bookingId: string) => {
-    if (!firestore) return;
-    BookingsAPI.startMeeting(firestore, bookingId);
-    toast({
-        title: "Meeting Started",
-        description: "The meeting link has been generated and a notification has been sent to the mentee.",
-    });
-  };
-
 
   if (isLoading) {
     return (
@@ -318,7 +309,7 @@ export default function MenteeDetailsPage({
                   <TableHead>Session</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Fee</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead className="text-right">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -338,20 +329,7 @@ export default function MenteeDetailsPage({
                         {formatCurrency(booking.sessionFee)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {booking.status === 'confirmed' && (
-                           <Button size="sm" onClick={() => handleStartMeeting(booking.id)}>
-                            <PlayCircle className="mr-2 h-4 w-4"/>
-                            Start Meeting
-                          </Button>
-                        )}
-                        {booking.status === 'started' && (
-                          <Button size="sm" asChild>
-                            <a href={booking.meetingUrl} target="_blank" rel="noopener noreferrer">Join Meeting</a>
-                          </Button>
-                        )}
-                         {booking.status === 'completed' && (
-                           <Badge variant="secondary">Completed</Badge>
-                        )}
+                        <Badge variant={booking.status === 'completed' ? 'secondary' : 'default'}>{booking.status}</Badge>
                       </TableCell>
                     </TableRow>
                   ))
