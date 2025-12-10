@@ -16,6 +16,7 @@ import {
   where,
   DocumentData,
   WithFieldValue,
+  increment,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -27,7 +28,9 @@ import type {
   Review,
   Tip,
   Disbursement,
+  Transaction,
 } from './types';
+import { v4 as uuidv4 } from 'uuid';
 
 const emitPermissionError = (
   path: string,
@@ -70,11 +73,40 @@ export const MenteesAPI = {
     });
   },
 
-  updateBalance: (db: Firestore, uid: string, newBalance: number) => {
-    const data = { accountBalance: newBalance };
+  deleteMentee: (db: Firestore, uid: string) => {
     const menteeRef = doc(db, 'mentees', uid);
-    updateDoc(menteeRef, data).catch(() => {
-      emitPermissionError(menteeRef.path, 'update', data);
+    deleteDoc(menteeRef).catch(() => {
+      emitPermissionError(menteeRef.path, 'delete');
+    });
+  },
+
+  addBalance: (db: Firestore, uid: string, amount: number) => {
+    if (amount <= 0) return;
+
+    const menteeRef = doc(db, 'mentees', uid);
+    const transactionRef = doc(
+      collection(db, `mentees/${uid}/transactions`),
+      uuidv4()
+    );
+
+    const transactionData: Transaction = {
+      id: transactionRef.id,
+      type: 'topup',
+      amount: amount,
+      description: 'Admin top-up',
+      createdAt: new Date().toISOString(),
+    };
+
+    // Non-blocking update for mentee balance
+    updateDoc(menteeRef, { accountBalance: increment(amount) }).catch(() => {
+      emitPermissionError(menteeRef.path, 'update', {
+        accountBalance: `increment(${amount})`,
+      });
+    });
+
+    // Non-blocking creation of transaction record
+    setDoc(transactionRef, transactionData).catch(() => {
+      emitPermissionError(transactionRef.path, 'create', transactionData);
     });
   },
 
@@ -125,7 +157,7 @@ export const SessionsAPI = {
   getSession: (db: Firestore, id: string) => {
     return getDoc(doc(db, 'sessions', id));
   },
-  
+
   listSessions: (db: Firestore) => {
     return getDocs(collection(db, 'sessions'));
   },
@@ -147,8 +179,8 @@ export const SessionsAPI = {
       emitPermissionError(sessionRef.path, 'update', data);
     });
   },
-  
-   deleteSession: (db: Firestore, id: string) => {
+
+  deleteSession: (db: Firestore, id: string) => {
     const sessionRef = doc(db, 'sessions', id);
     deleteDoc(sessionRef).catch(() => {
       emitPermissionError(sessionRef.path, 'delete');
@@ -181,16 +213,21 @@ export const BookingsAPI = {
   },
 
   listBookingsForMentee: (db: Firestore, menteeId: string) => {
-    const q = query(collection(db, 'bookings'), where('menteeId', '==', menteeId));
+    const q = query(
+      collection(db, 'bookings'),
+      where('menteeId', '==', menteeId)
+    );
     return getDocs(q);
   },
 
   listBookingsForMentor: (db: Firestore, mentorId: string) => {
-    const q = query(collection(db, 'bookings'), where('mentorId', '==', mentorId));
+    const q = query(
+      collection(db, 'bookings'),
+      where('mentorId', '==', mentorId)
+    );
     return getDocs(q);
   },
 };
-
 
 // ------------------ REVIEWS ------------------
 export const ReviewsAPI = {
@@ -202,7 +239,10 @@ export const ReviewsAPI = {
   },
 
   listReviewsForMentor: (db: Firestore, mentorId: string) => {
-    const q = query(collection(db, 'reviews'), where('mentorId', '==', mentorId));
+    const q = query(
+      collection(db, 'reviews'),
+      where('mentorId', '==', mentorId)
+    );
     return getDocs(q);
   },
 };
@@ -220,7 +260,11 @@ export const TipsAPI = {
     });
   },
 
-  updateTip: (db: Firestore, id: string, data: Partial<WithFieldValue<Tip>>) => {
+  updateTip: (
+    db: Firestore,
+    id: string,
+    data: Partial<WithFieldValue<Tip>>
+  ) => {
     const tipRef = doc(db, 'tips', id);
     updateDoc(tipRef, data).catch(() => {
       emitPermissionError(tipRef.path, 'update', data);
@@ -245,7 +289,10 @@ export const DisbursementAPI = {
   },
 
   listForBooking: (db: Firestore, bookingId: string) => {
-    const q = query(collection(db, 'disbursements'), where('bookingIds', 'array-contains', bookingId));
+    const q = query(
+      collection(db, 'disbursements'),
+      where('bookingIds', 'array-contains', bookingId)
+    );
     return getDocs(q);
   },
 };
