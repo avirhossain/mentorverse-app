@@ -1,3 +1,4 @@
+'use client';
 // Defines the core data structures for the MentorVerse application, ensuring type safety.
 
 export interface Mentor {
@@ -49,11 +50,12 @@ export interface Session {
   bestSuitedFor?: string;
   requirements?: string;
   sessionType: 'Free' | 'Paid' | 'Exclusive' | 'Special Request';
-  scheduledDate: string; // YYYY-MM-DD
-  scheduledTime: string; // HH:mm
+  scheduledDate?: string; // YYYY-MM-DD
+  scheduledTime?: string; // HH:mm
   duration?: number; // Duration in minutes
   sessionFee: number;
   status?: 'Active' | 'Expired' | 'Draft';
+  availability?: AvailabilitySlot[];
 }
 
 export interface Booking {

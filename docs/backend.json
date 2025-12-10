@@ -207,6 +207,23 @@
             "Draft"
           ],
           "description": "The manually set status of the session, controlled by an admin."
+        },
+        "availability": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "day": {
+                "type": "string"
+              },
+              "slots": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
         }
       },
       "required": [
@@ -215,8 +232,6 @@
         "mentorName",
         "name",
         "sessionType",
-        "scheduledDate",
-        "scheduledTime",
         "sessionFee"
       ]
     },

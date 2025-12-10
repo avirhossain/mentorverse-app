@@ -39,18 +39,24 @@ const sessionFormSchema = z.object({
   mentorId: z.string().min(1, 'A mentor must be selected.'),
   sessionType: z.enum(['Free', 'Paid', 'Exclusive', 'Special Request']),
   status: z.enum(['Active', 'Expired', 'Draft']).default('Draft'),
-  scheduledDate: z.date({
-    required_error: 'A date for the session is required.',
-  }),
+  scheduledDate: z.date().optional(),
   scheduledTime: z
     .string()
-    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:mm).'),
+    .optional(),
   duration: z.coerce.number().min(1, 'Duration must be greater than 0.').optional(),
   sessionFee: z.coerce.number().min(0).default(0),
   tag: z.string().optional(),
   offerings: z.string().optional(),
   bestSuitedFor: z.string().optional(),
   requirements: z.string().optional(),
+}).refine(data => {
+    if (data.sessionType !== 'Special Request') {
+        return !!data.scheduledDate && !!data.scheduledTime;
+    }
+    return true;
+}, {
+    message: "Date and time are required for this session type.",
+    path: ["scheduledDate"], // you can point to a specific field
 });
 
 type SessionFormValues = z.infer<typeof sessionFormSchema>;
@@ -89,7 +95,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
   const handleFormSubmit = (values: SessionFormValues) => {
     onSubmit({
       ...values,
-      scheduledDate: format(values.scheduledDate, 'yyyy-MM-dd'),
+      scheduledDate: values.scheduledDate ? format(values.scheduledDate, 'yyyy-MM-dd') : undefined,
     });
   };
 
@@ -210,72 +216,74 @@ export const SessionForm: React.FC<SessionFormProps> = ({
           />
         </div>
         
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Controller
-            control={form.control}
-            name="scheduledDate"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Scheduled Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={'outline'}
-                        className={cn(
-                          'w-full pl-3 text-left font-normal',
-                          !field.value && 'text-muted-foreground'
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, 'PPP')
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="scheduledTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Scheduled Time</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="duration"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Duration (minutes)</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="e.g., 60" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        {sessionType !== 'Special Request' && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Controller
+              control={form.control}
+              name="scheduledDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Scheduled Date</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={'outline'}
+                          className={cn(
+                            'w-full pl-3 text-left font-normal',
+                            !field.value && 'text-muted-foreground'
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, 'PPP')
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="scheduledTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Scheduled Time</FormLabel>
+                  <FormControl>
+                    <Input type="time" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="duration"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Duration (minutes)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="e.g., 60" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        )}
 
         <FormField
           control={form.control}

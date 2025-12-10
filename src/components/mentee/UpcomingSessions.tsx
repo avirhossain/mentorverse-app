@@ -3,7 +3,7 @@ import { SessionCard } from './SessionCard';
 import type { Session } from '@/lib/types';
 import { Skeleton } from '../ui/skeleton';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 
 
 export function UpcomingSessions() {
@@ -13,6 +13,8 @@ export function UpcomingSessions() {
     if (!firestore) return null;
     return query(
       collection(firestore, 'sessions'),
+      where('sessionType', '!=', 'Special Request'), // Exclude special requests
+      orderBy('sessionType'), // This is needed for the inequality filter
       orderBy('scheduledDate', 'desc'),
       limit(3)
     );
