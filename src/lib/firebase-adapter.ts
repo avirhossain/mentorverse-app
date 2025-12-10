@@ -33,6 +33,7 @@ import type {
   Transaction,
   Waitlist,
   Payout,
+  Notification,
 } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -274,16 +275,48 @@ export const BookingsAPI = {
     });
   },
 
-  startMeeting: (db: Firestore, bookingId: string) => {
+  startMeeting: async (db: Firestore, bookingId: string) => {
+    const batch = writeBatch(db);
     const bookingRef = doc(db, 'bookings', bookingId);
-    const meetingUrl = `https://meet.jit.si/mentorverse-booking-${bookingId}`;
-    const data = {
-      status: 'started',
-      meetingUrl: meetingUrl,
-    };
-    updateDoc(bookingRef, data).catch(() => {
-      emitPermissionError(bookingRef.path, 'update', data);
-    });
+  
+    try {
+      // First, get the booking document to retrieve menteeId and sessionName
+      const bookingSnap = await getDoc(bookingRef);
+      if (!bookingSnap.exists()) {
+        throw new Error("Booking not found!");
+      }
+      const bookingData = bookingSnap.data() as Booking;
+  
+      // 1. Prepare booking update
+      const meetingUrl = `https://meet.jit.si/mentorverse-booking-${bookingId}`;
+      const bookingUpdateData = {
+        status: 'started' as const,
+        meetingUrl: meetingUrl,
+      };
+      batch.update(bookingRef, bookingUpdateData);
+  
+      // 2. Prepare notification creation
+      const notificationRef = doc(collection(db, 'mentees', bookingData.menteeId, 'notifications'));
+      const notificationData: Notification = {
+        id: notificationRef.id,
+        menteeId: bookingData.menteeId,
+        message: `Your session "${bookingData.sessionName}" has started!`,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        link: meetingUrl,
+      };
+      batch.set(notificationRef, notificationData);
+  
+      // 3. Atomically commit both operations
+      await batch.commit();
+  
+    } catch (error) {
+      // If anything fails (getting doc, or committing batch), emit permission errors
+      console.error("Failed to start meeting and send notification:", error);
+      emitPermissionError(bookingRef.path, 'update', { status: 'started' });
+      // We don't know the notification ID, but we can signal the intent
+      emitPermissionError(`/mentees/${bookingRef.id}/notifications`, 'create');
+    }
   },
 
   listBookingsForMentee: (db: Firestore, menteeId: string) => {
