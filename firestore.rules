@@ -80,7 +80,7 @@ service cloud.firestore {
     }
 
     match /mentees/{menteeId}/transactions/{transactionId} {
-      allow read, write: if isOwner(menteeId) && isMenteeActive(menteeId);
+      allow read, write: if (isOwner(menteeId) && isMenteeActive(menteeId)) || isAdmin();
     }
     
     match /mentors/{mentorId}/payouts/{payoutId} {
