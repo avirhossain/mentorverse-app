@@ -11,7 +11,7 @@ import {
   UserCredential,
   signOut,
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { useAuth, useFirestore } from '@/firebase';
 import { MenteesAPI } from '@/lib/firebase-adapter';
 import type { Mentee } from '@/lib/types';
@@ -94,11 +94,16 @@ export function AuthForm() {
 
   const createMenteeProfile = async (userCred: UserCredential) => {
     const { user } = userCred;
-    if (!user) return;
-
+    if (!user || !firestore) return;
+  
     try {
-      // Create a human-readable display ID.
-      const displayId = `U${Date.now().toString().slice(-6)}`;
+      // Get the current count of mentees to generate the next ID
+      const menteesCollection = collection(firestore, 'mentees');
+      const collectionSnapshot = await getDocs(menteesCollection);
+      const menteeCount = collectionSnapshot.size;
+  
+      // Create a human-readable display ID starting from U10001
+      const displayId = `U${10001 + menteeCount}`;
       
       await MenteesAPI.createMentee(firestore, user.uid, {
         id: user.uid,
