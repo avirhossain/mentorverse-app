@@ -429,6 +429,9 @@
         "mentorId": {
           "type": "string"
         },
+        "mentorName": {
+          "type": "string"
+        },
         "totalAmount": {
           "type": "number"
         },
@@ -451,6 +454,9 @@
           "format": "date-time"
         },
         "adminId": {
+          "type": "string"
+        },
+        "note": {
           "type": "string"
         }
       },

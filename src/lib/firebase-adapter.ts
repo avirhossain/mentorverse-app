@@ -32,6 +32,7 @@ import type {
   Disbursement,
   Transaction,
   Waitlist,
+  Payout,
 } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -342,10 +343,33 @@ export const TipsAPI = {
 
 // ------------------ DISBURSEMENTS ------------------
 export const DisbursementAPI = {
-  createDisbursement: (db: Firestore, data: WithFieldValue<Disbursement>) => {
-    const disbursementsCol = collection(db, 'disbursements');
-    addDoc(disbursementsCol, data).catch(() => {
-      emitPermissionError(disbursementsCol.path, 'create', data);
+  createDisbursement: (
+    db: Firestore,
+    data: WithFieldValue<Disbursement>
+  ) => {
+    const batch = writeBatch(db);
+
+    // 1. Create the main disbursement record
+    const disbursementRef = doc(db, 'disbursements', data.id);
+    batch.set(disbursementRef, data);
+
+    // 2. Create the payout record in the mentor's subcollection
+    const payoutRef = doc(
+      collection(db, 'mentors', data.mentorId, 'payouts'),
+      uuidv4()
+    );
+    const payoutData: Payout = {
+      id: payoutRef.id,
+      disbursementId: data.id,
+      amount: data.totalAmount,
+      createdAt: data.createdAt,
+    };
+    batch.set(payoutRef, payoutData);
+
+    // Atomically commit both writes
+    batch.commit().catch(() => {
+      emitPermissionError(disbursementRef.path, 'create', data);
+      emitPermissionError(payoutRef.path, 'create', payoutData);
     });
   },
 

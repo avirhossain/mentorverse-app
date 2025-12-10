@@ -10,7 +10,7 @@ import {
 import { DollarSign, Users, Clock } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
-import type { Mentor, Mentee, Session } from '@/lib/types';
+import type { Mentor, Mentee, Booking } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils';
 
@@ -26,17 +26,22 @@ export default function AdminDashboardPage() {
     [firestore]
   );
   const runningSessionsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'sessions'), where('isActive', '==', true)) : null),
+    () => (firestore ? query(collection(firestore, 'sessions'), where('status', '==', 'Active')) : null),
+    [firestore]
+  );
+  
+  const completedBookingsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'bookings'), where('status', '==', 'completed')) : null),
     [firestore]
   );
   
   const { data: mentors, isLoading: loadingMentors } = useCollection<Mentor>(mentorsQuery);
   const { data: mentees, isLoading: loadingMentees } = useCollection<Mentee>(menteesQuery);
-  const { data: runningSessions, isLoading: loadingSessions } = useCollection<Session>(runningSessionsQuery);
-  const { data: allSessions, isLoading: loadingAllSessions } = useCollection<Session>(useMemoFirebase(() => firestore ? collection(firestore, 'sessions') : null, [firestore]));
+  const { data: runningSessions, isLoading: loadingSessions } = useCollection<Booking>(runningSessionsQuery);
+  const { data: completedBookings, isLoading: loadingBookings } = useCollection<Booking>(completedBookingsQuery);
 
-  const totalEarnings = allSessions?.reduce((acc, session) => acc + (session.sessionFee || 0), 0) ?? 0;
-  const isLoading = loadingMentors || loadingMentees || loadingSessions || loadingAllSessions;
+  const totalEarnings = completedBookings?.reduce((acc, booking) => acc + (booking.sessionFee || 0), 0) ?? 0;
+  const isLoading = loadingMentors || loadingMentees || loadingSessions || loadingBookings;
 
   const statItems = [
     {
@@ -61,7 +66,7 @@ export default function AdminDashboardPage() {
       title: 'Total Earnings',
       value: formatCurrency(totalEarnings),
       icon: <DollarSign className="h-4 w-4 text-muted-foreground" />,
-      loading: loadingAllSessions,
+      loading: loadingBookings,
     },
   ];
 

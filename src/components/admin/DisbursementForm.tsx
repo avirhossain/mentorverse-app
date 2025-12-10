@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { Disbursement, Mentor } from '@/lib/types';
+import { Skeleton } from '../ui/skeleton';
 
 const disbursementFormSchema = z.object({
   mentorId: z.string().min(1, 'A mentor must be selected.'),
@@ -36,28 +37,38 @@ interface DisbursementFormProps {
   disbursement?: Disbursement | null;
   mentors: Mentor[];
   onSubmit: (data: Partial<Disbursement>) => void;
+  isLoading?: boolean;
 }
 
 export const DisbursementForm: React.FC<DisbursementFormProps> = ({
   disbursement,
   mentors,
   onSubmit,
+  isLoading = false,
 }) => {
   const form = useForm<DisbursementFormValues>({
     resolver: zodResolver(disbursementFormSchema),
     defaultValues: {
       mentorId: disbursement?.mentorId || '',
       totalAmount: disbursement?.totalAmount || 0,
-      note: (disbursement as any)?.note || '', // Assuming note might be a field
+      note: (disbursement as any)?.note || '',
     },
   });
 
   const handleFormSubmit = (values: DisbursementFormValues) => {
-    onSubmit({
-      ...values,
-      status: 'pending', // Default status
-    });
+    onSubmit(values);
   };
+
+  if (isLoading) {
+    return (
+        <div className="space-y-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-10 w-24 ml-auto" />
+        </div>
+    )
+  }
 
   return (
     <Form {...form}>
@@ -121,7 +132,7 @@ export const DisbursementForm: React.FC<DisbursementFormProps> = ({
           )}
         />
 
-        <div className="pt-4">
+        <div className="pt-4 flex justify-end">
           <Button type="submit">
             {disbursement ? 'Save Changes' : 'Create Record'}
           </Button>

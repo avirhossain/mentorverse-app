@@ -100,12 +100,14 @@ export interface Tip {
 export interface Disbursement {
   id: string; // Corresponds to document ID
   mentorId: string;
+  mentorName: string;
   totalAmount: number;
   bookingIds: string[]; // Array of booking IDs
   status: 'pending' | 'paid';
   paidAt?: string; // ISO 8601 date string
   createdAt: string; // ISO 8601 date string
   adminId: string;
+  note?: string;
 }
 
 export interface SpecialRequest {

@@ -47,9 +47,12 @@ import { DisbursementForm } from '@/components/admin/DisbursementForm';
 import type { Disbursement, Mentor } from '@/lib/types';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DisbursementAPI } from '@/lib/firebase-adapter';
+import { useToast } from '@/hooks/use-toast';
+import { v4 as uuidv4 } from 'uuid';
 
 const getStatusBadgeVariant = (status: Disbursement['status']) => {
   switch (status) {
@@ -64,6 +67,9 @@ const getStatusBadgeVariant = (status: Disbursement['status']) => {
 
 export default function DisbursementsPage() {
   const firestore = useFirestore();
+  const { user: adminUser } = useUser();
+  const { toast } = useToast();
+
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<Disbursement | null>(null);
 
@@ -90,7 +96,38 @@ export default function DisbursementsPage() {
   };
 
   const handleFormSubmit = (data: Partial<Disbursement>) => {
-    console.log('Disbursement form submitted', data);
+    if (!firestore || !adminUser || !mentors) return;
+    
+    const selectedMentor = mentors.find(m => m.id === data.mentorId);
+
+    if (!selectedMentor) {
+      toast({
+        variant: 'destructive',
+        title: 'Mentor not found',
+      });
+      return;
+    }
+
+    const newDisbursement: Disbursement = {
+      id: uuidv4(),
+      mentorId: data.mentorId!,
+      mentorName: selectedMentor.name,
+      totalAmount: data.totalAmount!,
+      note: data.note,
+      bookingIds: [], // This could be populated from a selection in a more advanced form
+      status: 'paid', // Assuming direct creation marks it as paid
+      paidAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      adminId: adminUser.uid,
+    };
+
+    DisbursementAPI.createDisbursement(firestore, newDisbursement);
+
+    toast({
+      title: 'Disbursement Created',
+      description: `${formatCurrency(data.totalAmount || 0)} has been recorded for ${selectedMentor.name}.`,
+    });
+    
     setIsFormOpen(false);
   };
 
@@ -113,8 +150,8 @@ export default function DisbursementsPage() {
     return disbursements.map((item) => (
         <TableRow key={item.id}>
           <TableCell>
-            <div className="font-medium">{item.mentorId}</div>
-            {/* <div className="text-sm text-muted-foreground">{item.mentorId}</div> */}
+            <div className="font-medium">{item.mentorName}</div>
+            <div className="text-sm text-muted-foreground">{item.mentorId}</div>
           </TableCell>
             <TableCell>
             {format(new Date(item.createdAt), 'MMM d, yyyy')}
@@ -215,13 +252,14 @@ export default function DisbursementsPage() {
                   {selected ? 'Edit Disbursement' : 'Create Disbursement'}
                 </DialogTitle>
                 <DialogDescription>
-                  Manually record a payment to a mentor.
+                  Manually record a payment to a mentor. This will create a payout record for the mentor.
                 </DialogDescription>
               </DialogHeader>
               <DisbursementForm
                 disbursement={selected}
                 mentors={mentors || []}
                 onSubmit={handleFormSubmit}
+                isLoading={loadingMentors}
               />
             </DialogContent>
           </Dialog>
