@@ -67,7 +67,7 @@ export default function MenteesPage() {
 
     return mentees.map((mentee) => (
       <TableRow key={mentee.id}>
-        <TableCell className="font-medium">{mentee.displayId || 'N/A'}</TableCell>
+        <TableCell className="font-medium">{mentee.displayId || mentee.id}</TableCell>
         <TableCell>
             <div className="font-medium">{mentee.name}</div>
             <div className="text-sm text-muted-foreground">{mentee.email}</div>
