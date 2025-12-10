@@ -70,7 +70,7 @@ export default function MenteesPage() {
         <TableCell className="font-medium">{index + 1}</TableCell>
         <TableCell>
             <div className="font-medium">{mentee.name}</div>
-            <div className="text-sm text-muted-foreground">{mentee.email}</div>
+            <div className="text-sm text-muted-foreground">{mentee.displayId || mentee.id}</div>
         </TableCell>
         <TableCell>
           <Badge variant={mentee.isActive ? 'default' : 'destructive'}>
