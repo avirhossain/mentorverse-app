@@ -50,7 +50,7 @@ export default function MenteesPage() {
     if (isLoading) {
       return Array.from({ length: 4 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell colSpan={7}>
+          <TableCell colSpan={8}>
             <Skeleton className="h-8 w-full" />
           </TableCell>
         </TableRow>
@@ -58,11 +58,11 @@ export default function MenteesPage() {
     }
 
     if (error) {
-      return <TableRow><TableCell colSpan={7} className="text-center text-destructive">Error loading mentees: {error.message}</TableCell></TableRow>
+      return <TableRow><TableCell colSpan={8} className="text-center text-destructive">Error loading mentees: {error.message}</TableCell></TableRow>
     }
 
     if (!mentees || mentees.length === 0) {
-      return <TableRow><TableCell colSpan={7} className="text-center">No mentees found.</TableCell></TableRow>
+      return <TableRow><TableCell colSpan={8} className="text-center">No mentees found.</TableCell></TableRow>
     }
 
     return mentees.map((mentee, index) => (
@@ -74,8 +74,8 @@ export default function MenteesPage() {
             <div className="text-sm text-muted-foreground">{mentee.email}</div>
         </TableCell>
         <TableCell>
-          <Badge variant={mentee.isActive ? 'default' : 'secondary'}>
-            {mentee.isActive ? 'Active' : 'Inactive'}
+          <Badge variant={mentee.isActive ? 'default' : 'destructive'}>
+            {mentee.isActive ? 'Active' : 'Suspended'}
           </Badge>
         </TableCell>
         <TableCell>{mentee.totalSessionsBooked || 0}</TableCell>
@@ -101,13 +101,6 @@ export default function MenteesPage() {
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem asChild>
                 <Link href={`/admin/mentees/${mentee.id}`}>View Details</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                View Session History
-              </DropdownMenuItem>
-               <DropdownMenuSeparator />
-               <DropdownMenuItem className="text-destructive">
-                  Suspend Account
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

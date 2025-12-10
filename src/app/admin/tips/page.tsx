@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import {
   PlusCircle,
   File,
@@ -32,29 +33,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { TipForm } from '@/components/admin/TipForm';
 import type { Tip } from '@/lib/types';
 import { format } from 'date-fns';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TipsAPI } from '@/lib/firebase-adapter';
-import { useToast } from '@/hooks/use-toast';
 
 export default function TipsPage() {
   const firestore = useFirestore();
-  const { toast } = useToast();
-  const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [selected, setSelected] = React.useState<Tip | null>(null);
 
   const tipsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -62,41 +49,6 @@ export default function TipsPage() {
   }, [firestore]);
 
   const { data: tips, isLoading, error } = useCollection<Tip>(tipsQuery);
-
-  const handleCreateNew = () => {
-    setSelected(null);
-    setIsFormOpen(true);
-  };
-
-  const handleEdit = (item: Tip) => {
-    setSelected(item);
-    setIsFormOpen(true);
-  };
-
-  const handleDelete = (tipId: string) => {
-    if (!firestore) return;
-    TipsAPI.deleteTip(firestore, tipId);
-    toast({ title: 'Tip Deleted' });
-  };
-
-  const handleFormSubmit = (data: Partial<Tip>) => {
-    if (!firestore) return;
-    if (selected) {
-      TipsAPI.updateTip(firestore, selected.id, data);
-      toast({ title: 'Tip Updated' });
-    } else {
-      const newTip: Tip = {
-        ...data,
-        id: '', // Firestore will generate it
-        adminId: 'admin', // Replace with actual admin ID
-        createdAt: new Date().toISOString(),
-        isActive: data.isActive ?? true,
-      } as Tip;
-      TipsAPI.createTip(firestore, newTip);
-      toast({ title: 'Tip Created' });
-    }
-    setIsFormOpen(false);
-  };
 
   const renderTableBody = () => {
     if (isLoading) {
@@ -137,10 +89,9 @@ export default function TipsPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => handleEdit(tip)}>
-                Edit
+              <DropdownMenuItem asChild>
+                <Link href={`/admin/tips/${tip.id}`}>View Details</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleDelete(tip.id)}>Delete</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </TableCell>
@@ -174,29 +125,14 @@ export default function TipsPage() {
               Export
             </span>
           </Button>
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogTrigger asChild>
-              <Button
-                size="sm"
-                className="h-8 gap-1"
-                onClick={handleCreateNew}
-              >
-                <PlusCircle className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Create Tip
-                </span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[625px]">
-              <DialogHeader>
-                <DialogTitle>{selected ? 'Edit Tip' : 'Create Tip'}</DialogTitle>
-                <DialogDescription>
-                  Provide a helpful tip or article for mentees.
-                </DialogDescription>
-              </DialogHeader>
-              <TipForm tip={selected} onSubmit={handleFormSubmit} />
-            </DialogContent>
-          </Dialog>
+           <Button asChild size="sm" className="h-8 gap-1">
+            <Link href="/admin/tips/create">
+              <PlusCircle className="h-3.5 w-3.5" />
+              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                Create Tip
+              </span>
+            </Link>
+          </Button>
         </div>
       </div>
       <Card>

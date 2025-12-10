@@ -17,7 +17,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -28,67 +27,32 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { MentorForm } from '@/components/admin/MentorForm';
 import type { Mentor } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { MentorsAPI } from '@/lib/firebase-adapter';
-import { useToast } from '@/hooks/use-toast';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 
 export default function MentorsPage() {
   const firestore = useFirestore();
-  const { toast } = useToast();
-
-  const [isEditFormOpen, setIsEditFormOpen] = React.useState(false);
-  const [selectedMentor, setSelectedMentor] = React.useState<Mentor | null>(
-    null
-  );
 
   const mentorsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'mentors'), orderBy('createdAt', 'desc'));
   }, [firestore]);
 
-  const { data: mentors, isLoading, error } = useCollection<Mentor>(mentorsQuery);
-
-  const handleEdit = (mentor: Mentor) => {
-    setSelectedMentor(mentor);
-    setIsEditFormOpen(true);
-  };
-
-  const handleDelete = (mentorId: string) => {
-    if (!firestore) return;
-    MentorsAPI.deleteMentor(firestore, mentorId);
-    toast({ title: 'Mentor Deleted' });
-  };
-
-  const handleEditFormSubmit = (data: Partial<Mentor>) => {
-    if (!firestore || !selectedMentor) return;
-
-    MentorsAPI.updateMentor(firestore, selectedMentor.id, data);
-    toast({
-      title: 'Mentor Updated',
-      description: `${data.name}'s profile has been updated.`,
-    });
-
-    setIsEditFormOpen(false);
-  };
+  const {
+    data: mentors,
+    isLoading,
+    error,
+  } = useCollection<Mentor>(mentorsQuery);
 
   const renderTableBody = () => {
     if (isLoading) {
       return Array.from({ length: 3 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell colSpan={6}>
+          <TableCell colSpan={7}>
             <Skeleton className="h-8 w-full" />
           </TableCell>
         </TableRow>
@@ -98,7 +62,7 @@ export default function MentorsPage() {
     if (error) {
       return (
         <TableRow>
-          <TableCell colSpan={6} className="text-center text-destructive">
+          <TableCell colSpan={7} className="text-center text-destructive">
             Error loading mentors: {error.message}
           </TableCell>
         </TableRow>
@@ -108,7 +72,7 @@ export default function MentorsPage() {
     if (!mentors || mentors.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={6} className="text-center">
+          <TableCell colSpan={7} className="text-center">
             No mentors found.
           </TableCell>
         </TableRow>
@@ -131,7 +95,9 @@ export default function MentorsPage() {
             ))}
           </div>
         </TableCell>
-        <TableCell className="text-right">{mentor.totalSessions || 0}</TableCell>
+        <TableCell className="text-right">
+          {mentor.totalSessions || 0}
+        </TableCell>
         <TableCell className="text-right">
           {mentor.ratingAvg?.toFixed(1) || 'N/A'}
         </TableCell>
@@ -145,15 +111,8 @@ export default function MentorsPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => handleEdit(mentor)}>
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => handleDelete(mentor.id)}
-              >
-                Delete
+              <DropdownMenuItem asChild>
+                 <Link href={`/admin/mentors/${mentor.id}`}>View Details</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -216,19 +175,6 @@ export default function MentorsPage() {
           </CardFooter>
         )}
       </Card>
-
-      {/* Dialog for Editing */}
-      <Dialog open={isEditFormOpen} onOpenChange={setIsEditFormOpen}>
-        <DialogContent className="sm:max-w-[625px]">
-          <DialogHeader>
-            <DialogTitle>Edit Mentor</DialogTitle>
-            <DialogDescription>
-              Update the mentor's profile information.
-            </DialogDescription>
-          </DialogHeader>
-          <MentorForm mentor={selectedMentor} onSubmit={handleEditFormSubmit} />
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
