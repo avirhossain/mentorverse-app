@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -27,7 +26,7 @@ export default function MentorDetailsPage({
 }: {
   params: { mentorId: string };
 }) {
-  const { mentorId } = params;
+  const { mentorId } = React.use(params);
   const firestore = useFirestore();
 
   const mentorRef = useMemoFirebase(
@@ -72,6 +71,21 @@ export default function MentorDetailsPage({
 
     return (
       <>
+        <CardHeader>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
+                {mentor.name}
+              </h1>
+              <Badge variant={mentor.isActive ? 'default' : 'destructive'}>
+                {mentor.isActive ? 'Active' : 'Suspended'}
+              </Badge>
+            </div>
+          </div>
+          <CardDescription>
+            {mentor.email}
+          </CardDescription>
+        </CardHeader>
         <CardContent className="grid gap-6">
           <div className="grid gap-2">
             <h3 className="font-semibold">Biography</h3>
@@ -82,13 +96,15 @@ export default function MentorDetailsPage({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <h3 className="font-semibold">Email</h3>
-              <p className="text-sm">{mentor.email}</p>
-            </div>
-            <div className="grid gap-2">
               <h3 className="font-semibold">Hourly Rate</h3>
               <p className="text-sm">
                 {formatCurrency(mentor.hourlyRate || 0)}
+              </p>
+            </div>
+             <div className="grid gap-2">
+              <h3 className="font-semibold">Total Sessions</h3>
+              <p className="text-sm">
+                {mentor.totalSessions || 0}
               </p>
             </div>
           </div>
@@ -130,16 +146,9 @@ export default function MentorDetailsPage({
               <span className="sr-only">Back</span>
             </Link>
           </Button>
-          <div className="flex items-center gap-2">
-            <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
-              {mentor?.name || 'Mentor Details'}
-            </h1>
-            {mentor && (
-              <Badge variant={mentor.isActive ? 'default' : 'destructive'}>
-                {mentor.isActive ? 'Active' : 'Suspended'}
-              </Badge>
-            )}
-          </div>
+          <h1 className="text-xl font-semibold">
+            Mentor Details
+          </h1>
         </div>
         <Card>{renderContent()}</Card>
       </div>
