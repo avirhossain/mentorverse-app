@@ -17,6 +17,7 @@ import {
   DocumentData,
   WithFieldValue,
   increment,
+  writeBatch,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -83,6 +84,7 @@ export const MenteesAPI = {
   addBalance: (db: Firestore, uid: string, amount: number) => {
     if (amount <= 0) return;
 
+    const batch = writeBatch(db);
     const menteeRef = doc(db, 'mentees', uid);
     const transactionRef = doc(
       collection(db, `mentees/${uid}/transactions`),
@@ -97,15 +99,17 @@ export const MenteesAPI = {
       createdAt: new Date().toISOString(),
     };
 
-    // Non-blocking update for mentee balance
-    updateDoc(menteeRef, { accountBalance: increment(amount) }).catch(() => {
+    // Add both operations to the batch
+    batch.update(menteeRef, { accountBalance: increment(amount) });
+    batch.set(transactionRef, transactionData);
+
+    // Commit the batch and handle potential errors
+    batch.commit().catch(() => {
+      // If the batch fails, it's likely a permission error on one of the writes.
+      // We can emit errors for both potential points of failure to aid debugging.
       emitPermissionError(menteeRef.path, 'update', {
         accountBalance: `increment(${amount})`,
       });
-    });
-
-    // Non-blocking creation of transaction record
-    setDoc(transactionRef, transactionData).catch(() => {
       emitPermissionError(transactionRef.path, 'create', transactionData);
     });
   },
