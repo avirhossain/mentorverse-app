@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -15,8 +14,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
 import type { Mentor } from '@/lib/types';
 import {
   ChevronLeft,
@@ -32,7 +31,6 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { formatCurrency } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { MentorsAPI } from '@/lib/firebase-adapter';
@@ -57,27 +55,20 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
-interface MentorDetailsPageProps {
-  params: {
-    mentorName: string;
-  };
-}
-
-export default function MentorDetailsPage({ params }: MentorDetailsPageProps) {
+export default function MentorDetailsPage({ params }: { params: { mentorId: string } }) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
-  const mentorName = decodeURIComponent(params.mentorName);
+  const { mentorId } = params;
 
   const [isEditFormOpen, setIsEditFormOpen] = React.useState(false);
 
-  const mentorQuery = useMemoFirebase(() => {
-    if (!firestore || !mentorName) return null;
-    return query(collection(firestore, 'mentors'), where('name', '==', mentorName), limit(1));
-  }, [firestore, mentorName]);
+  const mentorRef = useMemoFirebase(() => {
+    if (!firestore || !mentorId) return null;
+    return doc(firestore, 'mentors', mentorId);
+  }, [firestore, mentorId]);
 
-  const { data: mentors, isLoading, error } = useCollection<Mentor>(mentorQuery);
-  const mentor = mentors?.[0];
+  const { data: mentor, isLoading, error } = useDoc<Mentor>(mentorRef);
 
   const handleDelete = () => {
     if (!firestore || !mentor) return;
@@ -122,7 +113,9 @@ export default function MentorDetailsPage({ params }: MentorDetailsPageProps) {
   }
 
   if (error || !mentor) {
-    notFound();
+    // This could be a 404 or an error page
+    if (error) console.error("Error fetching mentor:", error);
+    return notFound();
   }
 
   return (

@@ -1,8 +1,9 @@
+
 'use client';
 
 import * as React from 'react';
 import Link from 'next/link';
-import { File, ListFilter } from 'lucide-react';
+import { File, ListFilter, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -16,6 +17,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -49,7 +51,7 @@ export default function MenteesPage() {
     if (isLoading) {
       return Array.from({ length: 4 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell colSpan={6}>
+          <TableCell colSpan={7}>
             <Skeleton className="h-8 w-full" />
           </TableCell>
         </TableRow>
@@ -57,11 +59,11 @@ export default function MenteesPage() {
     }
 
     if (error) {
-      return <TableRow><TableCell colSpan={6} className="text-center text-destructive">Error loading mentees: {error.message}</TableCell></TableRow>
+      return <TableRow><TableCell colSpan={7} className="text-center text-destructive">Error loading mentees: {error.message}</TableCell></TableRow>
     }
 
     if (!mentees || mentees.length === 0) {
-      return <TableRow><TableCell colSpan={6} className="text-center">No mentees found.</TableCell></TableRow>
+      return <TableRow><TableCell colSpan={7} className="text-center">No mentees found.</TableCell></TableRow>
     }
 
     return mentees.map((mentee, index) => (
@@ -83,6 +85,26 @@ export default function MenteesPage() {
         <TableCell className="text-right">
           {formatCurrency(mentee.accountBalance || 0)}
         </TableCell>
+        <TableCell>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-haspopup="true"
+                  size="icon"
+                  variant="ghost"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem asChild>
+                  <Link href={`/admin/mentees/${mentee.id}`}>View Details</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </TableCell>
       </TableRow>
     ));
   };
@@ -134,6 +156,9 @@ export default function MenteesPage() {
                 <TableHead>Total Sessions</TableHead>
                 <TableHead>Joined On</TableHead>
                 <TableHead className="text-right">Account Balance</TableHead>
+                <TableHead>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
