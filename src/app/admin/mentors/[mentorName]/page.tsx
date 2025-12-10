@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -32,7 +31,6 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { formatCurrency } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { MentorsAPI } from '@/lib/firebase-adapter';
@@ -67,15 +65,18 @@ export default function MentorDetailsPage({ params }: MentorDetailsPageProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
+  // Decode mentorName from URL params
   const mentorName = decodeURIComponent(params.mentorName);
 
   const [isEditFormOpen, setIsEditFormOpen] = React.useState(false);
 
+  // Create a stable Firestore query using useMemoFirebase
   const mentorQuery = useMemoFirebase(() => {
     if (!firestore || !mentorName) return null;
     return query(collection(firestore, 'mentors'), where('name', '==', mentorName), limit(1));
   }, [firestore, mentorName]);
 
+  // Fetch mentor data reactively
   const { data: mentors, isLoading, error } = useCollection<Mentor>(mentorQuery);
   const mentor = mentors?.[0];
 
@@ -97,6 +98,10 @@ export default function MentorDetailsPage({ params }: MentorDetailsPageProps) {
       description: `${data.name}'s profile has been updated.`,
     });
     setIsEditFormOpen(false);
+    // If name changes, we need to redirect
+    if (data.name && data.name !== mentorName) {
+        router.push(`/admin/mentors/${encodeURIComponent(data.name)}`);
+    }
   };
   
   const handleSuspend = () => {
@@ -121,8 +126,14 @@ export default function MentorDetailsPage({ params }: MentorDetailsPageProps) {
     return <MentorDetailsSkeleton />;
   }
 
-  if (error || !mentor) {
-    notFound();
+  // Handle case where mentor is not found after loading
+  if (!isLoading && !mentor) {
+     notFound();
+  }
+
+  // This check is needed because TS doesn't know mentor is guaranteed to be defined here.
+  if (!mentor) {
+    return <MentorDetailsSkeleton />;
   }
 
   return (
@@ -310,7 +321,17 @@ const InfoItem = ({
 const MentorDetailsSkeleton = () => (
   <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
     <div className="mx-auto grid w-full max-w-4xl flex-1 auto-rows-max gap-4">
-      <Skeleton className="h-8 w-48" />
+      <div className="flex items-center gap-4">
+          <Button asChild variant="outline" size="icon" className="h-7 w-7">
+            <Link href="/admin/mentors">
+              <ChevronLeft className="h-4 w-4" />
+              <span className="sr-only">Back</span>
+            </Link>
+          </Button>
+          <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
+            Mentor Details
+          </h1>
+        </div>
       <Card>
         <CardHeader>
           <div className="flex items-center gap-4">
@@ -349,4 +370,5 @@ const MentorDetailsSkeleton = () => (
     </div>
   </div>
 );
+
     
