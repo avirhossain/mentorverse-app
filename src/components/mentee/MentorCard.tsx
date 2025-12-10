@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { Star } from 'lucide-react';
 import type { Mentor } from '@/lib/types';
 import {
@@ -25,6 +26,7 @@ export function MentorCard({ mentor }: MentorCardProps) {
             src={mentor.photoUrl || 'https://i.pravatar.cc/150'}
             alt={`Profile of ${mentor.name}`}
             fill
+            sizes="80px"
             className="rounded-full object-cover"
             data-ai-hint="person portrait"
           />
@@ -53,7 +55,9 @@ export function MentorCard({ mentor }: MentorCardProps) {
         </div>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <Button className="w-full">View Profile</Button>
+        <Button asChild className="w-full">
+          <Link href={`/${encodeURIComponent(mentor.name)}`}>View Profile</Link>
+        </Button>
       </CardFooter>
     </Card>
   );
