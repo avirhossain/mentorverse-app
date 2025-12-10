@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -55,7 +56,7 @@ export default function MenteeDetailsPage({ params }: MenteeDetailsPageProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
-  const { menteeId } = params;
+  const menteeId = params.menteeId;
 
   const menteeRef = useMemoFirebase(() => {
     if (!firestore || !menteeId) return null;
@@ -255,3 +256,5 @@ const MenteeDetailsSkeleton = () => (
     </div>
   </div>
 );
+
+    

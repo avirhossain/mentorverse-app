@@ -53,7 +53,7 @@ export default function TipDetailsPage({ params }: TipDetailsPageProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
-  const { tipId } = params;
+  const tipId = params.tipId;
 
   const [isFormOpen, setIsFormOpen] = React.useState(false);
 
@@ -213,3 +213,5 @@ const TipDetailsSkeleton = () => (
     </div>
   </div>
 );
+
+    
