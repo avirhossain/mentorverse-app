@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -77,7 +77,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({
     },
   });
 
-
   const handleFormSubmit = (values: SessionFormValues) => {
     onSubmit({
       ...values,
@@ -87,8 +86,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
 
   const sessionType = form.watch('sessionType');
   
-   // Sync sessionFee with sessionType
-  useEffect(() => {
+  React.useEffect(() => {
     if (sessionType === 'Free') {
       form.setValue('sessionFee', 0);
     }
@@ -189,59 +187,65 @@ export const SessionForm: React.FC<SessionFormProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="scheduledDate"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Scheduled Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-           <FormField
-            control={form.control}
-            name="scheduledTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Scheduled Time</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <div className="grid grid-cols-1 gap-4">
+            <FormField
+              control={form.control}
+              name="scheduledDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Pick a date and time</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={'outline'}
+                          className={cn(
+                            'w-full pl-3 text-left font-normal',
+                            !field.value && 'text-muted-foreground'
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, 'PPP')
+                          ) : (
+                            <span>Pick a date</span>
+                          )}{' '}
+                          {form.watch('scheduledTime') &&
+                            `at ${form.watch('scheduledTime')}`}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) =>
+                          date < new Date() || date < new Date('1900-01-01')
+                        }
+                        initialFocus
+                      />
+                      <div className="p-4 border-t">
+                        <FormField
+                            control={form.control}
+                            name="scheduledTime"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Time</FormLabel>
+                                <FormControl>
+                                <Input type="time" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
         </div>
 
          <FormField
