@@ -48,7 +48,7 @@ export default function MentorDetailsPage({
 }: {
   params: { mentorId: string };
 }) {
-  const { mentorId } = params;
+  const { mentorId } = React.use(params);
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
