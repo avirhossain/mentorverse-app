@@ -15,8 +15,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit, getDocs } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, limit } from 'firebase/firestore';
 import type { Mentor } from '@/lib/types';
 import {
   ChevronLeft,
@@ -70,37 +70,14 @@ export default function MentorDetailsPage({ params }: MentorDetailsPageProps) {
   const mentorName = decodeURIComponent(params.mentorName);
 
   const [isEditFormOpen, setIsEditFormOpen] = React.useState(false);
-  const [mentor, setMentor] = React.useState<Mentor | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<Error | null>(null);
 
-  React.useEffect(() => {
-    if (!firestore || !mentorName) return;
-
-    const fetchMentor = async () => {
-      setIsLoading(true);
-      try {
-        const mentorsRef = collection(firestore, 'mentors');
-        const q = query(mentorsRef, where('name', '==', mentorName), limit(1));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-          setMentor(null);
-        } else {
-          const mentorDoc = querySnapshot.docs[0];
-          setMentor({ id: mentorDoc.id, ...mentorDoc.data() } as Mentor);
-        }
-      } catch (err: any) {
-        console.error("Error fetching mentor:", err);
-        setError(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMentor();
+  const mentorQuery = useMemoFirebase(() => {
+    if (!firestore || !mentorName) return null;
+    return query(collection(firestore, 'mentors'), where('name', '==', mentorName), limit(1));
   }, [firestore, mentorName]);
 
+  const { data: mentors, isLoading, error } = useCollection<Mentor>(mentorQuery);
+  const mentor = mentors?.[0];
 
   const handleDelete = () => {
     if (!firestore || !mentor) return;
@@ -120,30 +97,24 @@ export default function MentorDetailsPage({ params }: MentorDetailsPageProps) {
       description: `${data.name}'s profile has been updated.`,
     });
     setIsEditFormOpen(false);
-    // Optimistically update the local state to reflect changes immediately
-    setMentor(prev => prev ? { ...prev, ...data } : null);
   };
   
   const handleSuspend = () => {
     if (!firestore || !mentor) return;
-    const isActive = false;
-    MentorsAPI.updateMentor(firestore, mentor.id, { isActive });
+    MentorsAPI.updateMentor(firestore, mentor.id, { isActive: false });
     toast({
       title: 'Mentor Suspended',
       description: `${mentor.name}'s profile has been suspended and will be hidden.`,
     });
-     setMentor(prev => prev ? { ...prev, isActive } : null);
   };
 
   const handleReactivate = () => {
     if (!firestore || !mentor) return;
-    const isActive = true;
-    MentorsAPI.updateMentor(firestore, mentor.id, { isActive });
+    MentorsAPI.updateMentor(firestore, mentor.id, { isActive: true });
     toast({
       title: 'Mentor Reactivated',
       description: `${mentor.name}'s profile is now active and visible.`,
     });
-    setMentor(prev => prev ? { ...prev, isActive } : null);
   };
 
   if (isLoading) {
