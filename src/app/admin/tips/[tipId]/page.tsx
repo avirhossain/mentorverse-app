@@ -132,7 +132,7 @@ export default function TipDetailsPage({ params }: TipDetailsPageProps) {
                 </Badge>
             </div>
             <CardDescription>
-                Created on {format(new Date(tip.createdAt), 'MMMM d, yyyy')}
+                Created on {format(new Date(tip.createdAt), 'MMMM d, yyyy')} by Admin {tip.adminId}
             </CardDescription>
           </CardHeader>
           <CardContent className="mt-4">
@@ -213,5 +213,3 @@ const TipDetailsSkeleton = () => (
     </div>
   </div>
 );
-
-    

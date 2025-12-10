@@ -81,7 +81,7 @@ export default function MentorsPage() {
 
     return mentors.map((mentor) => (
       <TableRow key={mentor.id}>
-        <TableCell className="font-medium">{mentor.id}</TableCell>
+        <TableCell className="font-medium max-w-xs truncate">{mentor.id}</TableCell>
         <TableCell>{mentor.name}</TableCell>
         <TableCell>
           {format(new Date(mentor.createdAt), 'MMM d, yyyy')}

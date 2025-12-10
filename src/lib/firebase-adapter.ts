@@ -94,6 +94,7 @@ export const MentorsAPI = {
   },
 
   createMentor: (db: Firestore, data: WithFieldValue<Mentor>) => {
+    // This assumes the ID is pre-generated (e.g., with uuid) before calling this function
     const mentorRef = doc(db, 'mentors', data.id);
     setDoc(mentorRef, data).catch(() => {
       emitPermissionError(mentorRef.path, 'create', data);

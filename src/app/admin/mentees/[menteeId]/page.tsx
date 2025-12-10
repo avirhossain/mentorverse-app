@@ -256,5 +256,3 @@ const MenteeDetailsSkeleton = () => (
     </div>
   </div>
 );
-
-    

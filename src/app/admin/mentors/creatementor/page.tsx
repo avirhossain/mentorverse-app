@@ -11,30 +11,25 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MentorForm } from '@/components/admin/MentorForm';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
 import type { Mentor } from '@/lib/types';
 import { MentorsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
 import { ChevronLeft } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+import { useRouter } from 'next/navigation';
 
 export default function CreateMentorPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
   const [formKey, setFormKey] = React.useState(Date.now());
 
-  // We need to count existing mentors to generate a new ID
-  const mentorsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'mentors');
-  }, [firestore]);
-  const { data: mentors } = useCollection<Mentor>(mentorsQuery);
 
   const handleFormSubmit = (data: Partial<Mentor>) => {
     if (!firestore) return;
 
-    const mentorCount = mentors?.length || 0;
-    const newId = `MEN${(mentorCount + 1).toString().padStart(2, '0')}`;
+    const newId = uuidv4();
     const newMentor: Mentor = {
       ...data,
       id: newId,
@@ -44,9 +39,10 @@ export default function CreateMentorPage() {
     MentorsAPI.createMentor(firestore, newMentor);
     toast({
       title: 'Mentor Created',
-      description: `A new profile for ${data.name} has been created with ID ${newId}.`,
+      description: `A new profile for ${data.name} has been created.`,
     });
-    setFormKey(Date.now()); // Reset form
+    // Redirect to the new mentor's detail page after creation
+    router.push(`/admin/mentors/${newId}`);
   };
 
   return (
