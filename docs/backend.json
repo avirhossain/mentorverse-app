@@ -180,7 +180,8 @@
           "enum": [
             "Free",
             "Paid",
-            "Exclusive"
+            "Exclusive",
+            "Special Request"
           ]
         },
         "scheduledDate": {

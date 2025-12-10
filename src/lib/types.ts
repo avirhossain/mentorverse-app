@@ -48,7 +48,7 @@ export interface Session {
   offerings?: string;
   bestSuitedFor?: string;
   requirements?: string;
-  sessionType: 'Free' | 'Paid' | 'Exclusive';
+  sessionType: 'Free' | 'Paid' | 'Exclusive' | 'Special Request';
   scheduledDate: string; // YYYY-MM-DD
   scheduledTime: string; // HH:mm
   duration?: number; // Duration in minutes

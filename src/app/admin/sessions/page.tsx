@@ -41,6 +41,7 @@ const getTypeBadgeVariant = (type: Session['sessionType']) => {
         case 'Paid': return 'default';
         case 'Free': return 'secondary';
         case 'Exclusive': return 'outline';
+        case 'Special Request': return 'destructive';
         default: return 'secondary';
     }
 }

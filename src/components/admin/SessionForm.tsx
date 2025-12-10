@@ -37,7 +37,7 @@ import { Calendar } from '@/components/ui/calendar';
 const sessionFormSchema = z.object({
   name: z.string().min(3, 'Session name must be at least 3 characters.'),
   mentorId: z.string().min(1, 'A mentor must be selected.'),
-  sessionType: z.enum(['Free', 'Paid', 'Exclusive']),
+  sessionType: z.enum(['Free', 'Paid', 'Exclusive', 'Special Request']),
   status: z.enum(['Active', 'Expired', 'Draft']).default('Draft'),
   scheduledDate: z.date({
     required_error: 'A date for the session is required.',
@@ -180,6 +180,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                     <SelectItem value="Free">Free</SelectItem>
                     <SelectItem value="Paid">Paid</SelectItem>
                     <SelectItem value="Exclusive">Exclusive</SelectItem>
+                    <SelectItem value="Special Request">Special Request</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormDescription>
