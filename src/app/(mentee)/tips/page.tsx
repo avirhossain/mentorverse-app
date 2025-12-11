@@ -1,47 +1,91 @@
 'use client';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Lightbulb } from "lucide-react";
-import type { Tip } from "@/lib/types";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, orderBy, query, where } from "firebase/firestore";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Lightbulb } from 'lucide-react';
+import type { Tip } from '@/lib/types';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, orderBy, query, where } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function TipsPage() {
   const firestore = useFirestore();
 
   const tipsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'tips'), where('isActive', '==', true), orderBy('createdAt', 'desc'));
+    return query(
+      collection(firestore, 'tips'),
+      where('isActive', '==', true),
+      orderBy('createdAt', 'desc')
+    );
   }, [firestore]);
 
-  const { data: tips, isLoading, error } = useCollection<Tip>(tipsQuery);
+  const {
+    data: tips,
+    isLoading,
+    error,
+  } = useCollection<Tip>(tipsQuery);
 
   const renderContent = () => {
     if (isLoading) {
       return Array.from({ length: 3 }).map((_, i) => (
-         <Skeleton key={i} className="h-40 w-full" />
+        <Skeleton key={i} className="h-60 w-full" />
       ));
     }
     if (error) {
-      return <p className="text-destructive text-center col-span-full">Error loading tips: {error.message}</p>;
+      return (
+        <p className="col-span-full text-center text-destructive">
+          Error loading tips: {error.message}
+        </p>
+      );
     }
     if (!tips || tips.length === 0) {
-      return <p className="text-muted-foreground text-center col-span-full">No tips available yet. Check back soon!</p>;
+      return (
+        <p className="col-span-full text-center text-muted-foreground">
+          No tips available yet. Check back soon!
+        </p>
+      );
     }
     return tips.map((tip) => (
-      <Card key={tip.id} className="flex flex-col">
-           <CardHeader>
-              <div className="flex items-center gap-3">
-                  <Lightbulb className="h-6 w-6 text-primary" />
-                  <CardTitle>{tip.title}</CardTitle>
-              </div>
-          </CardHeader>
-          <CardContent>
-              <CardDescription>{tip.description}</CardDescription>
-          </CardContent>
+      <Card key={tip.id} className="flex flex-col overflow-hidden">
+        {tip.imageUrl && (
+          <div className="relative aspect-video w-full">
+            <Image
+              src={tip.imageUrl}
+              alt={tip.title}
+              fill
+              className="object-cover"
+            />
+          </div>
+        )}
+        <CardHeader className={!tip.imageUrl ? '' : 'pt-4'}>
+          <div className="flex items-start gap-3">
+            {!tip.imageUrl && <Lightbulb className="h-6 w-6 text-primary" />}
+            <CardTitle>{tip.title}</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="flex-grow">
+          <CardDescription>{tip.description}</CardDescription>
+        </CardContent>
+        {tip.linkUrl && (
+          <div className="p-4 pt-0">
+             <Button asChild className="w-full">
+               <Link href={tip.linkUrl} target="_blank" rel="noopener noreferrer">
+                 Read More
+               </Link>
+             </Button>
+          </div>
+        )}
       </Card>
     ));
-  }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">

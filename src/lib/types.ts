@@ -94,6 +94,7 @@ export interface Tip {
   title: string;
   description: string;
   imageUrl?: string;
+  linkUrl?: string;
   createdAt: string; // ISO 8601 date string
   adminId: string;
   isActive: boolean;

@@ -1,12 +1,12 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import Image from 'next/image';
 import {
   Form,
   FormControl,
@@ -18,12 +18,17 @@ import {
 } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 import type { Tip } from '@/lib/types';
+import { getThumbnailFromUrl } from '@/ai/flows/thumbnail-flow';
+import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const tipFormSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
   description: z
     .string()
     .min(10, 'Description must be at least 10 characters.'),
+  linkUrl: z.string().url().optional().or(z.literal('')),
+  imageUrl: z.string().url().optional(),
   isActive: z.boolean().default(true),
 });
 
@@ -35,14 +40,56 @@ interface TipFormProps {
 }
 
 export const TipForm: React.FC<TipFormProps> = ({ tip, onSubmit }) => {
+  const [isFetchingThumbnail, setIsFetchingThumbnail] = useState(false);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(
+    tip?.imageUrl || null
+  );
+  const { toast } = useToast();
+
   const form = useForm<TipFormValues>({
     resolver: zodResolver(tipFormSchema),
     defaultValues: {
       title: tip?.title || '',
       description: tip?.description || '',
+      linkUrl: tip?.linkUrl || '',
+      imageUrl: tip?.imageUrl || '',
       isActive: tip?.isActive ?? true,
     },
   });
+
+  const handleLinkBlur = async (
+    e: React.FocusEvent<HTMLInputElement, Element>
+  ) => {
+    const url = e.target.value;
+    if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+      setIsFetchingThumbnail(true);
+      setThumbnailPreview(null);
+      form.setValue('imageUrl', '');
+      try {
+        const response = await getThumbnailFromUrl({ url });
+        if (response?.thumbnailUrl) {
+          setThumbnailPreview(response.thumbnailUrl);
+          form.setValue('imageUrl', response.thumbnailUrl);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Could not fetch thumbnail',
+            description:
+              'Please check the URL or provide an image URL manually.',
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching thumbnail:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'An unexpected error occurred while fetching the thumbnail.',
+        });
+      } finally {
+        setIsFetchingThumbnail(false);
+      }
+    }
+  };
 
   const handleFormSubmit = (values: TipFormValues) => {
     onSubmit(values);
@@ -50,7 +97,10 @@ export const TipForm: React.FC<TipFormProps> = ({ tip, onSubmit }) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+      <form
+        onSubmit={form.handleSubmit(handleFormSubmit)}
+        className="space-y-4"
+      >
         <FormField
           control={form.control}
           name="title"
@@ -88,6 +138,62 @@ export const TipForm: React.FC<TipFormProps> = ({ tip, onSubmit }) => {
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="linkUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Link (Optional)</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="https://youtube.com/watch?v=..."
+                  {...field}
+                  onBlur={handleLinkBlur}
+                />
+              </FormControl>
+              <FormDescription>
+                Pasting a YouTube or article link here will try to fetch a thumbnail.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        {isFetchingThumbnail && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Fetching thumbnail...</span>
+          </div>
+        )}
+
+        {thumbnailPreview && (
+            <div className="mt-2 space-y-2">
+                <Label>Thumbnail Preview</Label>
+                <div className='relative w-full aspect-video overflow-hidden rounded-md border'>
+                    <Image src={thumbnailPreview} alt="Thumbnail Preview" layout="fill" objectFit="cover" />
+                </div>
+            </div>
+        )}
+
+        <FormField
+          control={form.control}
+          name="imageUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Image URL (Optional)</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Or paste an image URL directly"
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>Manually override the fetched thumbnail.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
 
         <FormField
           control={form.control}
