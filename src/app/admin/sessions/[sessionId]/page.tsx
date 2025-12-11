@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import Link from 'next/link';
@@ -74,8 +75,8 @@ export default function SessionDetailsPage({
 
   const handleCreateMeeting = async () => {
     if (!firestore || !session) return;
-    const newRoomName = `mentorverse-session-${sessionId}`;
-    const newLink = `${window.location.origin}/meeting/${newRoomName}`;
+    const newRoomName = `vpaas-magic-cookie-514c5de29b504a348a2e6ce4646314c2/mentorverse-session-${sessionId}`;
+    const newLink = `${window.location.origin}/meeting/${encodeURIComponent(newRoomName)}`;
     
     // Update session with meeting URL
     await SessionsAPI.startMeetingForSession(firestore, sessionId, newRoomName);
@@ -174,7 +175,7 @@ export default function SessionDetailsPage({
             )}
             {isMeetingActive && session?.meetingUrl && (
                 <Button size="sm" asChild>
-                    <a href={`/meeting/${session.meetingUrl}`} target="_blank" rel="noopener noreferrer">
+                    <a href={`/meeting/${encodeURIComponent(session.meetingUrl)}`} target="_blank" rel="noopener noreferrer">
                         Join Active Meeting
                     </a>
                 </Button>

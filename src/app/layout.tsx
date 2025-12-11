@@ -21,7 +21,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-        <Script src="https://meet.jit.si/external_api.js" />
+        <Script src="https://8x8.vc/vpaas-magic-cookie-514c5de29b504a348a2e6ce4646314c2/external_api.js" async />
       </head>
       <body className="antialiased">
         <FirebaseClientProvider>

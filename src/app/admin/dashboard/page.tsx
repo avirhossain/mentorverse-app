@@ -91,8 +91,8 @@ export default function AdminDashboardPage() {
     loadingMentors || loadingMentees || loadingSessions || loadingBookings;
 
   const handleCreateMeeting = () => {
-    const newRoomName = `mentor-meet-${uuidv4()}`;
-    const newLink = `${window.location.origin}/meeting/${newRoomName}`;
+    const newRoomName = `vpaas-magic-cookie-514c5de29b504a348a2e6ce4646314c2/mentor-meet-${uuidv4()}`;
+    const newLink = `${window.location.origin}/meeting/${encodeURIComponent(newRoomName)}`;
     setRoomName(newRoomName);
     setGeneratedLink(newLink);
     toast({
