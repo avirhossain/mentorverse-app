@@ -119,9 +119,8 @@ export default function AdminDashboardPage() {
       });
       setIsMeetingFormOpen(false);
 
-      // Open the meeting in a new page inside the app
       if (roomName) {
-         router.push(`/admin/meeting/${encodeURIComponent(roomName)}`);
+         router.push(`/admin/meeting/${roomName}`);
       }
 
     } catch (error: any) {
@@ -175,7 +174,7 @@ export default function AdminDashboardPage() {
             <DialogHeader>
               <DialogTitle>Create an Instant Meeting</DialogTitle>
               <DialogDescription>
-                Set up a one-to-one or shareable meeting right now.
+                Set up a shareable meeting right now.
               </DialogDescription>
             </DialogHeader>
             <CreateMeetingForm
