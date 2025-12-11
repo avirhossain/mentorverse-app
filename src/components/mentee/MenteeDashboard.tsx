@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dialog';
 import { SessionCard } from './SessionCard';
 import { Separator } from '../ui/separator';
+import { Save } from 'lucide-react';
 
 function PersonalDetails() {
   const { user, isUserLoading } = useUser();
@@ -47,6 +48,7 @@ function PersonalDetails() {
 
   const [name, setName] = React.useState(mentee?.name || '');
   const [phone, setPhone] = React.useState(mentee?.phone || '');
+  const [isEditing, setIsEditing] = React.useState(false);
 
   React.useEffect(() => {
     if (mentee) {
@@ -65,6 +67,7 @@ function PersonalDetails() {
       MenteesAPI.updateMentee(firestore, user.uid, dataToUpdate);
       toast({ title: 'Profile Updated', description: 'Your details have been saved.' });
     }
+    setIsEditing(false);
   };
 
   if (isUserLoading || loadingMentee) {
@@ -95,29 +98,32 @@ function PersonalDetails() {
         <CardDescription>Update your personal information.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-20 w-20">
+        <div className="flex flex-col items-center gap-4">
+          <Avatar className="h-32 w-32">
             <AvatarImage src={mentee.photoUrl} alt={mentee.name} />
             <AvatarFallback>{getInitials(mentee.name)}</AvatarFallback>
           </Avatar>
-          <div className='w-full space-y-2'>
+          <div className='w-full space-y-2 text-center'>
             <div className="grid gap-1">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+              <Label htmlFor="name" className='sr-only'>Name</Label>
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="text-center text-lg font-semibold" />
             </div>
             <div className="grid gap-1">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" value={mentee.email} disabled />
+              <Label htmlFor="email" className='sr-only'>Email</Label>
+              <Input id="email" value={mentee.email} disabled className="text-center text-muted-foreground" />
             </div>
              <div className="grid gap-1">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Your phone number" />
+                <Label htmlFor="phone" className='sr-only'>Phone Number</Label>
+                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Your phone number" className="text-center" />
             </div>
           </div>
         </div>
       </CardContent>
-       <CardFooter>
-        <Button onClick={handleUpdate}>Save Changes</Button>
+       <CardFooter className="justify-center">
+        <Button onClick={handleUpdate}>
+            <Save className="mr-2 h-4 w-4" />
+            Save Changes
+        </Button>
       </CardFooter>
     </Card>
   );
@@ -255,3 +261,5 @@ export function MenteeDashboard() {
     </div>
   );
 }
+
+    
