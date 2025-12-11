@@ -1,3 +1,4 @@
+
 'use client';
 import { useEffect, useState } from 'react';
 import { useUser } from '@/firebase';
@@ -16,7 +17,7 @@ export default function MeetingPage({ params }: { params: { roomName: string[] }
   const [jwt, setJwt] = useState<string | null>(null);
 
   // The room name can contain slashes, so it's passed as an array of segments.
-  const roomName = params.roomName.join('/');
+  const roomName = decodeURIComponent(params.roomName.join('/'));
 
   useEffect(() => {
     if (user) {
@@ -44,7 +45,7 @@ export default function MeetingPage({ params }: { params: { roomName: string[] }
   return (
     <div style={{ height: 'calc(100vh - 4rem)'}}>
       <MeetingView 
-        roomName={decodeURIComponent(roomName)} 
+        roomName={roomName} 
         displayName={user?.displayName || 'Admin'}
         jwt={jwt}
       />
