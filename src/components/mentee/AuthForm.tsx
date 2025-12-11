@@ -9,6 +9,7 @@ import {
   signInWithPopup,
   UserCredential,
   signOut,
+  sendEmailVerification,
 } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { useAuth, useFirestore } from '@/firebase';
@@ -120,9 +121,22 @@ export function AuthForm() {
   };
 
   const handleAuthSuccess = async (userCredential: UserCredential, isNewUser: boolean) => {
-    const isSuspended = await handleSuspensionCheck(userCredential.user);
+    const { user } = userCredential;
+    const isSuspended = await handleSuspensionCheck(user);
     if (isSuspended) {
       return; // Stop the process
+    }
+
+    // Enforce email verification
+    if (!user.emailVerified) {
+        toast({
+            variant: "destructive",
+            title: "Email Not Verified",
+            description: "Please check your inbox and verify your email address to log in.",
+            duration: 10000,
+        });
+        await signOut(auth);
+        return;
     }
 
     if (isNewUser) {
@@ -140,12 +154,19 @@ export function AuthForm() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      let userCredential: UserCredential;
       if (isSignUp) {
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await handleAuthSuccess(userCredential, true);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await sendEmailVerification(userCredential.user);
+        await createMenteeProfile(userCredential); // Create profile right away
+        toast({
+          title: "Verification Email Sent",
+          description: "Please check your inbox to verify your email address. Then you can sign in.",
+          duration: 10000,
+        });
+        setIsSignUp(false); // Switch to sign-in view
+        await signOut(auth); // Sign out user until they are verified
       } else {
-        userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
         await handleAuthSuccess(userCredential, false);
       }
     } catch (error: any) {
