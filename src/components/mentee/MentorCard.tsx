@@ -20,7 +20,7 @@ interface MentorCardProps {
 export function MentorCard({ mentor }: MentorCardProps) {
   return (
     <Card className="flex h-full flex-col overflow-hidden text-center transition-shadow hover:shadow-lg">
-      <CardHeader className="flex-col items-center gap-4 p-6">
+      <CardHeader className="flex-col items-center gap-4 p-6 pb-4">
         <div className="relative h-28 w-28 flex-shrink-0">
           <Image
             src={mentor.photoUrl || 'https://i.pravatar.cc/150'}
@@ -33,13 +33,15 @@ export function MentorCard({ mentor }: MentorCardProps) {
         </div>
         <div className="flex-1">
           <CardTitle className="text-xl">{mentor.name}</CardTitle>
-          <div className="mt-1 flex items-center justify-center gap-1">
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-            <span className="font-semibold">{mentor.ratingAvg?.toFixed(1)}</span>
-            <span className="text-sm text-muted-foreground">
-              ({mentor.ratingCount || 0} reviews)
-            </span>
-          </div>
+          {mentor.ratingCount && mentor.ratingCount >= 10 && (
+            <div className="mt-1 flex items-center justify-center gap-1">
+              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <span className="font-semibold">{mentor.ratingAvg?.toFixed(1)}</span>
+              <span className="text-sm text-muted-foreground">
+                ({mentor.ratingCount} reviews)
+              </span>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="flex-grow p-4 pt-0">
