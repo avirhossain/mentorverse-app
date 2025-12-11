@@ -8,7 +8,10 @@ import {
   FirestoreError,
   QuerySnapshot,
   CollectionReference,
+  DocumentReference,
 } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 /** Utility type to add an 'id' field to a given type T. */
 export type WithId<T> = T & { id: string, ref: DocumentReference };
@@ -83,14 +86,17 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // This is a critical change. Instead of throwing a global error that crashes the app,
-        // we will set the local error state and return empty data. This allows the UI
-        // to handle the error gracefully (e.g., show a "No sessions found" message)
-        // instead of causing a redirect or showing a global error overlay.
-        console.error("Firestore Permission Error in useCollection:", error);
-        setError(error);
-        setData([]); // Set data to an empty array to prevent UI from breaking.
+        const path = (memoizedTargetRefOrQuery as InternalQuery)._query.path.canonicalString();
+        const contextualError = new FirestorePermissionError({
+          operation: 'list',
+          path: path,
+        });
+
+        setError(contextualError);
+        setData([]);
         setIsLoading(false);
+
+        errorEmitter.emit('permission-error', contextualError);
       }
     );
 
