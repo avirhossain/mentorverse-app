@@ -1,3 +1,4 @@
+
 import { Clock, Calendar, Tag, Users, DollarSign, Edit, Star } from 'lucide-react';
 import type { Session, Booking, Mentee, Review } from '@/lib/types';
 import {
@@ -357,7 +358,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
     return (
       <div className="flex gap-2">
         <Button variant="outline" className="w-full" asChild>
-          <Link href={`/session/${encodeURIComponent(session.name)}`}>See More</Link>
+          <Link href={`/session/${session.name.replace(/\s+/g, '-')}`}>See More</Link>
         </Button>
         <AlertDialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
             <AlertDialogTrigger asChild>

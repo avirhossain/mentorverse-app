@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Star } from 'lucide-react';
@@ -63,11 +64,9 @@ export function MentorCard({ mentor }: MentorCardProps) {
       </CardContent>
       <CardFooter className="p-4 pt-0">
         <Button asChild className="w-full">
-          <Link href={`/${encodeURIComponent(mentor.name)}`}>View Profile</Link>
+          <Link href={`/${mentor.name.replace(/\s+/g, '-')}`}>View Profile</Link>
         </Button>
       </CardFooter>
     </Card>
   );
 }
-
-    

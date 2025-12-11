@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -63,9 +64,10 @@ export default function SessionDetailsPage({
 
   const sessionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
+    const decodedName = sessionName.replace(/-/g, ' ');
     return query(
       collection(firestore, 'sessions'),
-      where('name', '==', decodeURIComponent(sessionName))
+      where('name', '==', decodedName)
     );
   }, [firestore, sessionName]);
 

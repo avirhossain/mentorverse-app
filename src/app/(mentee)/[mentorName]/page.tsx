@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -21,7 +22,8 @@ export default function MentorPublicProfilePage({
 
   const mentorsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'mentors'), where('name', '==', decodeURIComponent(mentorName)));
+    const decodedName = mentorName.replace(/-/g, ' ');
+    return query(collection(firestore, 'mentors'), where('name', '==', decodedName));
   }, [firestore, mentorName]);
 
   const { data: mentors, isLoading, error } = useCollection<Mentor>(mentorsQuery);
