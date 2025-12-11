@@ -17,7 +17,7 @@ import {
 } from '@/firebase';
 import { doc, collection, query, where, orderBy } from 'firebase/firestore';
 import type { Session, Booking } from '@/lib/types';
-import { ChevronLeft, PlayCircle } from 'lucide-react';
+import { ChevronLeft, PlayCircle, Copy } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -31,6 +31,16 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { SessionsAPI } from '@/lib/firebase-adapter';
 import { format } from 'date-fns';
+import { v4 as uuidv4 } from 'uuid';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 export default function SessionDetailsPage({
   params,
@@ -40,6 +50,10 @@ export default function SessionDetailsPage({
   const { sessionId } = React.use(params);
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [isMeetingDialogOpen, setIsMeetingDialogOpen] = React.useState(false);
+  const [generatedLink, setGeneratedLink] = React.useState('');
+  const [roomName, setRoomName] = React.useState('');
+
 
   const sessionRef = useMemoFirebase(
     () => (firestore ? doc(firestore, 'sessions', sessionId) : null),
@@ -58,23 +72,43 @@ export default function SessionDetailsPage({
   const { data: bookings, isLoading: loadingBookings } =
     useCollection<Booking>(bookingsQuery);
 
-  const handleStartMeeting = () => {
+  const handleCreateMeeting = async () => {
     if (!firestore || !session) return;
-    SessionsAPI.startMeetingForSession(firestore, session.id);
+    const newRoomName = `mentorverse-session-${sessionId}`;
+    const newLink = `${window.location.origin}/meeting/${newRoomName}`;
+    
+    // Update session with meeting URL
+    await SessionsAPI.startMeetingForSession(firestore, sessionId, newRoomName);
+
+    setRoomName(newRoomName);
+    setGeneratedLink(newLink);
+    setIsMeetingDialogOpen(true);
     toast({
-      title: 'Meeting Started',
-      description:
-        'A meeting link has been generated and notifications have been sent to all mentees.',
+      title: 'Meeting Ready',
+      description: 'The meeting link has been generated for this session.',
     });
   };
+
+  const handleStartMeeting = () => {
+    window.open(generatedLink, '_blank');
+    setIsMeetingDialogOpen(false);
+  }
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(generatedLink);
+    toast({
+        title: 'Link Copied!',
+        description: 'The meeting link has been copied to your clipboard.',
+    })
+  }
 
   const hasConfirmedBookings = React.useMemo(() => {
     return bookings?.some(b => b.status === 'confirmed');
   }, [bookings]);
 
   const isMeetingActive = React.useMemo(() => {
-    return bookings?.some(b => b.status === 'started');
-  }, [bookings]);
+    return !!session?.meetingUrl;
+  }, [session]);
 
 
   const renderBookings = () => {
@@ -119,6 +153,7 @@ export default function SessionDetailsPage({
   };
 
   return (
+    <>
     <div className="grid flex-1 auto-rows-max gap-4">
       <div className="flex items-center gap-4">
         <Button asChild variant="outline" size="icon" className="h-7 w-7">
@@ -132,14 +167,14 @@ export default function SessionDetailsPage({
         </h1>
         <div className="ml-auto flex items-center gap-2">
             {session && hasConfirmedBookings && !isMeetingActive && (
-                 <Button size="sm" onClick={handleStartMeeting}>
+                 <Button size="sm" onClick={handleCreateMeeting}>
                     <PlayCircle className="mr-2 h-4 w-4" />
                     Start Meeting for All
                  </Button>
             )}
-            {isMeetingActive && (
+            {isMeetingActive && session?.meetingUrl && (
                 <Button size="sm" asChild>
-                    <a href={bookings?.find(b => b.status === 'started')?.meetingUrl} target="_blank" rel="noopener noreferrer">
+                    <a href={`/meeting/${session.meetingUrl}`} target="_blank" rel="noopener noreferrer">
                         Join Active Meeting
                     </a>
                 </Button>
@@ -203,5 +238,29 @@ export default function SessionDetailsPage({
         </Card>
       )}
     </div>
+     <Dialog open={isMeetingDialogOpen} onOpenChange={setIsMeetingDialogOpen}>
+        <DialogContent>
+        <DialogHeader>
+            <DialogTitle>Meeting Ready</DialogTitle>
+            <DialogDescription>
+                Share this link with participants for them to join the session.
+            </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+            <p>Meeting Link:</p>
+            <div className="flex items-center space-x-2">
+                <Input value={generatedLink} readOnly />
+                <Button variant="outline" size="icon" onClick={handleCopyLink}>
+                    <Copy className="h-4 w-4"/>
+                </Button>
+            </div>
+            <div className="flex justify-end gap-2">
+                <Button variant="secondary" onClick={() => setIsMeetingDialogOpen(false)}>Close</Button>
+                <Button onClick={handleStartMeeting}>Start Meeting</Button>
+            </div>
+        </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
