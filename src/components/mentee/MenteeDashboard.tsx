@@ -218,16 +218,6 @@ export function MenteeDashboard() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const upcomingBookingsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(
-      collection(firestore, 'sessionBookings'),
-      where('menteeId', '==', user.uid),
-      where('status', 'in', ['confirmed', 'started']),
-      orderBy('scheduledDate', 'asc')
-    );
-  }, [firestore, user]);
-
   const previousBookingsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
@@ -238,7 +228,6 @@ export function MenteeDashboard() {
     );
   }, [firestore, user]);
 
-  const { data: upcomingBookings, isLoading: loadingUpcoming } = useCollection<Booking>(upcomingBookingsQuery);
   const { data: previousBookings, isLoading: loadingPrevious } = useCollection<Booking>(previousBookingsQuery);
 
   if (!user) {
@@ -258,7 +247,6 @@ export function MenteeDashboard() {
             <BalanceSection />
         </div>
         <div className="lg:col-span-2 space-y-8">
-            <SessionList title="Upcoming Sessions" bookings={upcomingBookings} isLoading={loadingUpcoming} emptyMessage="You have no upcoming sessions." />
             <SessionList title="Previous Sessions" bookings={previousBookings} isLoading={loadingPrevious} emptyMessage="You have not completed any sessions yet." />
         </div>
       </div>
