@@ -245,11 +245,9 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
             </>
           )}
            <div className="flex items-center gap-2 pt-2 font-semibold text-foreground">
-                <DollarSign className="h-4 w-4" />
+                
                 <span>
-                   {session.sessionType === 'Free'
-                    ? 'Free'
-                    : formatCurrency(session.sessionFee)}
+                   {session.sessionType !== 'Free' && formatCurrency(session.sessionFee)}
                 </span>
             </div>
           {'tag' in session && session.tag && (
