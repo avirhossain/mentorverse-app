@@ -49,15 +49,17 @@ export default function MentorPublicProfilePage({
               <AvatarImage src={mentor.photoUrl} alt={mentor.name} />
               <AvatarFallback>{mentor.name[0]}</AvatarFallback>
             </Avatar>
-            <div className="mt-4 flex items-center gap-1">
-              <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-              <span className="text-lg font-semibold">
-                {mentor.ratingAvg?.toFixed(1)}
-              </span>
-              <span className="text-muted-foreground">
-                ({mentor.ratingCount || 0} reviews)
-              </span>
-            </div>
+            {mentor.ratingCount && mentor.ratingCount >= 10 && (
+              <div className="mt-4 flex items-center gap-1">
+                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                <span className="text-lg font-semibold">
+                  {mentor.ratingAvg?.toFixed(1)}
+                </span>
+                <span className="text-muted-foreground">
+                  ({mentor.ratingCount || 0} reviews)
+                </span>
+              </div>
+            )}
           </div>
           <div className="mt-6 w-full text-center md:mt-0 md:text-left">
             <h1 className="text-3xl font-bold">{mentor.name}</h1>
