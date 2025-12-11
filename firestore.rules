@@ -31,23 +31,23 @@ service cloud.firestore {
 
     // Mentors: Active mentors are publicly readable. Admins can write.
     match /mentors/{mentorId} {
-      // Allow read only if mentor is active, or if user is an admin.
+      // Allow read for anyone if mentor is active, or if user is an admin.
       allow get: if (resource.data.isActive == true) || isAdmin();
-      // Allow list only for active mentors (client-side query must filter by isActive == true).
-      allow list: if request.auth != null; 
+      // Allow list for anyone. Client-side query must filter by isActive == true for public view.
+      allow list: if true;
       allow create, update, delete: if isAdmin();
     }
     
-    // Sessions: Readable by active mentees, but only admins can create/manage them.
+    // Sessions: Readable by anyone, but only admins can create/manage them.
     match /sessions/{sessionId} {
-      allow get, list: if (request.auth != null && isMenteeActive(request.auth.uid)) || isAdmin();
+      allow get, list: if true;
       allow create, delete: if isAdmin();
       // Allow mentees to update bookedCount, but nothing else
       allow update: if isAdmin() || (request.auth != null && isMenteeActive(request.auth.uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bookedCount']));
     }
     
     match /sessions/{sessionId}/waitlist/{userId} {
-        allow create: if isOwner(userId) && isMenteeActive(userId);
+        allow create: if true; // Anyone can join a waitlist
         allow get, update, delete: if isAdmin();
     }
 
