@@ -2,14 +2,10 @@
 
 import React, { useState } from 'react';
 import {
-  Auth,
   GoogleAuthProvider,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
   signInWithPopup,
   UserCredential,
   signOut,
-  sendEmailVerification,
 } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { useAuth, useFirestore } from '@/firebase';
@@ -24,9 +20,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
 
 const GoogleIcon = () => (
@@ -51,11 +44,7 @@ const GoogleIcon = () => (
 );
 
 export function AuthForm() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false); // State to toggle between login and sign-up
 
   const auth = useAuth();
   const firestore = useFirestore();
@@ -102,7 +91,7 @@ export function AuthForm() {
       await MenteesAPI.createMentee(firestore, user.uid, {
         id: user.uid,
         displayId: displayId,
-        name: name || user.displayName || 'Anonymous User',
+        name: user.displayName || 'Anonymous User',
         email: user.email || '',
         createdAt: new Date().toISOString(),
         isActive: true,
@@ -127,18 +116,6 @@ export function AuthForm() {
       return; // Stop the process
     }
 
-    // Enforce email verification
-    if (!user.emailVerified) {
-        toast({
-            variant: "destructive",
-            title: "Email Not Verified",
-            description: "Please check your inbox and verify your email address to log in.",
-            duration: 10000,
-        });
-        await signOut(auth);
-        return;
-    }
-
     if (isNewUser) {
       await createMenteeProfile(userCredential);
     }
@@ -148,37 +125,6 @@ export function AuthForm() {
       description: "Welcome to MentorVerse! You're now logged in.",
     });
     router.push('/');
-  };
-
-  const handleEmailPasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      if (isSignUp) {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await sendEmailVerification(userCredential.user);
-        await createMenteeProfile(userCredential); // Create profile right away
-        toast({
-          title: "Verification Email Sent",
-          description: "Please check your inbox to verify your email address. Then you can sign in.",
-          duration: 10000,
-        });
-        setIsSignUp(false); // Switch to sign-in view
-        await signOut(auth); // Sign out user until they are verified
-      } else {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        await handleAuthSuccess(userCredential, false);
-      }
-    } catch (error: any) {
-      console.error('Auth Error:', error);
-      toast({
-        variant: 'destructive',
-        title: isSignUp ? 'Sign-up Failed' : 'Login Failed',
-        description: error.message || 'An unexpected error occurred.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleGoogleSignIn = async () => {
@@ -208,107 +154,27 @@ export function AuthForm() {
     <Card className="mx-4 w-full max-w-md">
       <CardHeader className="text-center">
         <CardTitle className="text-3xl font-bold text-primary">
-          {isSignUp ? 'Create an Account' : 'Welcome Back'}
+          Join MentorVerse
         </CardTitle>
         <CardDescription>
-          {isSignUp
-            ? 'Fill in your details to get started.'
-            : 'Sign in to access your dashboard.'}
+          Sign in or create an account with your Google account to get started.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleEmailPasswordSubmit} className="space-y-4 pt-4">
-          {isSignUp && (
-            <div className="space-y-2">
-              <Label htmlFor="signup-name">Full Name</Label>
-              <Input
-                id="signup-name"
-                type="text"
-                placeholder="John Doe"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="m@example.com"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading
-              ? isSignUp ? 'Creating Account...' : 'Signing In...'
-              : isSignUp ? 'Create Account' : 'Sign In'}
-          </Button>
-        </form>
-
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <Separator />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Or continue with
-            </span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-4 pt-4">
           <Button
             variant="outline"
             className="w-full"
             onClick={handleGoogleSignIn}
             disabled={isLoading}
           >
-            <GoogleIcon />
-            Google
+            {isLoading ? "Signing In..." : (
+                <>
+                    <GoogleIcon />
+                    Sign In with Google
+                </>
+            )}
           </Button>
-        </div>
-
-        <div className="mt-6 text-center text-sm">
-          {isSignUp ? (
-            <>
-              Already have an account?{' '}
-              <Button
-                variant="link"
-                className="p-0 h-auto"
-                onClick={() => setIsSignUp(false)}
-              >
-                Sign In
-              </Button>
-            </>
-          ) : (
-            <>
-              Don't have an account?{' '}
-              <Button
-                variant="link"
-                className="p-0 h-auto"
-                onClick={() => setIsSignUp(true)}
-              >
-                Sign Up
-              </Button>
-            </>
-          )}
         </div>
       </CardContent>
     </Card>
