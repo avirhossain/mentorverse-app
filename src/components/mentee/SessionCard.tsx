@@ -234,7 +234,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
         }
         return (
             <div className="w-full text-center">
-                 <Button className="w-full" disabled>Booking Confirmed</Button>
+                 <Button className="w-full" disabled>Join Session</Button>
                  <p className="text-xs text-muted-foreground mt-1">Link will be active when the session starts.</p>
             </div>
         )

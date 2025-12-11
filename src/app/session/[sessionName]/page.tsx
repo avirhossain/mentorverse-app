@@ -259,7 +259,7 @@ export default function SessionDetailsPage({
         }
         return (
             <div className="w-full text-center">
-                 <Button className="w-full text-lg" disabled>Booking Confirmed</Button>
+                 <Button className="w-full text-lg" disabled>Join Session</Button>
                  <p className="text-xs text-muted-foreground mt-1">The join link will be active when the session starts.</p>
             </div>
         )
@@ -573,4 +573,5 @@ export default function SessionDetailsPage({
     </div>
   );
 }
+
 
