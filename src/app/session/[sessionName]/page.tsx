@@ -62,8 +62,7 @@ function useBookingStatus(sessionId: string) {
         return query(
             collection(firestore, 'sessionBookings'),
             where('menteeId', '==', user.uid),
-            where('sessionId', '==', sessionId),
-            where('status', 'in', ['confirmed', 'started', 'completed'])
+            where('sessionId', '==', sessionId)
         );
     }, [firestore, user, sessionId]);
 
@@ -575,3 +574,6 @@ export default function SessionDetailsPage({
 }
 
 
+
+
+    
