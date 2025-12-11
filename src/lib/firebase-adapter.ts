@@ -201,7 +201,7 @@ export const SessionsAPI = {
       emitPermissionError(sessionRef.path, 'delete');
     });
   },
-  
+
   joinWaitlist: (
     db: Firestore,
     sessionId: string,
@@ -234,10 +234,10 @@ export const SessionsAPI = {
     try {
       const bookingSnapshots = await getDocs(bookingsQuery);
       if (bookingSnapshots.empty) {
-        throw new Error("No confirmed bookings to start a meeting for.");
+        throw new Error('No confirmed bookings to start a meeting for.');
       }
 
-      bookingSnapshots.forEach(bookingDoc => {
+      bookingSnapshots.forEach((bookingDoc) => {
         const bookingData = bookingDoc.data() as Booking;
 
         // 2. For each booking, update its status and add the meeting URL
@@ -245,7 +245,9 @@ export const SessionsAPI = {
         batch.update(bookingRef, { status: 'started' as const, meetingUrl });
 
         // 3. For each booking, create a notification for the mentee
-        const notificationRef = doc(collection(db, 'mentees', bookingData.menteeId, 'notifications'));
+        const notificationRef = doc(
+          collection(db, 'mentees', bookingData.menteeId, 'notifications')
+        );
         const notificationData: Notification = {
           id: notificationRef.id,
           menteeId: bookingData.menteeId,
@@ -259,9 +261,11 @@ export const SessionsAPI = {
 
       // 4. Commit all the updates and creations at once
       await batch.commit();
-
     } catch (error) {
-      console.error("Failed to start meeting for session and send notifications:", error);
+      console.error(
+        'Failed to start meeting for session and send notifications:',
+        error
+      );
       // Emit a generic error, as the specific failure point is hard to determine in a batch
       emitPermissionError(`/sessions/${sessionId}/sessionBookings`, 'update');
       emitPermissionError(`/mentees/.../notifications`, 'create');
@@ -271,7 +275,10 @@ export const SessionsAPI = {
 
 // ------------------ SESSION BOOKINGS ------------------
 export const SessionBookingsAPI = {
-  createBooking: async (db: Firestore, bookingData: WithFieldValue<Booking>) => {
+  createBooking: async (
+    db: Firestore,
+    bookingData: WithFieldValue<Booking>
+  ) => {
     const sessionRef = doc(db, 'sessions', bookingData.sessionId);
     const bookingRef = doc(db, 'sessionBookings', bookingData.id);
 
@@ -303,7 +310,9 @@ export const SessionBookingsAPI = {
       } else {
         // It's likely a Firestore permission error
         emitPermissionError(bookingRef.path, 'create', bookingData);
-        emitPermissionError(sessionRef.path, 'update', { bookedCount: 'increment(1)' });
+        emitPermissionError(sessionRef.path, 'update', {
+          bookedCount: 'increment(1)',
+        });
       }
     }
   },
@@ -326,15 +335,16 @@ export const SessionBookingsAPI = {
   startMeeting: async (db: Firestore, bookingId: string) => {
     const batch = writeBatch(db);
     const bookingRef = doc(db, 'sessionBookings', bookingId);
-  
+    let bookingData: Booking;
+
     try {
       // First, get the booking document to retrieve menteeId and sessionName
       const bookingSnap = await getDoc(bookingRef);
       if (!bookingSnap.exists()) {
-        throw new Error("Booking not found!");
+        throw new Error('Booking not found!');
       }
-      const bookingData = bookingSnap.data() as Booking;
-  
+      bookingData = bookingSnap.data() as Booking;
+
       // 1. Prepare booking update
       const meetingUrl = `https://meet.jit.si/mentorverse-booking-${bookingId}`;
       const bookingUpdateData = {
@@ -342,9 +352,11 @@ export const SessionBookingsAPI = {
         meetingUrl: meetingUrl,
       };
       batch.update(bookingRef, bookingUpdateData);
-  
+
       // 2. Prepare notification creation
-      const notificationRef = doc(collection(db, 'mentees', bookingData.menteeId, 'notifications'));
+      const notificationRef = doc(
+        collection(db, 'mentees', bookingData.menteeId, 'notifications')
+      );
       const notificationData: Notification = {
         id: notificationRef.id,
         menteeId: bookingData.menteeId,
@@ -354,16 +366,109 @@ export const SessionBookingsAPI = {
         link: meetingUrl,
       };
       batch.set(notificationRef, notificationData);
-  
+
       // 3. Atomically commit both operations
       await batch.commit();
-  
     } catch (error) {
       // If anything fails (getting doc, or committing batch), emit permission errors
-      console.error("Failed to start meeting and send notification:", error);
+      console.error('Failed to start meeting and send notification:', error);
       emitPermissionError(bookingRef.path, 'update', { status: 'started' });
       // We don't know the notification ID, but we can signal the intent
-      emitPermissionError(`/mentees/${bookingData.menteeId}/notifications`, 'create');
+      if (bookingData!) {
+        emitPermissionError(
+          `/mentees/${bookingData.menteeId}/notifications`,
+          'create'
+        );
+      }
+    }
+  },
+
+  createInstantMeeting: async (
+    db: Firestore,
+    options: {
+      mentor?: Mentor;
+      menteeId?: string;
+      subject: string;
+      isShareable: boolean;
+    }
+  ) => {
+    const { mentor, menteeId, subject, isShareable } = options;
+    const batch = writeBatch(db);
+    const now = new Date();
+    const sessionId = uuidv4();
+    const meetingUrl = `https://meet.jit.si/mentorverse-instant-${sessionId}`;
+
+    // 1. Create the session document
+    const sessionRef = doc(db, 'sessions', sessionId);
+    const sessionData: Session = {
+      id: sessionId,
+      mentorId: mentor?.id || 'admin',
+      mentorName: mentor?.name || 'Admin',
+      name: subject,
+      sessionType: 'Special Request',
+      status: 'Active',
+      sessionFee: 0,
+      scheduledDate: now.toISOString().split('T')[0],
+      scheduledTime: now.toTimeString().substring(0, 5),
+      duration: 60,
+      participants: isShareable ? 50 : 1, // High limit for shareable link
+      bookedCount: menteeId ? 1 : 0,
+    };
+    batch.set(sessionRef, sessionData);
+
+    // 2. If a specific mentee is targeted, create their booking and notification
+    if (menteeId) {
+      const menteeSnap = await getDoc(doc(db, 'mentees', menteeId));
+      if (!menteeSnap.exists()) {
+        throw new Error('Mentee with the provided ID does not exist.');
+      }
+      const menteeData = menteeSnap.data() as Mentee;
+
+      // Create booking
+      const bookingId = uuidv4();
+      const bookingRef = doc(db, 'sessionBookings', bookingId);
+      const bookingData: Booking = {
+        id: bookingId,
+        sessionId: sessionId,
+        sessionName: subject,
+        mentorId: mentor?.id || 'admin',
+        mentorName: mentor?.name || 'Admin',
+        menteeId: menteeId,
+        menteeName: menteeData.name,
+        bookingTime: now.toISOString(),
+        scheduledDate: sessionData.scheduledDate!,
+        scheduledTime: sessionData.scheduledTime!,
+        status: 'started',
+        meetingUrl: meetingUrl,
+        sessionFee: 0,
+        adminDisbursementStatus: 'pending',
+      };
+      batch.set(bookingRef, bookingData);
+
+      // Create notification
+      const notificationRef = doc(
+        collection(db, 'mentees', menteeId, 'notifications')
+      );
+      const notificationData: Notification = {
+        id: notificationRef.id,
+        menteeId: menteeId,
+        message: `An instant meeting "${subject}" has started!`,
+        isRead: false,
+        createdAt: now.toISOString(),
+        link: meetingUrl,
+      };
+      batch.set(notificationRef, notificationData);
+    }
+
+    try {
+      await batch.commit();
+    } catch (error) {
+      console.error('Failed to create instant meeting:', error);
+      emitPermissionError(sessionRef.path, 'create', sessionData);
+      if (menteeId) {
+        emitPermissionError(`/sessionBookings`, 'create');
+        emitPermissionError(`/mentees/${menteeId}/notifications`, 'create');
+      }
     }
   },
 

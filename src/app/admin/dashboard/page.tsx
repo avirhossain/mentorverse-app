@@ -9,16 +9,35 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { DollarSign, Users, Clock, ArrowUpRight } from 'lucide-react';
+import {
+  DollarSign,
+  Users,
+  Clock,
+  ArrowUpRight,
+  PlayCircle,
+} from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
-import type { Mentor, Mentee, Booking } from '@/lib/types';
+import type { Mentor, Mentee, Booking, Session } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { CreateMeetingForm } from '@/components/admin/CreateMeetingForm';
+import { SessionBookingsAPI } from '@/lib/firebase-adapter';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboardPage() {
   const firestore = useFirestore();
+  const { toast } = useToast();
+  const [isMeetingFormOpen, setIsMeetingFormOpen] = React.useState(false);
 
   const mentorsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'mentors') : null),
@@ -31,7 +50,10 @@ export default function AdminDashboardPage() {
   const runningSessionsQuery = useMemoFirebase(
     () =>
       firestore
-        ? query(collection(firestore, 'sessions'), where('status', '==', 'Active'))
+        ? query(
+            collection(firestore, 'sessions'),
+            where('status', '==', 'Active')
+          )
         : null,
     [firestore]
   );
@@ -52,7 +74,7 @@ export default function AdminDashboardPage() {
   const { data: mentees, isLoading: loadingMentees } =
     useCollection<Mentee>(menteesQuery);
   const { data: runningSessions, isLoading: loadingSessions } =
-    useCollection<Booking>(runningSessionsQuery);
+    useCollection<Session>(runningSessionsQuery);
   const { data: completedBookings, isLoading: loadingBookings } =
     useCollection<Booking>(completedBookingsQuery);
 
@@ -63,6 +85,40 @@ export default function AdminDashboardPage() {
     ) ?? 0;
   const isLoading =
     loadingMentors || loadingMentees || loadingSessions || loadingBookings;
+
+  const handleMeetingFormSubmit = async (values: {
+    mentorId?: string;
+    menteeId?: string;
+    subject: string;
+    isShareable: boolean;
+  }) => {
+    if (!firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Database not available.',
+      });
+      return;
+    }
+
+    try {
+      await SessionBookingsAPI.createInstantMeeting(firestore, {
+        ...values,
+        mentor: mentors?.find((m) => m.id === values.mentorId),
+      });
+      toast({
+        title: 'Meeting Created',
+        description: `The meeting "${values.subject}" has been started.`,
+      });
+      setIsMeetingFormOpen(false);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to create meeting',
+        description: error.message,
+      });
+    }
+  };
 
   const statItems = [
     {
@@ -93,31 +149,58 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {statItems.map((item) => (
-        <Card key={item.title}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
-            {item.icon}
-          </CardHeader>
-          <CardContent>
-            {item.loading ? (
-              <Skeleton className="h-8 w-24" />
-            ) : (
-              <div className="text-2xl font-bold">{item.value}</div>
+    <>
+      <div className="flex items-center justify-end gap-2 mb-4">
+        <Dialog open={isMeetingFormOpen} onOpenChange={setIsMeetingFormOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlayCircle className="mr-2 h-4 w-4" />
+              Start Instant Meeting
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create an Instant Meeting</DialogTitle>
+              <DialogDescription>
+                Set up a one-to-one or shareable meeting right now.
+              </DialogDescription>
+            </DialogHeader>
+            <CreateMeetingForm
+              mentors={mentors || []}
+              isLoading={loadingMentors}
+              onSubmit={handleMeetingFormSubmit}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {statItems.map((item) => (
+          <Card key={item.title}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {item.title}
+              </CardTitle>
+              {item.icon}
+            </CardHeader>
+            <CardContent>
+              {item.loading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <div className="text-2xl font-bold">{item.value}</div>
+              )}
+            </CardContent>
+            {item.link && (
+              <CardFooter>
+                <Button asChild variant="link" className="p-0 h-auto text-xs">
+                  <Link href={item.link}>
+                    More <ArrowUpRight className="h-3 w-3 ml-1" />
+                  </Link>
+                </Button>
+              </CardFooter>
             )}
-          </CardContent>
-          {item.link && (
-            <CardFooter>
-              <Button asChild variant="link" className="p-0 h-auto text-xs">
-                <Link href={item.link}>
-                  More <ArrowUpRight className="h-3 w-3 ml-1" />
-                </Link>
-              </Button>
-            </CardFooter>
-          )}
-        </Card>
-      ))}
-    </div>
+          </Card>
+        ))}
+      </div>
+    </>
   );
 }
