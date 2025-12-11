@@ -86,6 +86,22 @@ export const MenteesAPI = {
       emitPermissionError(menteeRef.path, 'delete');
     });
   },
+  
+  requestBalanceAdd: (db: Firestore, uid: string, amount: number, message: string) => {
+    const notificationRef = doc(collection(db, 'mentees', uid, 'notifications'));
+    const notification: Notification = {
+      id: notificationRef.id,
+      menteeId: uid,
+      message: `Balance request of ${amount} submitted. Ref: ${message}`,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+    setDoc(notificationRef, notification).catch(() => {
+        emitPermissionError(notificationRef.path, 'create', notification);
+    });
+
+    // In a real app, you'd also send a notification to the admin here.
+  },
 
   addBalance: (
     db: Firestore,

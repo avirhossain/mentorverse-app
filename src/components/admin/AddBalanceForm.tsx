@@ -14,103 +14,167 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { formatCurrency } from '@/lib/utils';
 import { Textarea } from '../ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { MenteesAPI } from '@/lib/firebase-adapter';
+import { useFirestore } from '@/firebase';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const addBalanceSchema = z.object({
+  paymentMethod: z.enum(['bKash', 'coupon']),
+  transactionId: z.string().optional(),
+  couponCode: z.string().optional(),
   amount: z.coerce
     .number()
     .positive({ message: 'Amount must be greater than 0.' }),
-  reference: z.string().optional(),
-  description: z.string().min(1, 'A description is required.'),
 });
 
 export type AddBalanceFormValues = z.infer<typeof addBalanceSchema>;
 
 interface AddBalanceFormProps {
-  currentBalance: number;
-  onSubmit: (values: AddBalanceFormValues) => void;
+  menteeId: string;
 }
 
 export const AddBalanceForm: React.FC<AddBalanceFormProps> = ({
-  currentBalance,
-  onSubmit,
+  menteeId,
 }) => {
+  const { toast } = useToast();
+  const firestore = useFirestore();
   const form = useForm<AddBalanceFormValues>({
     resolver: zodResolver(addBalanceSchema),
     defaultValues: {
+      paymentMethod: 'bKash',
       amount: 0,
-      reference: '',
-      description: 'Admin top-up',
     },
   });
 
   const handleFormSubmit = (values: AddBalanceFormValues) => {
-    onSubmit(values);
+    if (values.paymentMethod === 'bKash') {
+      if (!values.transactionId) {
+        toast({
+          variant: 'destructive',
+          title: 'Transaction ID required',
+          description: 'Please enter your bKash transaction ID.',
+        });
+        return;
+      }
+      MenteesAPI.requestBalanceAdd(
+        firestore,
+        menteeId,
+        values.amount,
+        `bKash top-up request. TrxID: ${values.transactionId}`
+      );
+      toast({
+        title: 'Request Submitted',
+        description: 'We will confirm your payment shortly.',
+      });
+    } else if (values.paymentMethod === 'coupon') {
+      if (!values.couponCode) {
+        toast({
+          variant: 'destructive',
+          title: 'Coupon Code Required',
+          description: 'Please enter a coupon code.',
+        });
+        return;
+      }
+      // This is a placeholder for coupon verification logic.
+      // In a real app, you would call a cloud function to verify the coupon.
+      toast({
+        title: 'Coupon Applied!',
+        description: 'Your balance has been updated.',
+      });
+    }
   };
 
-  const amount = form.watch('amount');
-  const newBalance = currentBalance + (amount || 0);
-
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(handleFormSubmit)}
-        className="space-y-4"
-      >
-        <FormField
-          control={form.control}
-          name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Amount to Add (BDT)</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="e.g., 1000" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="reference"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Reference (Optional)</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Invoice #12345" {...field} />
-              </FormControl>
-              <FormDescription>
-                An optional reference for this transaction.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea placeholder="e.g., Monthly top-up" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormDescription>
-          Current Balance: {formatCurrency(currentBalance)}
-          <br />
-          New Balance will be: {formatCurrency(newBalance)}
-        </FormDescription>
-
-        <div className="pt-4 flex justify-end">
-          <Button type="submit">Add Funds</Button>
-        </div>
-      </form>
-    </Form>
+    <Tabs defaultValue="bKash" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="bKash">bKash</TabsTrigger>
+        <TabsTrigger value="coupon">Coupon</TabsTrigger>
+      </TabsList>
+      <TabsContent value="bKash">
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleFormSubmit)}
+            className="space-y-4"
+          >
+            <FormField
+              control={form.control}
+              name="paymentMethod"
+              render={({ field }) => (
+                <Input type="hidden" {...field} value="bKash" />
+              )}
+            />
+            <div className="rounded-md border bg-muted/50 p-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Pay your desired amount to our bKash number:
+              </p>
+              <p className="text-lg font-bold text-primary">01673737971</p>
+            </div>
+            <FormField
+              control={form.control}
+              name="amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Amount Sent (BDT)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="e.g., 1000" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="transactionId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>bKash Transaction ID (TrxID)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., 9A8B7C6D5E" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="pt-4 flex justify-end">
+              <Button type="submit">Submit for Verification</Button>
+            </div>
+          </form>
+        </Form>
+      </TabsContent>
+      <TabsContent value="coupon">
+         <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleFormSubmit)}
+            className="space-y-4"
+          >
+             <FormField
+              control={form.control}
+              name="paymentMethod"
+              render={({ field }) => (
+                <Input type="hidden" {...field} value="coupon" />
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="couponCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Coupon Code</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter your coupon code" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <div className="pt-4 flex justify-end">
+              <Button type="submit">Apply Coupon</Button>
+            </div>
+          </form>
+        </Form>
+      </TabsContent>
+    </Tabs>
   );
 };

@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '../ui/separator';
 import { Edit } from 'lucide-react';
+import { AddBalanceForm } from '@/components/admin/AddBalanceForm';
 
 function PersonalDetails() {
   const { user, isUserLoading } = useUser();
@@ -165,17 +166,7 @@ function BalanceSection() {
                                 Top up your account using one of the methods below.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <Button variant="outline">Pay with bKash (Coming Soon)</Button>
-                            <Separator />
-                            <div className="space-y-2">
-                                <Label htmlFor="coupon">Coupon Code</Label>
-                                <Input id="coupon" placeholder="Enter coupon code" />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button>Apply Coupon</Button>
-                        </DialogFooter>
+                        <AddBalanceForm menteeId={user?.uid} />
                     </DialogContent>
                 </Dialog>
             </CardFooter>
