@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -22,10 +23,10 @@ export const MenteeFooter = () => {
             <path d="M12 3L2 9L12 15L22 9L12 3Z" />
             <path d="M2 9V15L12 21L22 15V9" />
           </svg>
-          <span className="font-bold">MentorVerse</span>
+          <span className="font-bold">Mentees</span>
         </div>
         <p className="text-sm text-muted-foreground">
-          © {new Date().getFullYear()} MentorVerse. All rights reserved.
+          © {new Date().getFullYear()} Mentees. All rights reserved.
         </p>
         <nav className="flex gap-4 sm:ml-auto sm:gap-6">
           <Link

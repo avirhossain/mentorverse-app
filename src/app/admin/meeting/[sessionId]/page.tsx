@@ -13,7 +13,7 @@ export default function MeetingPage({
   const { sessionId } = resolvedParams;
 
   // The room name is derived from the session ID to keep the URL clean
-  const roomName = `mentor-meet-${sessionId}`;
+  const roomName = `mentees-meet-${sessionId}`;
 
   // Pass the resolved roomName as a simple string prop to the Client Component.
   return <JitsiMeeting roomName={roomName} />;

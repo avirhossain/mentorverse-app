@@ -75,7 +75,7 @@ export default function SessionDetailsPage({
   const handleCreateMeeting = () => {
     if (!session) return;
     // Generate a clean, URL-friendly room ID
-    const newCleanRoomId = `mentorverse-session-${sessionId.substring(
+    const newCleanRoomId = `mentees-session-${sessionId.substring(
       0,
       8
     )}-${uuidv4().substring(0, 4)}`;

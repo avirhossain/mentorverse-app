@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import {
@@ -64,7 +65,7 @@ export function Sidebar() {
               <path d="M12 3L2 9L12 15L22 9L12 3Z" />
               <path d="M2 9V15L12 21L22 15V9" />
             </svg>
-            <span className="sr-only">MentorVerse</span>
+            <span className="sr-only">Mentees</span>
           </Link>
           {navItems.map((item) => (
             <Tooltip key={item.href}>

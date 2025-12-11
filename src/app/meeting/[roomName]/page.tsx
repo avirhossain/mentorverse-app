@@ -12,7 +12,7 @@ declare global {
 
 export default function MeetingPage() {
   const params = useParams();
-  const { roomName: cleanRoomId } = params; // e.g. mentor-meet-xxxx
+  const { roomName: cleanRoomId } = params; // e.g. mentees-meet-xxxx
   const containerRef = useRef<HTMLDivElement>(null);
   const jitsiApiRef = useRef<any>(null);
   const { user } = useUser();

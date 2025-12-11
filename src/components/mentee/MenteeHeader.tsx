@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import Link from 'next/link';
@@ -44,7 +45,7 @@ export function MenteeHeader() {
             xmlns="http://www.w3.org/2000/svg"
             width="24"
             height="24"
-            viewBox="0 0 24 24"
+            viewBox="0 0 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
@@ -55,7 +56,7 @@ export function MenteeHeader() {
             <path d="M12 3L2 9L12 15L22 9L12 3Z" />
             <path d="M2 9V15L12 21L22 15V9" />
           </svg>
-          <span className="font-bold hidden sm:inline-block">MentorVerse</span>
+          <span className="font-bold hidden sm:inline-block">Mentees</span>
         </Link>
         <nav className="hidden gap-6 md:flex">
           {navLinks.map((link) => (

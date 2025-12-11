@@ -388,7 +388,7 @@ export const SessionBookingsAPI = {
       bookingData = bookingSnap.data() as Booking;
 
       // 1. Prepare booking update
-      const meetingUrl = `https://meet.jit.si/mentorverse-booking-${bookingId}`;
+      const meetingUrl = `https://meet.jit.si/mentees-booking-${bookingId}`;
       const bookingUpdateData = {
         status: 'started' as const,
         meetingUrl: meetingUrl,

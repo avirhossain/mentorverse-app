@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import Script from 'next/script';
 
 export const metadata: Metadata = {
-  title: 'MentorVerse',
+  title: 'Mentees',
   description: 'A new application built in Firebase Studio',
 };
 
