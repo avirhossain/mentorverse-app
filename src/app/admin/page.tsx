@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -15,8 +16,9 @@ import {
   Clock,
   ArrowUpRight,
   PlayCircle,
+  Copy,
 } from 'lucide-react';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { Mentor, Mentee, Booking, Session } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,17 +32,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { CreateMeetingForm } from '@/components/admin/CreateMeetingForm';
-import { SessionBookingsAPI } from '@/lib/firebase-adapter';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function AdminDashboardPage() {
   const firestore = useFirestore();
-  const { user: adminUser } = useUser();
   const { toast } = useToast();
-  const [isMeetingFormOpen, setIsMeetingFormOpen] = React.useState(false);
-  const router = useRouter();
+  const [isMeetingDialogOpen, setIsMeetingDialogOpen] = React.useState(false);
+  const [generatedLink, setGeneratedLink] = React.useState('');
+  const [roomName, setRoomName] = React.useState('');
 
   const mentorsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'mentors') : null),
@@ -89,48 +90,29 @@ export default function AdminDashboardPage() {
   const isLoading =
     loadingMentors || loadingMentees || loadingSessions || loadingBookings;
 
-  const handleMeetingFormSubmit = async (values: {
-    mentorId?: string;
-    subject: string;
-    isShareable: boolean;
-  }) => {
-    if (!firestore || !adminUser) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Database or admin user not available.',
-      });
-      return;
-    }
-
-    try {
-      const finalMentorId = values.mentorId === 'none' ? undefined : values.mentorId;
-      
-      const sessionId = await SessionBookingsAPI.createInstantMeeting(firestore, {
-        ...values,
-        mentorId: finalMentorId,
-        mentor: mentors?.find((m) => m.id === finalMentorId),
-        admin: adminUser
-      });
-
-      toast({
-        title: 'Meeting Created',
-        description: `The meeting "${values.subject}" has been started.`,
-      });
-      setIsMeetingFormOpen(false);
-
-      if (sessionId) {
-        router.push(`/admin/meeting/${sessionId}`);
-      }
-
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Failed to create meeting',
-        description: error.message,
-      });
-    }
+  const handleCreateMeeting = () => {
+    const newRoomName = `mentor-meet-${uuidv4()}`;
+    const newLink = `${window.location.origin}/meeting/${newRoomName}`;
+    setRoomName(newRoomName);
+    setGeneratedLink(newLink);
+    toast({
+      title: 'Meeting Link Generated',
+      description: 'You can now start the meeting or copy the link.',
+    });
   };
+  
+  const handleStartMeeting = () => {
+    window.open(generatedLink, '_blank');
+    setIsMeetingDialogOpen(false);
+  }
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(generatedLink);
+    toast({
+        title: 'Link Copied!',
+        description: 'The meeting link has been copied to your clipboard.',
+    })
+  }
 
   const statItems = [
     {
@@ -163,25 +145,39 @@ export default function AdminDashboardPage() {
   return (
     <>
       <div className="flex items-center justify-end gap-2 mb-4">
-        <Dialog open={isMeetingFormOpen} onOpenChange={setIsMeetingFormOpen}>
+        <Dialog open={isMeetingDialogOpen} onOpenChange={setIsMeetingDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => setGeneratedLink('')}>
               <PlayCircle className="mr-2 h-4 w-4" />
               Start Instant Meeting
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create an Instant Meeting</DialogTitle>
+              <DialogTitle>Instant Meeting</DialogTitle>
               <DialogDescription>
-                Set up a shareable meeting right now.
+                Generate a unique link for an instant meeting session.
               </DialogDescription>
             </DialogHeader>
-            <CreateMeetingForm
-              mentors={mentors || []}
-              isLoading={loadingMentors}
-              onSubmit={handleMeetingFormSubmit}
-            />
+            {generatedLink ? (
+              <div className="space-y-4">
+                <p>Share this link with participants:</p>
+                <div className="flex items-center space-x-2">
+                    <Input value={generatedLink} readOnly />
+                    <Button variant="outline" size="icon" onClick={handleCopyLink}>
+                        <Copy className="h-4 w-4"/>
+                    </Button>
+                </div>
+                <div className="flex justify-end gap-2">
+                    <Button variant="secondary" onClick={() => setIsMeetingDialogOpen(false)}>Close</Button>
+                    <Button onClick={handleStartMeeting}>Start Meeting</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-center py-4">
+                <Button onClick={handleCreateMeeting}>Generate Meeting Link</Button>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>
@@ -216,5 +212,3 @@ export default function AdminDashboardPage() {
     </>
   );
 }
-
-    

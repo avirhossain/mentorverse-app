@@ -1,5 +1,6 @@
+
 import { use } from 'react';
-import { MeetingView } from '@/components/admin/MeetingView';
+import { JitsiMeeting } from '@/components/common/JitsiMeeting';
 
 // This page is a Server Component. Its only job is to resolve the `params` promise.
 export default function MeetingPage({
@@ -11,6 +12,9 @@ export default function MeetingPage({
   const resolvedParams = use(params);
   const { sessionId } = resolvedParams;
 
-  // Pass the resolved sessionId as a simple string prop to the Client Component.
-  return <MeetingView sessionId={sessionId} />;
+  // The room name is derived from the session ID to keep the URL clean
+  const roomName = `mentor-meet-${sessionId}`;
+
+  // Pass the resolved roomName as a simple string prop to the Client Component.
+  return <JitsiMeeting roomName={roomName} />;
 }
