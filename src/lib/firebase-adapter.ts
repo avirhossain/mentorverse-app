@@ -472,9 +472,9 @@ export const SessionBookingsAPI = {
 // ------------------ REVIEWS ------------------
 export const ReviewsAPI = {
   createReview: (db: Firestore, data: WithFieldValue<Review>) => {
-    const reviewsCol = collection(db, 'reviews');
-    addDoc(reviewsCol, data).catch(() => {
-      emitPermissionError(reviewsCol.path, 'create', data);
+    const reviewRef = doc(db, 'reviews', data.id);
+    setDoc(reviewRef, data).catch(() => {
+      emitPermissionError(reviewRef.path, 'create', data);
     });
   },
 

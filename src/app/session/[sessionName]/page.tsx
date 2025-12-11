@@ -9,7 +9,7 @@ import {
   useUser,
 } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
-import type { Session, Booking, Mentee } from '@/lib/types';
+import type { Session, Booking, Mentee, Review } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Card,
@@ -28,12 +28,13 @@ import {
   Briefcase,
   Target,
   CheckSquare,
+  Star,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
-import { SessionBookingsAPI, SessionsAPI } from '@/lib/firebase-adapter';
+import { SessionBookingsAPI, SessionsAPI, ReviewsAPI } from '@/lib/firebase-adapter';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +50,45 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc } from 'firebase/firestore';
+import Link from 'next/link';
+import { Textarea } from '@/components/ui/textarea';
+
+function useBookingStatus(sessionId: string) {
+    const { user } = useUser();
+    const firestore = useFirestore();
+
+    const bookingQuery = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return query(
+            collection(firestore, 'sessionBookings'),
+            where('menteeId', '==', user.uid),
+            where('sessionId', '==', sessionId),
+            where('status', 'in', ['confirmed', 'started', 'completed'])
+        );
+    }, [firestore, user, sessionId]);
+
+    const { data: bookings, isLoading } = useCollection<Booking>(bookingQuery);
+    const userBooking = bookings?.[0];
+
+     const reviewQuery = useMemoFirebase(() => {
+        if (!firestore || !user || !userBooking) return null;
+        return query(
+            collection(firestore, 'reviews'),
+            where('menteeId', '==', user.uid),
+            where('bookingId', '==', userBooking.id)
+        );
+    }, [firestore, user, userBooking]);
+
+    const { data: reviews } = useCollection<Review>(reviewQuery);
+
+    return {
+        userBooking,
+        hasBooked: !!userBooking,
+        hasReviewed: !!reviews && reviews.length > 0,
+        isLoadingStatus: isLoading,
+    };
+}
+
 
 export default function SessionDetailsPage({
   params,
@@ -61,6 +101,7 @@ export default function SessionDetailsPage({
   const { toast } = useToast();
   const [phoneNumber, setPhoneNumber] = React.useState('');
   const [name, setName] = React.useState('');
+  const [isReviewOpen, setIsReviewOpen] = React.useState(false);
 
   const sessionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -73,27 +114,31 @@ export default function SessionDetailsPage({
 
   const {
     data: sessions,
-    isLoading,
+    isLoading: isLoadingSession,
     error,
   } = useCollection<Session>(sessionsQuery);
 
   const session = sessions && sessions[0];
+  
+  const { userBooking, hasBooked, hasReviewed, isLoadingStatus } = useBookingStatus(session?.id || '');
 
   const menteeRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'mentees', user.uid);
   }, [firestore, user]);
 
-  const { data: mentee } = useDoc<Mentee>(menteeRef);
+  const { data: mentee, isLoading: isLoadingMentee } = useDoc<Mentee>(menteeRef);
 
   const bookedCount = session?.bookedCount || 0;
   const participantLimit = session?.participants || 1;
   const isFull = bookedCount >= participantLimit;
   const hasSufficientBalance = session && (mentee?.accountBalance || 0) >= session.sessionFee;
 
+  const isLoading = isLoadingSession || isLoadingMentee || isLoadingStatus;
+
 
   const handleBooking = async () => {
-    if (!user) {
+    if (!user || !mentee) {
       toast({
         variant: 'destructive',
         title: 'Authentication Required',
@@ -102,7 +147,7 @@ export default function SessionDetailsPage({
       return;
     }
 
-    if (!firestore || !session || !mentee) return;
+    if (!firestore || !session) return;
 
     if (isFull) {
       toast({
@@ -129,7 +174,7 @@ export default function SessionDetailsPage({
       mentorId: session.mentorId,
       mentorName: session.mentorName,
       menteeId: user.uid,
-      menteeName: user.displayName || 'Anonymous',
+      menteeName: mentee?.name || user.displayName || 'Anonymous',
       bookingTime: new Date().toISOString(),
       scheduledDate: session.scheduledDate as string,
       scheduledTime: session.scheduledTime as string,
@@ -141,8 +186,8 @@ export default function SessionDetailsPage({
     try {
       await SessionBookingsAPI.createBooking(firestore, newBooking, user.uid);
       toast({
-        title: 'Session Booked!',
-        description: `Your booking for "${session.name}" has been confirmed.`,
+        title: 'Booking Confirmed!',
+        description: `Your booking for "${session.name}" has been successful.`,
       });
     } catch (error: any) {
       toast({
@@ -188,13 +233,43 @@ export default function SessionDetailsPage({
 
   const renderFooter = () => {
     if (isLoading || !session) {
-      return <Skeleton className="h-10 w-1/2" />;
+      return <Skeleton className="h-12 w-full" />;
     }
+
+    if(hasBooked && userBooking) {
+        if (userBooking.status === 'completed' || session.status === 'Expired' || userBooking.status === 'cancelled') {
+             return (
+                <div className="w-full text-center">
+                    <p className="text-sm text-muted-foreground font-semibold mb-2">Session Expired</p>
+                    {!hasReviewed && (
+                         <Button variant="outline" size="sm" onClick={() => setIsReviewOpen(true)}>Write a Review</Button>
+                    )}
+                    {hasReviewed && (
+                        <p className="text-sm text-muted-foreground">Thank you for your review!</p>
+                    )}
+                </div>
+            );
+        }
+        if (userBooking.status === 'started' && userBooking.meetingUrl) {
+            return (
+                <Button asChild className="w-full text-lg">
+                    <a href={userBooking.meetingUrl} target="_blank" rel="noopener noreferrer">Join Session</a>
+                </Button>
+            );
+        }
+        return (
+            <div className="w-full text-center">
+                 <Button className="w-full text-lg" disabled>Booking Confirmed</Button>
+                 <p className="text-xs text-muted-foreground mt-1">The join link will be active when the session starts.</p>
+            </div>
+        )
+    }
+
     if (isFull) {
       return (
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button className="w-full" variant="secondary">
+            <Button className="w-full text-lg" variant="secondary">
               Session Full - Notify Me
             </Button>
           </AlertDialogTrigger>
@@ -240,13 +315,142 @@ export default function SessionDetailsPage({
         </AlertDialog>
       );
     }
+    
+    const BookingDialog = () => (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+             <Button className="w-full text-lg">
+                {session.sessionFee > 0
+                  ? `Book Now for ${formatCurrency(session.sessionFee)}`
+                  : 'Claim Your Seat'}
+              </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            {!user ? (
+                 <>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Login Required</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You need to be logged in to book this session.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction asChild>
+                            <Link href="/login">Login</Link>
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </>
+            ) : !hasSufficientBalance ? (
+                 <>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Insufficient Balance</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Your current balance is <span className="font-bold">{formatCurrency(mentee?.accountBalance || 0)}</span>, but this session costs <span className="font-bold">{formatCurrency(session.sessionFee)}</span>. Please add funds to your account.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction asChild>
+                            <Link href="/dashboard">Add Balance</Link>
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </>
+            ) : (
+                 <>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirm Your Booking</AlertDialogTitle>
+                        <AlertDialogDescription>
+                           {session.sessionFee > 0 ? (
+                                <>
+                                The session fee of{' '}
+                                <span className="font-bold">{formatCurrency(session.sessionFee)}</span>{' '}
+                                will be deducted from your account balance.
+                                </>
+                           ) : (
+                               "This is a free session. Confirm to claim your spot."
+                           )}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="text-sm text-muted-foreground">
+                        <p>Current Balance: {formatCurrency(mentee?.accountBalance || 0)}</p>
+                        <p>New Balance: {formatCurrency((mentee?.accountBalance || 0) - session.sessionFee)}</p>
+                    </div>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBooking}>
+                            Confirm & Book
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </>
+            )}
+          </AlertDialogContent>
+        </AlertDialog>
+    );
 
+    return <BookingDialog />;
+  };
+
+  const ReviewDialog = ({ booking, session }: { booking: Booking, session: Session }) => {
+    const [rating, setRating] = React.useState(0);
+    const [reviewText, setReviewText] = React.useState('');
+
+    const handleReviewSubmit = () => {
+        if (!firestore || !user) return;
+        if (rating === 0) {
+            toast({ variant: "destructive", title: "Rating required", description: "Please select a star rating." });
+            return;
+        }
+
+        const newReview: Review = {
+            id: uuidv4(),
+            bookingId: booking.id,
+            mentorId: session.mentorId,
+            menteeId: user.uid,
+            rating: rating,
+            reviewText: reviewText,
+            createdAt: new Date().toISOString(),
+        }
+
+        ReviewsAPI.createReview(firestore, newReview);
+
+        toast({ title: "Review Submitted", description: "Thank you for your feedback!" });
+        setIsReviewOpen(false);
+    };
+    
     return (
-      <Button onClick={handleBooking} className="w-full text-lg">
-        {session.sessionFee > 0
-          ? `Book Now for ${formatCurrency(session.sessionFee)}`
-          : 'Claim Your Seat'}
-      </Button>
+        <AlertDialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Write a Review for "{booking.sessionName}"</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Your feedback helps other mentees make better decisions.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="flex justify-center items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                            key={star}
+                            className={`h-8 w-8 cursor-pointer transition-colors ${
+                            rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                            }`}
+                            onClick={() => setRating(star)}
+                        />
+                        ))}
+                    </div>
+                    <Textarea 
+                        placeholder="Share your experience..."
+                        value={reviewText}
+                        onChange={(e) => setReviewText(e.target.value)}
+                    />
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleReviewSubmit}>Submit Review</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     );
   };
 
@@ -352,7 +556,7 @@ export default function SessionDetailsPage({
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-muted-foreground" />
                   <span className="font-medium">
-                    {isFull ? (
+                    {isFull && !hasBooked ? (
                           <span className="text-destructive">No Seats Available</span>
                       ) : (
                           `${bookedCount} / ${participantLimit} Seats Booked`
@@ -365,6 +569,8 @@ export default function SessionDetailsPage({
           </Card>
         </div>
       </div>
+      {userBooking && <ReviewDialog booking={userBooking} session={session} />}
     </div>
   );
 }
+
