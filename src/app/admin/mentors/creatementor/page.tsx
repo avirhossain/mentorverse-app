@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ChevronLeft } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useRouter } from 'next/navigation';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 export default function CreateMentorPage() {
   const firestore = useFirestore();
@@ -26,8 +27,22 @@ export default function CreateMentorPage() {
   const [formKey, setFormKey] = React.useState(Date.now());
 
 
-  const handleFormSubmit = (data: Partial<Mentor>) => {
+  const handleFormSubmit = async (data: Partial<Mentor>) => {
     if (!firestore) return;
+
+    // Check if email already exists as a mentee
+    const menteesRef = collection(firestore, 'mentees');
+    const q = query(menteesRef, where('email', '==', data.email));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      toast({
+        variant: 'destructive',
+        title: 'Email Already Exists',
+        description: `The email ${data.email} is already registered as a mentee.`,
+      });
+      return; // Stop the creation process
+    }
 
     const newId = uuidv4();
     const newMentor: Mentor = {

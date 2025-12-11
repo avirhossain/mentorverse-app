@@ -17,7 +17,7 @@ import { MentorsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
 import { ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { doc } from 'firebase/firestore';
+import { collection, doc, getDocs, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EditMentorPage({
@@ -36,8 +36,25 @@ export default function EditMentorPage({
   );
   const { data: mentor, isLoading } = useDoc<Mentor>(mentorRef);
 
-  const handleFormSubmit = (data: Partial<Mentor>) => {
-    if (!firestore) return;
+  const handleFormSubmit = async (data: Partial<Mentor>) => {
+    if (!firestore || !mentor) return;
+    
+    // If the email has changed, check if it's already in use by a mentee
+    if (data.email && data.email !== mentor.email) {
+        const menteesRef = collection(firestore, 'mentees');
+        const q = query(menteesRef, where('email', '==', data.email));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            toast({
+                variant: 'destructive',
+                title: 'Email Already Exists',
+                description: `The email ${data.email} is already registered as a mentee.`,
+            });
+            return; // Stop the update process
+        }
+    }
+
 
     MentorsAPI.updateMentor(firestore, mentorId, data);
     toast({
