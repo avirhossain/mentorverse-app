@@ -89,7 +89,7 @@ export default function SessionDetailsPage({
   const handleStartAndNotify = async () => {
     if (!firestore || !session) return;
     
-    const fullJaaSRoomName = `vpaas-magic-cookie-514c5de29b504a2e6ce4646314c2/${cleanRoomId}`;
+    const fullJaaSRoomName = `vpaas-magic-cookie-514c5de29b504a348a2e6ce4646314c2/${cleanRoomId}`;
 
     try {
         await SessionsAPI.startMeetingAndNotifyBookedMentees(firestore, sessionId, fullJaaSRoomName, bookings || []);
@@ -178,7 +178,7 @@ export default function SessionDetailsPage({
           Session Details
         </h1>
         <div className="ml-auto flex items-center gap-2">
-            {session && hasConfirmedBookings && (
+            {session && (
                 <Button size="sm" onClick={handleCreateMeeting}>
                     <PlayCircle className="mr-2 h-4 w-4" />
                     Start Meeting
