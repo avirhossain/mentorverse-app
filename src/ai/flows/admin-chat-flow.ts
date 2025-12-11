@@ -86,7 +86,7 @@ export const adminChatStream = ai.defineFlow(
   async ({ history, prompt }) => {
     // Generate the response from the LLM.
     const result = await ai.generate({
-      model: 'googleai/gemini-1.5-flash-latest',
+      model: 'googleai/gemini-1.5-flash',
       history,
       prompt,
       tools: [getReport],
