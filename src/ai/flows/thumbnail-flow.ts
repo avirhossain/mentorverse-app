@@ -3,18 +3,18 @@
  * @fileOverview A flow for extracting a thumbnail URL from a given web page URL.
  *
  * - getThumbnailFromUrl - A function that takes a URL and returns a thumbnail image URL.
- * - ThumbnailInputSchema - The input type for the getThumbnailFromUrl function.
- * - ThumbnailOutputSchema - The return type for the getThumbnailFromUrl function.
+ * - ThumbnailInput - The input type for the getThumbnailFromUrl function.
+ * - ThumbnailOutput - The return type for the getThumbnailFromUrl function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-export const ThumbnailInputSchema = z.object({
+const ThumbnailInputSchema = z.object({
   url: z.string().url().describe('The URL of the page to get a thumbnail for.'),
 });
 
-export const ThumbnailOutputSchema = z.object({
+const ThumbnailOutputSchema = z.object({
   thumbnailUrl: z.string().url().optional().describe('The URL of the thumbnail image.'),
 });
 
