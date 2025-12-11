@@ -30,13 +30,13 @@ import { DollarSign, Users } from 'lucide-react';
 export default function EarningsPage() {
   const firestore = useFirestore();
 
+  // Data fetching remains for balance calculations
   const completedBookingsQuery = useMemoFirebase(
     () =>
       firestore
         ? query(
             collection(firestore, 'sessionBookings'),
-            where('status', '==', 'completed'),
-            orderBy('bookingTime', 'desc')
+            where('status', '==', 'completed')
           )
         : null,
     [firestore]
@@ -80,28 +80,34 @@ export default function EarningsPage() {
   const isLoading =
     loadingBookings || loadingMentees || loadingMentors || loadingDisbursements;
 
-  const totalEarnings =
-    bookings?.reduce((acc, booking) => acc + (booking.sessionFee || 0), 0) ?? 0;
-
   const totalMenteeBalance =
-    mentees?.reduce((acc, mentee) => acc + (mentee.accountBalance || 0), 0) ?? 0;
+    mentees?.reduce((acc, mentee) => acc + (mentee.accountBalance || 0), 0) ??
+    0;
 
   const mentorBalances = React.useMemo(() => {
     if (!mentors || !bookings || !disbursements) return [];
 
     const earningsByMentor =
-      bookings.reduce((acc, booking) => {
-        acc[booking.mentorId] = (acc[booking.mentorId] || 0) + booking.sessionFee;
-        return acc;
-      }, {} as { [key: string]: number }) || {};
+      bookings.reduce(
+        (acc, booking) => {
+          acc[booking.mentorId] =
+            (acc[booking.mentorId] || 0) + booking.sessionFee;
+          return acc;
+        },
+        {} as { [key: string]: number }
+      ) || {};
 
     const payoutsByMentor =
-      disbursements.reduce((acc, disbursement) => {
-        acc[disbursement.mentorId] = (acc[disbursement.mentorId] || 0) + disbursement.totalAmount;
-        return acc;
-      }, {} as { [key: string]: number }) || {};
+      disbursements.reduce(
+        (acc, disbursement) => {
+          acc[disbursement.mentorId] =
+            (acc[disbursement.mentorId] || 0) + disbursement.totalAmount;
+          return acc;
+        },
+        {} as { [key: string]: number }
+      ) || {};
 
-    return mentors.map(mentor => {
+    return mentors.map((mentor) => {
       const totalEarnings = earningsByMentor[mentor.id] || 0;
       const totalPayouts = payoutsByMentor[mentor.id] || 0;
       return {
@@ -110,57 +116,6 @@ export default function EarningsPage() {
       };
     });
   }, [mentors, bookings, disbursements]);
-
-  const renderBookingsTableBody = () => {
-    if (isLoading) {
-      return Array.from({ length: 5 }).map((_, i) => (
-        <TableRow key={i}>
-          <TableCell colSpan={5}>
-            <Skeleton className="h-8 w-full" />
-          </TableCell>
-        </TableRow>
-      ));
-    }
-    if (!bookings || bookings.length === 0) {
-      return (
-        <TableRow>
-          <TableCell colSpan={5} className="text-center">
-            No completed sessions found.
-          </TableCell>
-        </TableRow>
-      );
-    }
-    return bookings.map((booking) => (
-      <TableRow key={booking.id}>
-        <TableCell>
-          <div className="font-medium">{booking.sessionName}</div>
-          <div className="text-sm text-muted-foreground">
-            {booking.mentorName}
-          </div>
-        </TableCell>
-        <TableCell>
-          <Button asChild variant="link" className="p-0 h-auto">
-            <Link href={`/admin/mentees/${booking.menteeId}`}>
-              {booking.menteeName}
-            </Link>
-          </Button>
-        </TableCell>
-        <TableCell>
-          {format(new Date(booking.scheduledDate), 'MMM d, yyyy')}
-        </TableCell>
-        <TableCell>
-          <Button asChild variant="link" className="p-0 h-auto">
-            <Link href={`/admin/sessions/${booking.sessionId}`}>
-              View Session
-            </Link>
-          </Button>
-        </TableCell>
-        <TableCell className="text-right">
-          {formatCurrency(booking.sessionFee)}
-        </TableCell>
-      </TableRow>
-    ));
-  };
 
   const renderMenteesTableBody = () => {
     if (isLoading) {
@@ -230,29 +185,11 @@ export default function EarningsPage() {
         </TableCell>
       </TableRow>
     ));
-  }
-
+  };
 
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Platform Earnings
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-32" />
-            ) : (
-              <div className="text-2xl font-bold">
-                {formatCurrency(totalEarnings)}
-              </div>
-            )}
-          </CardContent>
-        </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -271,7 +208,7 @@ export default function EarningsPage() {
           </CardContent>
         </Card>
       </div>
-      
+
       <div className="grid grid-cols-1 gap-4">
         <Card>
           <CardHeader>
@@ -330,36 +267,6 @@ export default function EarningsPage() {
           )}
         </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Earnings Breakdown</CardTitle>
-          <CardDescription>
-            A detailed list of all completed and paid sessions.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Session / Mentor</TableHead>
-                <TableHead>Mentee</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Details</TableHead>
-                <TableHead className="text-right">Amount (BDT)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>{renderBookingsTableBody()}</TableBody>
-          </Table>
-        </CardContent>
-        {bookings && (
-          <CardFooter>
-            <div className="text-xs text-muted-foreground">
-              Showing <strong>{bookings.length}</strong> completed sessions
-            </div>
-          </CardFooter>
-        )}
-      </Card>
     </div>
   );
 }
