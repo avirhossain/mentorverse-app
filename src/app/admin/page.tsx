@@ -102,9 +102,12 @@ export default function AdminDashboardPage() {
     }
 
     try {
+      const finalMentorId = values.mentorId === 'none' ? undefined : values.mentorId;
+      
       await SessionBookingsAPI.createInstantMeeting(firestore, {
         ...values,
-        mentor: mentors?.find((m) => m.id === values.mentorId),
+        mentorId: finalMentorId,
+        mentor: mentors?.find((m) => m.id === finalMentorId),
       });
       toast({
         title: 'Meeting Created',

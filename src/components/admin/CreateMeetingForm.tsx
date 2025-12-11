@@ -48,7 +48,7 @@ export const CreateMeetingForm: React.FC<CreateMeetingFormProps> = ({
   const form = useForm<CreateMeetingFormValues>({
     resolver: zodResolver(createMeetingSchema),
     defaultValues: {
-      mentorId: '',
+      mentorId: 'none',
       menteeId: '',
       subject: 'Instant Meeting',
       isShareable: false,
@@ -102,7 +102,7 @@ export const CreateMeetingForm: React.FC<CreateMeetingFormProps> = ({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {mentors.map((mentor) => (
                     <SelectItem key={mentor.id} value={mentor.id}>
                       {mentor.name}
