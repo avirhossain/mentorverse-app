@@ -1,4 +1,4 @@
- push# Firebase Studio
+sh push# Firebase Studio
 
 This is a NextJS starter in Firebase Studio.
 
