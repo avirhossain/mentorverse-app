@@ -123,7 +123,7 @@ export function AuthForm() {
     
     toast({
       title: isNewUser ? 'Account Created' : 'Login Successful',
-      description: "Welcome to Mentees! You're now logged in.",
+      description: "Welcome to MenTees! You're now logged in.",
     });
     router.push('/');
   };
@@ -155,7 +155,7 @@ export function AuthForm() {
     <Card className="mx-4 w-full max-w-md">
       <CardHeader className="text-center">
         <CardTitle className="text-3xl font-bold text-primary">
-          Join Mentees
+          Join MenTees
         </CardTitle>
         <CardDescription>
           Sign in or create an account with your Google account to get started.

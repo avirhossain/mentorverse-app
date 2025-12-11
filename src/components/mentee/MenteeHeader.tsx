@@ -56,7 +56,7 @@ export function MenteeHeader() {
             <path d="M12 3L2 9L12 15L22 9L12 3Z" />
             <path d="M2 9V15L12 21L22 15V9" />
           </svg>
-          <span className="font-bold hidden sm:inline-block">Mentees</span>
+          <span className="font-bold hidden sm:inline-block">MenTees</span>
         </Link>
         <nav className="hidden gap-6 md:flex">
           {navLinks.map((link) => (

@@ -90,7 +90,7 @@ export default function AdminDashboardPage() {
     loadingMentors || loadingMentees || loadingSessions || loadingBookings;
 
   const handleCreateMeeting = () => {
-    const cleanRoomId = `mentor-meet-${uuidv4()}`;
+    const cleanRoomId = `mentees-meet-${uuidv4()}`;
     const newLink = `${window.location.origin}/meeting/${cleanRoomId}`;
     setGeneratedLink(newLink);
     toast({
