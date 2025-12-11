@@ -64,7 +64,8 @@ export function AdminChat({ open, onOpenChange }: AdminChatProps) {
     }));
 
     try {
-      const stream = await adminChatStream.stream({
+      // Correctly call the streaming flow
+      const stream = await adminChatStream({
         history: history,
         prompt: input,
       });
@@ -72,11 +73,12 @@ export function AdminChat({ open, onOpenChange }: AdminChatProps) {
       const aiMessage: Message = { id: uuidv4(), role: 'model', text: '' };
       setMessages((prev) => [...prev, aiMessage]);
 
+      // Iterate over the stream and update the message text
       for await (const chunk of stream) {
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === aiMessage.id
-              ? { ...msg, text: msg.text + chunk }
+              ? { ...msg, text: msg.text + (chunk.text || '') }
               : msg
           )
         );
