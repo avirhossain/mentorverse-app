@@ -26,6 +26,7 @@ export const MeetingView: React.FC<MeetingViewProps> = ({ sessionId }) => {
   const [jitsiApi, setJitsiApi] = useState<any>(null);
   const [jwt, setJwt] = useState<string | null>(null);
 
+  // Construct the full Jitsi room name using the sessionId
   const roomName = `vpaas-magic-cookie-514c5de29b504a348a2e6ce4646314c2/mentorverse-instant-${sessionId}`;
 
 
@@ -107,5 +108,3 @@ export const MeetingView: React.FC<MeetingViewProps> = ({ sessionId }) => {
     />
   );
 };
-
-    
