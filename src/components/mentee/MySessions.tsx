@@ -1,6 +1,6 @@
 'use client';
 import { SessionCard } from './SessionCard';
-import type { Booking } from '@/lib/types';
+import type { Booking, Session } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where, limit, orderBy } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
@@ -27,8 +27,27 @@ export function MySessions() {
     error,
   } = useCollection<Booking>(bookingsQuery);
 
+  const [sessions, setSessions] = React.useState<Session[]>([]);
+  const [loadingSessions, setLoadingSessions] = React.useState(true);
+
+  React.useEffect(() => {
+    if (bookings) {
+      const fetchSessions = async () => {
+        if (!firestore) return;
+        setLoadingSessions(true);
+        const sessionPromises = bookings.map(b => getDoc(doc(firestore, 'sessions', b.sessionId)));
+        const sessionSnapshots = await Promise.all(sessionPromises);
+        const fetchedSessions = sessionSnapshots.map(s => s.data() as Session);
+        setSessions(fetchedSessions);
+        setLoadingSessions(false);
+      }
+      fetchSessions();
+    }
+  }, [bookings, firestore]);
+
+
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoading || loadingSessions) {
       return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
@@ -46,7 +65,7 @@ export function MySessions() {
       );
     }
 
-    if (!bookings || bookings.length === 0) {
+    if (!sessions || sessions.length === 0) {
       return (
         <CardDescription>
           You have no upcoming sessions booked.
@@ -56,23 +75,11 @@ export function MySessions() {
 
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {bookings.map((booking) => {
-          // Adapt the booking object to the SessionCard props
-          const sessionLike = {
-            ...booking,
-            name: booking.sessionName,
-            // These fields might not exist on booking, provide defaults
-            tag: undefined, 
-            offerings: undefined,
-            bestSuitedFor: undefined,
-            requirements: undefined,
-            sessionType: booking.sessionFee === 0 ? 'Free' : 'Paid',
-          };
+        {sessions.map((session) => {
           return (
             <SessionCard
-              key={booking.id}
-              session={sessionLike}
-              isBooking
+              key={session.id}
+              session={session}
             />
           );
         })}

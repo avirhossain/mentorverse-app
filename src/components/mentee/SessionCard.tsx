@@ -1,5 +1,5 @@
-import { Clock, Calendar, Tag, Users, DollarSign } from 'lucide-react';
-import type { Session, Booking, Mentee } from '@/lib/types';
+import { Clock, Calendar, Tag, Users, DollarSign, Edit, Star } from 'lucide-react';
+import type { Session, Booking, Mentee, Review } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { SessionBookingsAPI, SessionsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,8 +31,9 @@ import {
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import Link from 'next/link';
-import { doc } from 'firebase/firestore';
+import { doc, collection, query, where } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
+import { Textarea } from '../ui/textarea';
 
 interface SessionCardProps {
   session: Session | (Booking & { sessionName: string });
@@ -52,6 +53,44 @@ const getTypeBadgeVariant = (type: Session['sessionType']) => {
   }
 };
 
+
+// Custom hook to manage booking status for the current user and session
+function useBookingStatus(sessionId: string) {
+    const { user } = useUser();
+    const firestore = useFirestore();
+
+    const bookingQuery = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return query(
+            collection(firestore, 'sessionBookings'),
+            where('menteeId', '==', user.uid),
+            where('sessionId', '==', sessionId)
+        );
+    }, [firestore, user, sessionId]);
+
+    const { data: bookings, isLoading } = useCollection<Booking>(bookingQuery);
+    const userBooking = bookings?.[0];
+
+    const reviewQuery = useMemoFirebase(() => {
+        if (!firestore || !user || !userBooking) return null;
+        return query(
+            collection(firestore, 'reviews'),
+            where('menteeId', '==', user.uid),
+            where('bookingId', '==', userBooking.id)
+        );
+    }, [firestore, user, userBooking]);
+
+    const { data: reviews } = useCollection<Review>(reviewQuery);
+
+    return {
+        userBooking,
+        hasBooked: !!userBooking,
+        hasReviewed: !!reviews && reviews.length > 0,
+        isLoadingStatus: isLoading,
+    };
+}
+
+
 export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   const { user } = useUser();
   const firestore = useFirestore();
@@ -59,6 +98,10 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   const [phoneNumber, setPhoneNumber] = React.useState('');
   const [name, setName] = React.useState('');
   const [isCheckoutOpen, setIsCheckoutOpen] = React.useState(false);
+  const [isReviewOpen, setIsReviewOpen] = React.useState(false);
+
+  const { userBooking, hasBooked, hasReviewed, isLoadingStatus } = useBookingStatus(session.id);
+
 
   const menteeRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -166,18 +209,37 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   };
 
   const renderFooter = () => {
-    if (isBooking) {
-        const booking = session as Booking;
-        if (booking.status === 'started' && booking.meetingUrl) {
+    // State 1: User has booked this session
+    if (hasBooked && userBooking) {
+        if (userBooking.status === 'completed' || userBooking.status === 'cancelled' || session.status === 'Expired') {
+            return (
+                <div className="w-full text-center">
+                    <p className="text-sm text-muted-foreground font-semibold mb-2">Session Expired</p>
+                    {!hasReviewed && (
+                         <Button variant="outline" size="sm" onClick={() => setIsReviewOpen(true)}>Write a Review</Button>
+                    )}
+                    {hasReviewed && (
+                        <p className="text-sm text-muted-foreground">Thank you for your review!</p>
+                    )}
+                </div>
+            );
+        }
+        if (userBooking.status === 'started' && userBooking.meetingUrl) {
             return (
                 <Button asChild className="w-full">
-                    <a href={booking.meetingUrl} target="_blank" rel="noopener noreferrer">Join Meeting</a>
+                    <a href={userBooking.meetingUrl} target="_blank" rel="noopener noreferrer">Join Session</a>
                 </Button>
             );
         }
-        return <Button className="w-full" disabled>Meeting not started</Button>;
+        return (
+            <div className="w-full text-center">
+                 <Button className="w-full" disabled>Booking Confirmed</Button>
+                 <p className="text-xs text-muted-foreground mt-1">Link will be active when the session starts.</p>
+            </div>
+        )
     }
 
+    // State 2: Session is full and user has NOT booked
     if (isFull) {
       return (
         <AlertDialog>
@@ -227,6 +289,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
       );
     }
     
+    // State 3: Session is available for booking
     const renderCheckoutContent = () => {
       if (!user) {
         return (
@@ -309,6 +372,54 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
       </div>
     );
   };
+  
+  const ReviewDialog = ({ booking }: { booking: Booking }) => {
+    const [rating, setRating] = React.useState(0);
+    const [reviewText, setReviewText] = React.useState('');
+
+    const handleReviewSubmit = () => {
+        // Validation could be added here
+        console.log({ rating, reviewText, bookingId: booking.id });
+        setIsReviewOpen(false);
+        // Here you would call the API to submit the review
+    };
+    
+    return (
+        <AlertDialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Write a Review for "{booking.sessionName}"</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Your feedback helps other mentees make better decisions.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="flex justify-center items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                            key={star}
+                            className={`h-8 w-8 cursor-pointer transition-colors ${
+                            rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                            }`}
+                            onClick={() => setRating(star)}
+                        />
+                        ))}
+                    </div>
+                    <Textarea 
+                        placeholder="Share your experience..."
+                        value={reviewText}
+                        onChange={(e) => setReviewText(e.target.value)}
+                    />
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleReviewSubmit}>Submit Review</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+  };
+
 
   return (
     <Card className="flex h-full flex-col overflow-hidden transition-shadow hover:shadow-lg">
@@ -353,7 +464,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
             <div className="flex items-center gap-2 font-medium">
                 <Users className="h-4 w-4" />
                 <span>
-                    {isFull ? (
+                    {isFull && !hasBooked ? (
                         <span className="text-destructive">No Seats Available</span>
                     ) : (
                         `${bookedCount}/${participantLimit} Seats Booked`
@@ -364,8 +475,9 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
         </div>
       </CardContent>
       <CardFooter className="flex flex-col items-stretch p-4 pt-0">
-        {renderFooter()}
+        {isLoadingStatus ? <div className="h-9 w-full rounded-md bg-muted animate-pulse" /> : renderFooter()}
       </CardFooter>
+      {userBooking && <ReviewDialog booking={userBooking} />}
     </Card>
   );
 }
