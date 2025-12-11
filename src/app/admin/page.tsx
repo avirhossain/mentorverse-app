@@ -1,18 +1,21 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import {
   Card,
   CardContent,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { DollarSign, Users, Clock } from 'lucide-react';
+import { DollarSign, Users, Clock, ArrowUpRight } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { Mentor, Mentee, Booking } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 export default function AdminDashboardPage() {
   const firestore = useFirestore();
@@ -26,22 +29,40 @@ export default function AdminDashboardPage() {
     [firestore]
   );
   const runningSessionsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'sessions'), where('status', '==', 'Active')) : null),
+    () =>
+      firestore
+        ? query(collection(firestore, 'sessions'), where('status', '==', 'Active'))
+        : null,
     [firestore]
   );
-  
-  const completedBookingsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'sessionBookings'), where('status', '==', 'completed')) : null),
-    [firestore]
-  );
-  
-  const { data: mentors, isLoading: loadingMentors } = useCollection<Mentor>(mentorsQuery);
-  const { data: mentees, isLoading: loadingMentees } = useCollection<Mentee>(menteesQuery);
-  const { data: runningSessions, isLoading: loadingSessions } = useCollection<Booking>(runningSessionsQuery);
-  const { data: completedBookings, isLoading: loadingBookings } = useCollection<Booking>(completedBookingsQuery);
 
-  const totalEarnings = completedBookings?.reduce((acc, booking) => acc + (booking.sessionFee || 0), 0) ?? 0;
-  const isLoading = loadingMentors || loadingMentees || loadingSessions || loadingBookings;
+  const completedBookingsQuery = useMemoFirebase(
+    () =>
+      firestore
+        ? query(
+            collection(firestore, 'sessionBookings'),
+            where('status', '==', 'completed')
+          )
+        : null,
+    [firestore]
+  );
+
+  const { data: mentors, isLoading: loadingMentors } =
+    useCollection<Mentor>(mentorsQuery);
+  const { data: mentees, isLoading: loadingMentees } =
+    useCollection<Mentee>(menteesQuery);
+  const { data: runningSessions, isLoading: loadingSessions } =
+    useCollection<Booking>(runningSessionsQuery);
+  const { data: completedBookings, isLoading: loadingBookings } =
+    useCollection<Booking>(completedBookingsQuery);
+
+  const totalEarnings =
+    completedBookings?.reduce(
+      (acc, booking) => acc + (booking.sessionFee || 0),
+      0
+    ) ?? 0;
+  const isLoading =
+    loadingMentors || loadingMentees || loadingSessions || loadingBookings;
 
   const statItems = [
     {
@@ -67,6 +88,7 @@ export default function AdminDashboardPage() {
       value: formatCurrency(totalEarnings),
       icon: <DollarSign className="h-4 w-4 text-muted-foreground" />,
       loading: loadingBookings,
+      link: '/admin/earnings',
     },
   ];
 
@@ -85,6 +107,15 @@ export default function AdminDashboardPage() {
               <div className="text-2xl font-bold">{item.value}</div>
             )}
           </CardContent>
+          {item.link && (
+            <CardFooter>
+              <Button asChild variant="link" className="p-0 h-auto text-xs">
+                <Link href={item.link}>
+                  More <ArrowUpRight className="h-3 w-3 ml-1" />
+                </Link>
+              </Button>
+            </CardFooter>
+          )}
         </Card>
       ))}
     </div>
