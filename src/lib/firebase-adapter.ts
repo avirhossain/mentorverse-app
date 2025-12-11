@@ -292,26 +292,27 @@ export const SessionBookingsAPI = {
         const maxParticipants = sessionData.participants || 1;
 
         if (currentBookedCount >= maxParticipants) {
-          throw 'Session is already full!';
+          throw new Error('Session is already full!');
         }
 
         // Perform the writes within the transaction
         transaction.set(bookingRef, bookingData);
         transaction.update(sessionRef, { bookedCount: increment(1) });
       });
-    } catch (error) {
-      console.error('Booking transaction failed: ', error);
-      // Determine which permission error to emit based on the likely failure point
-      if (typeof error === 'string' && error.includes('full')) {
-        // This is a custom error, not a permission error. The UI should handle this.
+    } catch (error: any) {
+      // If it's a "Session is full" error, re-throw it so the UI can catch it.
+      if (error instanceof Error && error.message.includes('full')) {
         throw error;
-      } else {
-        // It's likely a Firestore permission error
-        emitPermissionError(bookingRef.path, 'create', bookingData);
-        emitPermissionError(sessionRef.path, 'update', {
-          bookedCount: 'increment(1)',
-        });
       }
+      
+      // Otherwise, it's likely a Firestore permission error
+      console.error('Booking transaction failed: ', error);
+      emitPermissionError(bookingRef.path, 'create', bookingData);
+      emitPermissionError(sessionRef.path, 'update', {
+        bookedCount: 'increment(1)',
+      });
+      // Throw a generic error for other cases
+      throw new Error('Could not complete booking due to a server error.');
     }
   },
 
@@ -332,12 +333,11 @@ export const SessionBookingsAPI = {
 
   startMeeting: async (db: Firestore, bookingId: string) => {
     const batch = writeBatch(db);
-    const bookingRef = doc(db, 'sessionBookings', bookingId);
     let bookingData: Booking;
 
     try {
       // First, get the booking document to retrieve menteeId and sessionName
-      const bookingSnap = await getDoc(bookingRef);
+      const bookingSnap = await getDoc(doc(db, 'sessionBookings', bookingId));
       if (!bookingSnap.exists()) {
         throw new Error('Booking not found!');
       }
@@ -349,7 +349,7 @@ export const SessionBookingsAPI = {
         status: 'started' as const,
         meetingUrl: meetingUrl,
       };
-      batch.update(bookingRef, bookingUpdateData);
+      batch.update(doc(db, 'sessionBookings', bookingId), bookingUpdateData);
 
       // 2. Prepare notification creation
       const notificationRef = doc(
@@ -370,7 +370,7 @@ export const SessionBookingsAPI = {
     } catch (error) {
       // If anything fails (getting doc, or committing batch), emit permission errors
       console.error('Failed to start meeting and send notification:', error);
-      emitPermissionError(bookingRef.path, 'update', { status: 'started' });
+      emitPermissionError(doc(db, 'sessionBookings', bookingId).path, 'update', { status: 'started' });
       // We don't know the notification ID, but we can signal the intent
       if (bookingData!) {
         emitPermissionError(
