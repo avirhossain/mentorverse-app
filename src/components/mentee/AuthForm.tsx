@@ -7,7 +7,6 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
-  signInAnonymously,
   UserCredential,
   signOut,
 } from 'firebase/auth';
@@ -24,12 +23,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -61,7 +54,7 @@ export function AuthForm() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('login');
+  const [isSignUp, setIsSignUp] = useState(false); // State to toggle between login and sign-up
 
   const auth = useAuth();
   const firestore = useFirestore();
@@ -95,16 +88,16 @@ export function AuthForm() {
   const createMenteeProfile = async (userCred: UserCredential) => {
     const { user } = userCred;
     if (!user || !firestore) return;
-  
+
     try {
       // Get the current count of mentees to generate the next ID
       const menteesCollection = collection(firestore, 'mentees');
       const collectionSnapshot = await getDocs(menteesCollection);
       const menteeCount = collectionSnapshot.size;
-  
+
       // Create a human-readable display ID starting from U10001
       const displayId = `U${10001 + menteeCount}`;
-      
+
       await MenteesAPI.createMentee(firestore, user.uid, {
         id: user.uid,
         displayId: displayId,
@@ -126,53 +119,44 @@ export function AuthForm() {
     }
   };
 
-  const handleAuthSuccess = async (userCredential: UserCredential) => {
-    // 1. Check for suspension
+  const handleAuthSuccess = async (userCredential: UserCredential, isNewUser: boolean) => {
     const isSuspended = await handleSuspensionCheck(userCredential.user);
     if (isSuspended) {
-      return; // Stop the login process
+      return; // Stop the process
     }
 
-    // 2. If it's a new signup, create their profile
-    if (activeTab === 'signup') {
+    if (isNewUser) {
       await createMenteeProfile(userCredential);
     }
     
-    // 3. Show success message and redirect
     toast({
-      title: activeTab === 'login' ? 'Login Successful' : 'Account Created',
+      title: isNewUser ? 'Account Created' : 'Login Successful',
       description: "Welcome to MentorVerse! You're now logged in.",
     });
     router.push('/');
   };
 
-  const handleAuthAction = async (
-    action: (auth: Auth, ...args: any[]) => Promise<UserCredential>
-  ) => {
+  const handleEmailPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
     try {
-      const userCredential = await action(auth, email, password);
-      if (userCredential) {
-        await handleAuthSuccess(userCredential);
+      let userCredential: UserCredential;
+      if (isSignUp) {
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await handleAuthSuccess(userCredential, true);
+      } else {
+        userCredential = await signInWithEmailAndPassword(auth, email, password);
+        await handleAuthSuccess(userCredential, false);
       }
     } catch (error: any) {
       console.error('Auth Error:', error);
       toast({
         variant: 'destructive',
-        title: activeTab === 'login' ? 'Login Failed' : 'Sign-up Failed',
+        title: isSignUp ? 'Sign-up Failed' : 'Login Failed',
         description: error.message || 'An unexpected error occurred.',
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleEmailPasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (activeTab === 'login') {
-      handleAuthAction(signInWithEmailAndPassword);
-    } else {
-      handleAuthAction(createUserWithEmailAndPassword);
     }
   };
 
@@ -182,14 +166,10 @@ export function AuthForm() {
       const provider = new GoogleAuthProvider();
       const userCredential = await signInWithPopup(auth, provider);
       
-      const isNewUser = (await MenteesAPI.getMentee(firestore, userCredential.user.uid)).exists() === false;
-      if (isNewUser) {
-        // Temporarily set active tab to 'signup' for profile creation logic
-        setActiveTab('signup'); 
-      }
+      const menteeDoc = await MenteesAPI.getMentee(firestore, userCredential.user.uid);
+      const isNewUser = !menteeDoc.exists();
 
-      await handleAuthSuccess(userCredential);
-      if (isNewUser) setActiveTab('login'); // Reset tab state
+      await handleAuthSuccess(userCredential, isNewUser);
 
     } catch (error: any) {
       console.error('Google Sign-In Error:', error);
@@ -203,118 +183,64 @@ export function AuthForm() {
     }
   };
 
-  const handleAnonymousSignIn = async () => {
-    setIsLoading(true);
-    try {
-      setActiveTab('signup'); // Treat as signup for profile creation
-      const userCredential = await signInAnonymously(auth);
-      await handleAuthSuccess(userCredential);
-    } catch (error: any) {
-      console.error('Anonymous Sign-In Error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Anonymous Sign-In Failed',
-        description: error.message || 'Could not sign in anonymously.',
-      });
-    } finally {
-      setIsLoading(false);
-      setActiveTab('login'); // Reset tab state
-    }
-  };
-
   return (
     <Card className="mx-4 w-full max-w-md">
       <CardHeader className="text-center">
         <CardTitle className="text-3xl font-bold text-primary">
-          MentorVerse
+          {isSignUp ? 'Create an Account' : 'Welcome Back'}
         </CardTitle>
-        <CardDescription>Your gateway to expert mentorship.</CardDescription>
+        <CardDescription>
+          {isSignUp
+            ? 'Fill in your details to get started.'
+            : 'Sign in to access your dashboard.'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
-          </TabsList>
-          <TabsContent value="login">
-            <form
-              onSubmit={handleEmailPasswordSubmit}
-              className="space-y-4 pt-4"
-            >
-              <div className="space-y-2">
-                <Label htmlFor="login-email">Email</Label>
-                <Input
-                  id="login-email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="login-password">Password</Label>
-                <Input
-                  id="login-password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Signing In...' : 'Sign In'}
-              </Button>
-            </form>
-          </TabsContent>
-          <TabsContent value="signup">
-            <form
-              onSubmit={handleEmailPasswordSubmit}
-              className="space-y-4 pt-4"
-            >
-              <div className="space-y-2">
-                <Label htmlFor="signup-name">Full Name</Label>
-                <Input
-                  id="signup-name"
-                  type="text"
-                  placeholder="John Doe"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
-                <Input
-                  id="signup-email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
-                <Input
-                  id="signup-password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Creating Account...' : 'Create Account'}
-              </Button>
-            </form>
-          </TabsContent>
-        </Tabs>
+        <form onSubmit={handleEmailPasswordSubmit} className="space-y-4 pt-4">
+          {isSignUp && (
+            <div className="space-y-2">
+              <Label htmlFor="signup-name">Full Name</Label>
+              <Input
+                id="signup-name"
+                type="text"
+                placeholder="John Doe"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="m@example.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading
+              ? isSignUp ? 'Creating Account...' : 'Signing In...'
+              : isSignUp ? 'Create Account' : 'Sign In'}
+          </Button>
+        </form>
+
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <Separator />
@@ -325,7 +251,8 @@ export function AuthForm() {
             </span>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+
+        <div className="grid grid-cols-1 gap-4">
           <Button
             variant="outline"
             className="w-full"
@@ -335,14 +262,32 @@ export function AuthForm() {
             <GoogleIcon />
             Google
           </Button>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleAnonymousSignIn}
-            disabled={isLoading}
-          >
-            Guest
-          </Button>
+        </div>
+
+        <div className="mt-6 text-center text-sm">
+          {isSignUp ? (
+            <>
+              Already have an account?{' '}
+              <Button
+                variant="link"
+                className="p-0 h-auto"
+                onClick={() => setIsSignUp(false)}
+              >
+                Sign In
+              </Button>
+            </>
+          ) : (
+            <>
+              Don't have an account?{' '}
+              <Button
+                variant="link"
+                className="p-0 h-auto"
+                onClick={() => setIsSignUp(true)}
+              >
+                Sign Up
+              </Button>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>
