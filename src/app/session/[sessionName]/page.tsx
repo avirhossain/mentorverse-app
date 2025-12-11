@@ -572,8 +572,3 @@ export default function SessionDetailsPage({
     </div>
   );
 }
-
-
-
-
-    

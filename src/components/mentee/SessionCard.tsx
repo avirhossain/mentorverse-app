@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { SessionBookingsAPI, SessionsAPI } from '@/lib/firebase-adapter';
+import { SessionBookingsAPI, SessionsAPI, ReviewsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import * as React from 'react';
