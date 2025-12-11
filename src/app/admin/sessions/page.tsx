@@ -2,7 +2,13 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { PlusCircle, File, ListFilter, Search } from 'lucide-react';
+import {
+  PlusCircle,
+  File,
+  ListFilter,
+  Search,
+  MoreHorizontal,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -15,6 +21,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -35,30 +42,39 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { SessionsAPI } from '@/lib/firebase-adapter';
 
 const getTypeBadgeVariant = (type: Session['sessionType']) => {
-    switch (type) {
-        case 'Paid': return 'default';
-        case 'Free': return 'secondary';
-        case 'Exclusive': return 'outline';
-        case 'Special Request': return 'destructive';
-        default: return 'secondary';
-    }
-}
-
-const getStatusBadgeVariant = (status?: Session['status']): "default" | "secondary" | "destructive" => {
-    if (status === 'Expired') {
-        return 'destructive';
-    }
-    if (status === 'Active') {
-        return 'default';
-    }
-    return 'secondary';
+  switch (type) {
+    case 'Paid':
+      return 'default';
+    case 'Free':
+      return 'secondary';
+    case 'Exclusive':
+      return 'outline';
+    case 'Special Request':
+      return 'destructive';
+    default:
+      return 'secondary';
+  }
 };
 
+const getStatusBadgeVariant = (
+  status?: Session['status']
+): 'default' | 'secondary' | 'destructive' => {
+  if (status === 'Expired') {
+    return 'destructive';
+  }
+  if (status === 'Active') {
+    return 'default';
+  }
+  return 'secondary';
+};
 
 export default function SessionsPage() {
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const sessionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -68,9 +84,21 @@ export default function SessionsPage() {
       limit(50)
     );
   }, [firestore]);
-  const { data: sessions, isLoading, error } = useCollection<Session>(sessionsQuery);
+  const {
+    data: sessions,
+    isLoading,
+    error,
+  } = useCollection<Session>(sessionsQuery);
 
-  
+  const handleEndSession = (session: Session) => {
+    if (!firestore) return;
+    SessionsAPI.updateSession(firestore, session.id, { status: 'Expired' });
+    toast({
+      title: 'Session Ended',
+      description: `The session "${session.name}" has been marked as expired.`,
+    });
+  };
+
   const renderTableBody = () => {
     if (isLoading) {
       return Array.from({ length: 5 }).map((_, i) => (
@@ -81,56 +109,92 @@ export default function SessionsPage() {
         </TableRow>
       ));
     }
-    
+
     if (error) {
-       return <TableRow><TableCell colSpan={8} className="text-center text-destructive">Error loading sessions: {error.message}</TableCell></TableRow>
+      return (
+        <TableRow>
+          <TableCell colSpan={8} className="text-center text-destructive">
+            Error loading sessions: {error.message}
+          </TableCell>
+        </TableRow>
+      );
     }
-    
+
     if (!sessions || sessions.length === 0) {
-      return <TableRow><TableCell colSpan={8} className="text-center">No sessions found.</TableCell></TableRow>
+      return (
+        <TableRow>
+          <TableCell colSpan={8} className="text-center">
+            No sessions found.
+          </TableCell>
+        </TableRow>
+      );
     }
-    
+
     return sessions.map((session) => {
       return (
         <TableRow key={session.id}>
-          <TableCell className="font-medium">{session.displayId || session.id}</TableCell>
+          <TableCell className="font-medium">
+            {session.displayId || session.id}
+          </TableCell>
           <TableCell>{session.name}</TableCell>
           <TableCell>{session.mentorName}</TableCell>
           <TableCell>
-            {session.scheduledDate ? format(new Date(session.scheduledDate), 'MMM d, yyyy') : 'N/A'} at {session.scheduledTime}
+            {session.scheduledDate
+              ? format(new Date(session.scheduledDate), 'MMM d, yyyy')
+              : 'N/A'}{' '}
+            at {session.scheduledTime}
           </TableCell>
           <TableCell>
-             <Badge variant={getTypeBadgeVariant(session.sessionType)}>
-                {session.sessionType}
-             </Badge>
+            <Badge variant={getTypeBadgeVariant(session.sessionType)}>
+              {session.sessionType}
+            </Badge>
           </TableCell>
           <TableCell>
             <Badge variant={getStatusBadgeVariant(session.status)}>
               {session.status || 'Draft'}
             </Badge>
           </TableCell>
-          <TableCell className="text-right">{formatCurrency(session.sessionFee)}</TableCell>
           <TableCell className="text-right">
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/admin/sessions/${session.id}`}>View</Link>
-            </Button>
+            {formatCurrency(session.sessionFee)}
+          </TableCell>
+          <TableCell className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button aria-haspopup="true" size="icon" variant="ghost">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem asChild>
+                  <Link href={`/admin/sessions/${session.id}`}>View</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => handleEndSession(session)}
+                  disabled={session.status === 'Expired'}
+                >
+                  End Session
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </TableCell>
         </TableRow>
-      )
+      );
     });
-  }
-
+  };
 
   return (
     <>
       <div className="flex items-center">
         <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search sessions..."
-              className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
-            />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search sessions..."
+            className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
+          />
         </div>
         <div className="ml-auto flex items-center gap-2">
           <DropdownMenu>
@@ -146,7 +210,7 @@ export default function SessionsPage() {
               <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem checked>Active</DropdownMenuCheckboxItem>
-               <DropdownMenuCheckboxItem>Expired</DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem>Expired</DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button size="sm" variant="outline" className="h-8 gap-1">
@@ -186,9 +250,7 @@ export default function SessionsPage() {
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {renderTableBody()}
-            </TableBody>
+            <TableBody>{renderTableBody()}</TableBody>
           </Table>
         </CardContent>
       </Card>
