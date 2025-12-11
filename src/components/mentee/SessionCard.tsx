@@ -349,7 +349,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
               <span>{session.tag}</span>
             </div>
           )}
-           {session.participants && session.participants > 1 && (
+           {session.participants && (
             <div className="flex items-center gap-2 font-medium">
                 <Users className="h-4 w-4" />
                 <span>

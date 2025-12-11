@@ -118,7 +118,7 @@ export default function SessionDetailsPage({
     };
 
     try {
-      await SessionBookingsAPI.createBooking(firestore, newBooking);
+      await SessionBookingsAPI.createBooking(firestore, newBooking, user.uid);
       toast({
         title: 'Session Booked!',
         description: `Your booking for "${session.name}" has been confirmed.`,
@@ -321,12 +321,18 @@ export default function SessionDetailsPage({
                 <Clock className="h-5 w-5 text-muted-foreground" />
                 <span className="font-medium">{session.scheduledTime}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">
-                  {bookedCount} / {participantLimit} booked
-                </span>
-              </div>
+              {session.participants && (
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">
+                    {isFull ? (
+                          <span className="text-destructive">No Seats Available</span>
+                      ) : (
+                          `${bookedCount} / ${participantLimit} Seats Booked`
+                      )}
+                  </span>
+                </div>
+              )}
             </CardContent>
             <CardFooter>{renderFooter()}</CardFooter>
           </Card>
