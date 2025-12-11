@@ -25,9 +25,6 @@ export function PublicDashboard() {
           <p className="mt-4 max-w-2xl text-md md:text-lg text-gray-200">
             Connect with experienced mentors who can guide you to success.
           </p>
-          <Button size="lg" className="mt-8" asChild>
-            <Link href="/mentors">Browse Mentors</Link>
-          </Button>
         </div>
       </section>
       <FeaturedMentors />
