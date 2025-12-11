@@ -1,4 +1,4 @@
-import { Clock, Calendar, Tag, Users } from 'lucide-react';
+import { Clock, Calendar, Tag, Users, DollarSign } from 'lucide-react';
 import type { Session, Booking, Mentee } from '@/lib/types';
 import {
   Card,
@@ -244,6 +244,14 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
               </div>
             </>
           )}
+           <div className="flex items-center gap-2 pt-2 font-semibold text-foreground">
+                <DollarSign className="h-4 w-4" />
+                <span>
+                   {session.sessionType === 'Free'
+                    ? 'Free'
+                    : formatCurrency(session.sessionFee)}
+                </span>
+            </div>
           {'tag' in session && session.tag && (
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4" />
@@ -265,11 +273,6 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
         </div>
       </CardContent>
       <CardFooter className="flex flex-col items-stretch p-4 pt-0">
-        <div className="mb-4 text-center text-2xl font-bold">
-          {session.sessionType === 'Free'
-            ? 'Free'
-            : formatCurrency(session.sessionFee)}
-        </div>
         {renderFooter()}
       </CardFooter>
     </Card>
