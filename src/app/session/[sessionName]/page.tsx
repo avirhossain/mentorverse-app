@@ -58,7 +58,7 @@ function useBookingStatus(sessionId: string) {
     const firestore = useFirestore();
 
     const bookingQuery = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
+        if (!firestore || !user || !sessionId) return null;
         return query(
             collection(firestore, 'sessionBookings'),
             where('menteeId', '==', user.uid),
