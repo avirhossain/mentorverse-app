@@ -377,7 +377,7 @@ export const SessionBookingsAPI = {
       // We don't know the notification ID, but we can signal the intent
       if (bookingData!) {
         emitPermissionError(
-          `/mentees/${bookingData.menteeId}/notifications`,
+          `/mentees/${bookingData!.menteeId}/notifications`,
           'create'
         );
       }
@@ -400,8 +400,6 @@ export const SessionBookingsAPI = {
     const sessionId = uuidv4();
     const sessionRef = doc(db, 'sessions', sessionId);
     
-    const roomName = `vpaas-magic-cookie-514c5de29b504a348a2e6ce4646314c2/mentorverse-instant-${sessionId}`;
-    
     // Create the session document
     const sessionData: Session = {
       id: sessionId,
@@ -420,7 +418,7 @@ export const SessionBookingsAPI = {
 
     try {
       await setDoc(sessionRef, sessionData);
-      return roomName; // Return the room name on success
+      return sessionId; // Return the session ID on success
     } catch (error) {
       console.error('Failed to create instant meeting session:', error);
       emitPermissionError(sessionRef.path, 'create', sessionData);
@@ -536,3 +534,5 @@ export const DisbursementAPI = {
     return getDocs(q);
   },
 };
+
+    

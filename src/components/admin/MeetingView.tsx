@@ -17,14 +17,17 @@ declare global {
 }
 
 interface MeetingViewProps {
-  roomName: string;
+  sessionId: string;
 }
 
-export const MeetingView: React.FC<MeetingViewProps> = ({ roomName }) => {
+export const MeetingView: React.FC<MeetingViewProps> = ({ sessionId }) => {
   const { user, isUserLoading } = useUser();
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
   const [jitsiApi, setJitsiApi] = useState<any>(null);
   const [jwt, setJwt] = useState<string | null>(null);
+
+  const roomName = `vpaas-magic-cookie-514c5de29b504a348a2e6ce4646314c2/mentorverse-instant-${sessionId}`;
+
 
   // Generate JWT once user is available
   useEffect(() => {
@@ -104,3 +107,5 @@ export const MeetingView: React.FC<MeetingViewProps> = ({ roomName }) => {
     />
   );
 };
+
+    

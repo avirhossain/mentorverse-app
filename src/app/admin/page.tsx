@@ -106,7 +106,7 @@ export default function AdminDashboardPage() {
     try {
       const finalMentorId = values.mentorId === 'none' ? undefined : values.mentorId;
       
-      const roomName = await SessionBookingsAPI.createInstantMeeting(firestore, {
+      const sessionId = await SessionBookingsAPI.createInstantMeeting(firestore, {
         ...values,
         mentorId: finalMentorId,
         mentor: mentors?.find((m) => m.id === finalMentorId),
@@ -119,8 +119,8 @@ export default function AdminDashboardPage() {
       });
       setIsMeetingFormOpen(false);
 
-      if (roomName) {
-        router.push(`/admin/meeting/${roomName}`);
+      if (sessionId) {
+        router.push(`/admin/meeting/${sessionId}`);
       }
 
     } catch (error: any) {
@@ -216,3 +216,5 @@ export default function AdminDashboardPage() {
     </>
   );
 }
+
+    
