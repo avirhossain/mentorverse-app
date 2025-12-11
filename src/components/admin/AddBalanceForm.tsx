@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import { useForm } from 'react-hook-form';
@@ -45,10 +46,13 @@ export const AddBalanceForm: React.FC<AddBalanceFormProps> = ({
     defaultValues: {
       paymentMethod: 'bKash',
       amount: 0,
+      transactionId: '',
+      couponCode: '',
     },
   });
 
   const handleFormSubmit = (values: AddBalanceFormValues) => {
+    if (!firestore) return;
     if (values.paymentMethod === 'bKash') {
       if (!values.transactionId) {
         toast({
