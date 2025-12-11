@@ -73,32 +73,6 @@ const getReport = ai.defineTool(
   }
 );
 
-// This flow is for non-streaming history-based chat.
-export const adminChatHistory = ai.defineFlow(
-  {
-    name: 'adminChatHistory',
-    inputSchema: z.object({
-      history: z.array(z.any()),
-      prompt: z.string(),
-    }),
-    outputSchema: z.string(),
-  },
-  async ({ history, prompt }) => {
-    const result = await ai.generate({
-      model: 'googleai/gemini-1.5-flash-latest',
-      history,
-      prompt,
-      tools: [getReport],
-      config: {
-        // Lower temperature for more factual, less creative responses.
-        temperature: 0.1,
-      },
-    });
-
-    return result.text;
-  }
-);
-
 // This is the primary streaming flow for the Admin Chat UI.
 export const adminChatStream = ai.defineFlow(
   {
@@ -107,12 +81,11 @@ export const adminChatStream = ai.defineFlow(
       history: z.array(z.any()),
       prompt: z.string(),
     }),
-    outputSchema: z.string(), // The final output is a string, but it's generated via a stream.
-    stream: true, // IMPORTANT: This tells Genkit this flow supports streaming.
+    outputSchema: z.string(),
   },
   async ({ history, prompt }) => {
-    // Directly return the stream from the LLM.
-    const { stream } = await ai.generateStream({
+    // Generate the response from the LLM.
+    const result = await ai.generate({
       model: 'googleai/gemini-1.5-flash-latest',
       history,
       prompt,
@@ -122,7 +95,7 @@ export const adminChatStream = ai.defineFlow(
       },
     });
 
-    // The flow will now handle piping the stream back to the client.
-    return stream;
+    // Return the final text content, which matches the outputSchema.
+    return result.text;
   }
 );

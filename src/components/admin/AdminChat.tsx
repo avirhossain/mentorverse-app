@@ -64,25 +64,15 @@ export function AdminChat({ open, onOpenChange }: AdminChatProps) {
     }));
 
     try {
-      // Correctly call the streaming flow
-      const stream = await adminChatStream({
+      // Call the flow and wait for the full response text.
+      const responseText = await adminChatStream({
         history: history,
         prompt: input,
       });
 
-      const aiMessage: Message = { id: uuidv4(), role: 'model', text: '' };
+      const aiMessage: Message = { id: uuidv4(), role: 'model', text: responseText };
       setMessages((prev) => [...prev, aiMessage]);
 
-      // Iterate over the stream and update the message text
-      for await (const chunk of stream) {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === aiMessage.id
-              ? { ...msg, text: msg.text + (chunk.text || '') }
-              : msg
-          )
-        );
-      }
     } catch (error) {
       console.error('AI Chat Error:', error);
       const errorMessage: Message = {
@@ -110,7 +100,7 @@ export function AdminChat({ open, onOpenChange }: AdminChatProps) {
             {messages.length === 0 && (
                  <div className="text-center text-muted-foreground p-8">
                     <p>Ask me anything!</p>
-                    <p className="text-sm">e.g., &quot;What were the total earnings last week?&quot;</p>
+                    <p className="text-sm">&quot;What were the total earnings last week?&quot;</p>
                 </div>
             )}
             {messages.map((message) => (
