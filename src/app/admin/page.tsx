@@ -31,7 +31,7 @@ export default function AdminDashboardPage() {
   );
   
   const completedBookingsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'bookings'), where('status', '==', 'completed')) : null),
+    () => (firestore ? query(collection(firestore, 'sessionBookings'), where('status', '==', 'completed')) : null),
     [firestore]
   );
   
