@@ -27,7 +27,6 @@ import { Skeleton } from '../ui/skeleton';
 
 const createMeetingSchema = z.object({
   mentorId: z.string().optional(),
-  menteeId: z.string().optional(),
   subject: z.string().min(3, 'Subject must be at least 3 characters long.'),
   isShareable: z.boolean().default(false),
 });
@@ -49,7 +48,6 @@ export const CreateMeetingForm: React.FC<CreateMeetingFormProps> = ({
     resolver: zodResolver(createMeetingSchema),
     defaultValues: {
       mentorId: 'none',
-      menteeId: '',
       subject: 'Instant Meeting',
       isShareable: false,
     },
@@ -117,25 +115,7 @@ export const CreateMeetingForm: React.FC<CreateMeetingFormProps> = ({
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="menteeId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mentee User ID (Optional)</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Enter a specific mentee's User ID"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                If provided, only this mentee will be notified.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        
         <FormField
           control={form.control}
           name="isShareable"

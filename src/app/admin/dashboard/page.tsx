@@ -91,7 +91,6 @@ export default function AdminDashboardPage() {
 
   const handleMeetingFormSubmit = async (values: {
     mentorId?: string;
-    menteeId?: string;
     subject: string;
     isShareable: boolean;
   }) => {
@@ -218,5 +217,3 @@ export default function AdminDashboardPage() {
     </>
   );
 }
-
-    

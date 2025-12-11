@@ -387,27 +387,26 @@ export const SessionBookingsAPI = {
   createInstantMeeting: async (
     db: Firestore,
     options: {
+      mentorId?: string;
       mentor?: Mentor;
-      menteeId?: string;
       subject: string;
       isShareable: boolean;
       admin: User;
     }
   ): Promise<string> => {
-    const { mentor, menteeId, subject, isShareable, admin } = options;
-    const batch = writeBatch(db);
+    const { mentor, subject, isShareable, admin } = options;
+    
     const now = new Date();
     const sessionId = uuidv4();
+    const sessionRef = doc(db, 'sessions', sessionId);
     
     const roomName = `vpaas-magic-cookie-514c5de29b504a348a2e6ce4646314c2/mentorverse-instant-${sessionId}`;
-    const meetingUrl = `/admin/meeting/${encodeURIComponent(roomName)}`;
-
-    // 1. Create the session document
-    const sessionRef = doc(db, 'sessions', sessionId);
+    
+    // Create the session document
     const sessionData: Session = {
       id: sessionId,
-      mentorId: mentor?.id || 'admin',
-      mentorName: mentor?.name || 'Admin',
+      mentorId: mentor?.id || admin.uid,
+      mentorName: mentor?.name || admin.displayName || 'Admin',
       name: subject,
       sessionType: 'Special Request',
       status: 'Active',
@@ -416,65 +415,15 @@ export const SessionBookingsAPI = {
       scheduledTime: now.toTimeString().substring(0, 5),
       duration: 60,
       participants: isShareable ? 50 : 1, // High limit for shareable link
-      bookedCount: menteeId ? 1 : 0,
-      meetingUrl: roomName, // Store the room name
+      bookedCount: 0,
     };
-    batch.set(sessionRef, sessionData);
-
-    // 2. If a specific mentee is targeted, create their booking and notification
-    if (menteeId) {
-      const menteeSnap = await getDoc(doc(db, 'mentees', menteeId));
-      if (!menteeSnap.exists()) {
-        throw new Error('Mentee with the provided ID does not exist.');
-      }
-      const menteeData = menteeSnap.data() as Mentee;
-
-      // Create booking
-      const bookingId = uuidv4();
-      const bookingRef = doc(db, 'sessionBookings', bookingId);
-      const bookingData: Booking = {
-        id: bookingId,
-        sessionId: sessionId,
-        sessionName: subject,
-        mentorId: mentor?.id || 'admin',
-        mentorName: mentor?.name || 'Admin',
-        menteeId: menteeId,
-        menteeName: menteeData.name,
-        bookingTime: now.toISOString(),
-        scheduledDate: sessionData.scheduledDate!,
-        scheduledTime: sessionData.scheduledTime!,
-        status: 'started',
-        meetingUrl: roomName,
-        sessionFee: 0,
-        adminDisbursementStatus: 'pending',
-      };
-      batch.set(bookingRef, bookingData);
-
-      // Create notification
-      const notificationRef = doc(
-        collection(db, 'mentees', menteeId, 'notifications')
-      );
-      const notificationData: Notification = {
-        id: notificationRef.id,
-        menteeId: menteeId,
-        message: `An instant meeting "${subject}" has started!`,
-        isRead: false,
-        createdAt: now.toISOString(),
-        link: meetingUrl,
-      };
-      batch.set(notificationRef, notificationData);
-    }
 
     try {
-      await batch.commit();
+      await setDoc(sessionRef, sessionData);
       return roomName; // Return the room name on success
     } catch (error) {
-      console.error('Failed to create instant meeting:', error);
+      console.error('Failed to create instant meeting session:', error);
       emitPermissionError(sessionRef.path, 'create', sessionData);
-      if (menteeId) {
-        emitPermissionError(`/sessionBookings`, 'create');
-        emitPermissionError(`/mentees/${menteeId}/notifications`, 'create');
-      }
       throw error; // Re-throw the error to be caught by the caller
     }
   },
@@ -587,5 +536,3 @@ export const DisbursementAPI = {
     return getDocs(q);
   },
 };
-
-    
