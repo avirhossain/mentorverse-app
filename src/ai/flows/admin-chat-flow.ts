@@ -112,7 +112,7 @@ export const adminChatStream = ai.defineFlow(
   },
   async ({ history, prompt }) => {
     // Directly return the stream from the LLM.
-    const { stream } = ai.generateStream({
+    const { stream } = await ai.generateStream({
       model: 'googleai/gemini-1.5-flash-latest',
       history,
       prompt,
