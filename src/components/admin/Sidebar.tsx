@@ -21,7 +21,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/admin', icon: Home, label: 'Dashboard' },
+  { href: '/admin/dashboard', icon: Home, label: 'Dashboard' },
   { href: '/admin/mentors', icon: Users, label: 'Mentors' },
   { href: '/admin/mentees', icon: BookUser, label: 'Mentees' },
   { href: '/admin/sessions', icon: Clock, label: 'Sessions' },
@@ -34,12 +34,19 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
 
+  const isCurrentPage = (href: string) => {
+    if (href === '/admin/dashboard' || href === '/admin') {
+      return pathname === '/admin' || pathname === '/admin/dashboard';
+    }
+    return pathname.startsWith(href);
+  };
+
   return (
     <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
       <TooltipProvider>
         <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
           <Link
-            href="#"
+            href="/admin"
             className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
           >
             <svg
@@ -66,7 +73,7 @@ export function Sidebar() {
                   href={item.href}
                   className={cn(
                     'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8',
-                    pathname.startsWith(item.href) && (item.href !== '/admin' || pathname === '/admin') && 'bg-accent text-accent-foreground'
+                    isCurrentPage(item.href) && 'bg-accent text-accent-foreground'
                   )}
                 >
                   <item.icon className="h-5 w-5" />

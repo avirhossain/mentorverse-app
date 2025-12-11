@@ -33,25 +33,11 @@ export function FeaturedMentors() {
     if (isLoading) {
       return (
         <div className="mt-10">
-          <Carousel
-            opts={{
-              align: 'start',
-            }}
-            className="w-full"
-          >
-            <CarouselContent>
-              {Array.from({ length: 3 }).map((_, index) => (
-                <CarouselItem
-                  key={index}
-                  className="md:basis-1/2 lg:basis-1/3"
-                >
-                  <div className="p-1">
-                    <Skeleton className="h-[280px] w-full rounded-lg" />
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+                <Skeleton key={index} className="h-[280px] w-full rounded-lg" />
+            ))}
+          </div>
         </div>
       );
     }
@@ -85,7 +71,7 @@ export function FeaturedMentors() {
             {mentors.map((mentor) => (
               <CarouselItem
                 key={mentor.id}
-                className="md:basis-1/2 lg:basis-1/3"
+                className="sm:basis-1/2 lg:basis-1/3"
               >
                 <div className="p-1">
                   <MentorCard mentor={mentor} />

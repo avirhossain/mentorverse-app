@@ -13,6 +13,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Menu } from 'lucide-react';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -22,6 +24,8 @@ const navLinks = [
 export function MenteeHeader() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
+  const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+
 
   const handleSignOut = () => {
     signOut(auth);
@@ -39,6 +43,59 @@ export function MenteeHeader() {
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 max-w-7xl items-center px-4">
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon" className="md:hidden mr-4">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle Menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="sm:max-w-xs">
+            <nav className="grid gap-6 text-lg font-medium">
+              <Link
+                  href="/"
+                  className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
+                  onClick={() => setIsSheetOpen(false)}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-5 w-5 transition-all group-hover:scale-110"
+                  >
+                    <path d="M12 3L2 9L12 15L22 9L12 3Z" />
+                    <path d="M2 9V15L12 21L22 15V9" />
+                  </svg>
+                  <span className="sr-only">MentorVerse</span>
+                </Link>
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                     onClick={() => setIsSheetOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                 {user && (
+                   <Link
+                      href="/dashboard"
+                      className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                      onClick={() => setIsSheetOpen(false)}
+                    >
+                     Dashboard
+                    </Link>
+                 )}
+            </nav>
+          </SheetContent>
+        </Sheet>
         <Link href="/" className="mr-6 flex items-center gap-2">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -55,7 +112,7 @@ export function MenteeHeader() {
             <path d="M12 3L2 9L12 15L22 9L12 3Z" />
             <path d="M2 9V15L12 21L22 15V9" />
           </svg>
-          <span className="font-bold">MentorVerse</span>
+          <span className="font-bold hidden sm:inline-block">MentorVerse</span>
         </Link>
         <nav className="hidden gap-6 md:flex">
           {navLinks.map((link) => (

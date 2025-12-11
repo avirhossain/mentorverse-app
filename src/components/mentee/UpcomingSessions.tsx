@@ -25,7 +25,7 @@ export function UpcomingSessions() {
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 3 }).map((_, index) => (
             <Skeleton key={index} className="h-[320px] w-full rounded-lg" />
           ))}
@@ -50,7 +50,7 @@ export function UpcomingSessions() {
     }
 
     return (
-      <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {sessions.map((session) => (
           <SessionCard key={session.id} session={session} />
         ))}

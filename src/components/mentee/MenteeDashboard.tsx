@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/dialog';
 import { SessionCard } from './SessionCard';
 import { Separator } from '../ui/separator';
-import { Save } from 'lucide-react';
+import { Edit } from 'lucide-react';
 
 function PersonalDetails() {
   const { user, isUserLoading } = useUser();
@@ -93,20 +93,25 @@ function PersonalDetails() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Personal Details</CardTitle>
-        <CardDescription>Update your personal information.</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div className="space-y-1.5">
+          <CardTitle>Personal Details</CardTitle>
+          <CardDescription>Update your personal information.</CardDescription>
+        </div>
+        <Button variant="ghost" size="icon" onClick={() => setIsEditing(!isEditing)}>
+            <Edit className="h-4 w-4" />
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col items-center gap-4">
-          <Avatar className="h-32 w-32">
+          <Avatar className="h-24 w-24 sm:h-32 sm:w-32">
             <AvatarImage src={mentee.photoUrl} alt={mentee.name} />
             <AvatarFallback>{getInitials(mentee.name)}</AvatarFallback>
           </Avatar>
           <div className='w-full space-y-2 text-center'>
             <div className="grid gap-1">
               <Label htmlFor="name" className='sr-only'>Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="text-center text-lg font-semibold" />
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="text-center text-lg font-semibold" disabled={!isEditing} />
             </div>
             <div className="grid gap-1">
               <Label htmlFor="email" className='sr-only'>Email</Label>
@@ -114,17 +119,16 @@ function PersonalDetails() {
             </div>
              <div className="grid gap-1">
                 <Label htmlFor="phone" className='sr-only'>Phone Number</Label>
-                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Your phone number" className="text-center" />
+                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Your phone number" className="text-center" disabled={!isEditing} />
             </div>
           </div>
         </div>
       </CardContent>
-       <CardFooter className="justify-center">
-        <Button onClick={handleUpdate}>
-            <Save className="mr-2 h-4 w-4" />
-            Save Changes
-        </Button>
-      </CardFooter>
+       {isEditing && (
+         <CardFooter className="justify-center">
+            <Button onClick={handleUpdate}>Save Changes</Button>
+        </CardFooter>
+       )}
     </Card>
   );
 }
@@ -188,7 +192,7 @@ function SessionList({ title, bookings, isLoading, emptyMessage }: { title: stri
             </CardHeader>
             <CardContent>
                 {isLoading && (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {Array.from({ length: 3 }).map((_, index) => (
                             <Skeleton key={index} className="h-[320px] w-full rounded-lg" />
                         ))}
@@ -198,7 +202,7 @@ function SessionList({ title, bookings, isLoading, emptyMessage }: { title: stri
                     <p className="text-muted-foreground">{emptyMessage}</p>
                 )}
                 {!isLoading && bookings && bookings.length > 0 && (
-                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                         {bookings.map((booking) => {
                             const sessionLike = { ...booking, name: booking.sessionName, sessionType: booking.sessionFee === 0 ? 'Free' : 'Paid' };
                             return <SessionCard key={booking.id} session={sessionLike} isBooking />;
@@ -244,7 +248,7 @@ export function MenteeDashboard() {
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">My Dashboard</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">My Dashboard</h1>
         <p className="text-muted-foreground">Manage your profile and sessions.</p>
       </div>
 
@@ -261,5 +265,3 @@ export function MenteeDashboard() {
     </div>
   );
 }
-
-    
