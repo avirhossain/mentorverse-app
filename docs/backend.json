@@ -23,6 +23,12 @@
           "type": "string",
           "format": "uri"
         },
+        "designation": {
+          "type": "string"
+        },
+        "company": {
+          "type": "string"
+        },
         "bio": {
           "type": "string"
         },
@@ -695,3 +701,5 @@
     }
   }
 }
+
+    

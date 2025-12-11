@@ -22,6 +22,8 @@ import { Switch } from '../ui/switch';
 const mentorFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   email: z.string().email('Invalid email address.'),
+  designation: z.string().optional(),
+  company: z.string().optional(),
   bio: z.string().optional(),
   expertise: z.string().optional(), // Handled as comma-separated string
   education: z.string().optional(),
@@ -44,6 +46,8 @@ export const MentorForm: React.FC<MentorFormProps> = ({ mentor, onSubmit }) => {
     defaultValues: {
       name: mentor?.name || '',
       email: mentor?.email || '',
+      designation: mentor?.designation || '',
+      company: mentor?.company || '',
       bio: mentor?.bio || '',
       expertise: mentor?.expertise?.join(', ') || '',
       education: mentor?.education || '',
@@ -59,6 +63,8 @@ export const MentorForm: React.FC<MentorFormProps> = ({ mentor, onSubmit }) => {
     form.reset({
       name: mentor?.name || '',
       email: mentor?.email || '',
+      designation: mentor?.designation || '',
+      company: mentor?.company || '',
       bio: mentor?.bio || '',
       expertise: mentor?.expertise?.join(', ') || '',
       education: mentor?.education || '',
@@ -107,6 +113,35 @@ export const MentorForm: React.FC<MentorFormProps> = ({ mentor, onSubmit }) => {
                 <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input placeholder="john.doe@example.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="designation"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Designation</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Software Engineer" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="company"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Google" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -250,3 +285,5 @@ export const MentorForm: React.FC<MentorFormProps> = ({ mentor, onSubmit }) => {
     </Form>
   );
 };
+
+    

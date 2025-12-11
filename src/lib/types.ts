@@ -8,6 +8,8 @@ export interface Mentor {
   email: string;
   phone?: string;
   photoUrl?: string;
+  designation?: string;
+  company?: string;
   bio?: string;
   expertise?: string[];
   education?: string;
@@ -157,3 +159,5 @@ export interface Waitlist {
   phoneNumber?: string;
   createdAt: string; // ISO 8601 date string
 }
+
+    
