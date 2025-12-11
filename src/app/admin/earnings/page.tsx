@@ -23,26 +23,11 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import type { Booking, Mentee, Mentor, Disbursement } from '@/lib/types';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
-import { DollarSign, Users } from 'lucide-react';
+import { Users, ChevronLeft } from 'lucide-react';
 
 export default function EarningsPage() {
   const firestore = useFirestore();
-
-  // Data fetching remains for balance calculations
-  const completedBookingsQuery = useMemoFirebase(
-    () =>
-      firestore
-        ? query(
-            collection(firestore, 'sessionBookings'),
-            where('status', '==', 'completed')
-          )
-        : null,
-    [firestore]
-  );
-  const { data: bookings, isLoading: loadingBookings } =
-    useCollection<Booking>(completedBookingsQuery);
 
   const menteesQuery = useMemoFirebase(
     () =>
@@ -64,6 +49,20 @@ export default function EarningsPage() {
   const { data: mentors, isLoading: loadingMentors } =
     useCollection<Mentor>(mentorsQuery);
 
+  // Fetch related data for balance calculation
+  const completedBookingsQuery = useMemoFirebase(
+    () =>
+      firestore
+        ? query(
+            collection(firestore, 'sessionBookings'),
+            where('status', '==', 'completed')
+          )
+        : null,
+    [firestore]
+  );
+  const { data: bookings, isLoading: loadingBookings } =
+    useCollection<Booking>(completedBookingsQuery);
+
   const disbursementsQuery = useMemoFirebase(
     () =>
       firestore
@@ -78,7 +77,7 @@ export default function EarningsPage() {
     useCollection<Disbursement>(disbursementsQuery);
 
   const isLoading =
-    loadingBookings || loadingMentees || loadingMentors || loadingDisbursements;
+    loadingMentees || loadingMentors || loadingBookings || loadingDisbursements;
 
   const totalMenteeBalance =
     mentees?.reduce((acc, mentee) => acc + (mentee.accountBalance || 0), 0) ??
@@ -189,6 +188,18 @@ export default function EarningsPage() {
 
   return (
     <div className="flex flex-col gap-4">
+       <div className="flex items-center gap-4">
+        <Button asChild variant="outline" size="icon" className="h-7 w-7">
+          <Link href="/admin">
+            <ChevronLeft className="h-4 w-4" />
+            <span className="sr-only">Back</span>
+          </Link>
+        </Button>
+        <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
+          Earnings & Balances
+        </h1>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
