@@ -16,7 +16,7 @@ import {
   ArrowUpRight,
   PlayCircle,
 } from 'lucide-react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { Mentor, Mentee, Booking, Session } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -36,6 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboardPage() {
   const firestore = useFirestore();
+  const { user: adminUser } = useUser();
   const { toast } = useToast();
   const [isMeetingFormOpen, setIsMeetingFormOpen] = React.useState(false);
 
@@ -92,11 +93,11 @@ export default function AdminDashboardPage() {
     subject: string;
     isShareable: boolean;
   }) => {
-    if (!firestore) {
+    if (!firestore || !adminUser) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Database not available.',
+        description: 'Database or admin user not available.',
       });
       return;
     }
@@ -108,6 +109,7 @@ export default function AdminDashboardPage() {
         ...values,
         mentorId: finalMentorId,
         mentor: mentors?.find((m) => m.id === finalMentorId),
+        admin: adminUser
       });
 
       toast({

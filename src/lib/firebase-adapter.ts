@@ -20,6 +20,7 @@ import {
   writeBatch,
   runTransaction,
 } from 'firebase/firestore';
+import type { User } from 'firebase/auth';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type {
@@ -390,13 +391,17 @@ export const SessionBookingsAPI = {
       menteeId?: string;
       subject: string;
       isShareable: boolean;
+      admin: User;
     }
   ): Promise<string> => {
-    const { mentor, menteeId, subject, isShareable } = options;
+    const { mentor, menteeId, subject, isShareable, admin } = options;
     const batch = writeBatch(db);
     const now = new Date();
     const sessionId = uuidv4();
-    const meetingUrl = `https://meet.jit.si/mentorverse-instant-${sessionId}`;
+    
+    const adminDisplayName = admin.displayName ? encodeURIComponent(admin.displayName) : '';
+    const adminEmail = admin.email ? encodeURIComponent(admin.email) : '';
+    const meetingUrl = `https://meet.jit.si/mentorverse-instant-${sessionId}#userInfo.displayName="${adminDisplayName}"&userInfo.email="${adminEmail}"`;
 
     // 1. Create the session document
     const sessionRef = doc(db, 'sessions', sessionId);
