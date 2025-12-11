@@ -24,7 +24,6 @@ import {
   Calendar,
   Clock,
   Users,
-  DollarSign,
   Briefcase,
   Target,
   CheckSquare,
@@ -47,6 +46,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { doc } from 'firebase/firestore';
 
 export default function SessionDetailsPage({
   params,
@@ -76,9 +77,18 @@ export default function SessionDetailsPage({
 
   const session = sessions && sessions[0];
 
+  const menteeRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'mentees', user.uid);
+  }, [firestore, user]);
+
+  const { data: mentee } = useDoc<Mentee>(menteeRef);
+
   const bookedCount = session?.bookedCount || 0;
   const participantLimit = session?.participants || 1;
   const isFull = bookedCount >= participantLimit;
+  const hasSufficientBalance = session && (mentee?.accountBalance || 0) >= session.sessionFee;
+
 
   const handleBooking = async () => {
     if (!user) {
@@ -90,7 +100,7 @@ export default function SessionDetailsPage({
       return;
     }
 
-    if (!firestore || !session) return;
+    if (!firestore || !session || !mentee) return;
 
     if (isFull) {
       toast({
@@ -99,6 +109,15 @@ export default function SessionDetailsPage({
         description: 'This session has no available seats.',
       });
       return;
+    }
+    
+    if (!hasSufficientBalance) {
+        toast({
+            variant: 'destructive',
+            title: 'Insufficient Balance',
+            description: 'Please add funds to your account before booking.',
+        });
+        return;
     }
 
     const newBooking: Booking = {
@@ -222,7 +241,9 @@ export default function SessionDetailsPage({
 
     return (
       <Button onClick={handleBooking} className="w-full text-lg">
-        Book Now for {formatCurrency(session.sessionFee)}
+        {session.sessionFee > 0
+          ? `Book Now for ${formatCurrency(session.sessionFee)}`
+          : 'Claim Your Seat'}
       </Button>
     );
   };
@@ -306,7 +327,11 @@ export default function SessionDetailsPage({
           <Card className="sticky top-20">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>{formatCurrency(session.sessionFee)}</span>
+                {session.sessionFee > 0 ? (
+                  <span>{formatCurrency(session.sessionFee)}</span>
+                ) : (
+                  <span>Free Session</span>
+                )}
                 <Badge variant="secondary">{session.sessionType}</Badge>
               </CardTitle>
             </CardHeader>
