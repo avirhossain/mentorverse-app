@@ -84,9 +84,8 @@ export const adminChatHistory = ai.defineFlow(
     outputSchema: z.string(),
   },
   async ({ history, prompt }) => {
-    const llm = ai.getGenerator('googleai/gemini-1.5-flash-latest');
-
-    const result = await llm.generate({
+    const result = await ai.generate({
+      model: 'googleai/gemini-1.5-flash-latest',
       history,
       prompt,
       tools: [getReport],
@@ -112,10 +111,9 @@ export const adminChatStream = ai.defineFlow(
     stream: true, // IMPORTANT: This tells Genkit this flow supports streaming.
   },
   async ({ history, prompt }) => {
-    const llm = ai.getGenerator('googleai/gemini-1.5-flash-latest');
-
     // Directly return the stream from the LLM.
-    const { stream } = llm.generateStream({
+    const { stream } = ai.generateStream({
+      model: 'googleai/gemini-1.5-flash-latest',
       history,
       prompt,
       tools: [getReport],
