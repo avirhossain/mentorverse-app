@@ -20,12 +20,12 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import type { Booking } from '@/lib/types';
+import type { Booking, Mentee } from '@/lib/types';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
-import { DollarSign } from 'lucide-react';
+import { DollarSign, Users } from 'lucide-react';
 
 export default function EarningsPage() {
   const firestore = useFirestore();
@@ -41,13 +41,26 @@ export default function EarningsPage() {
         : null,
     [firestore]
   );
-  const { data: bookings, isLoading } =
+  const { data: bookings, isLoading: loadingBookings } =
     useCollection<Booking>(completedBookingsQuery);
+
+  const menteesQuery = useMemoFirebase(
+    () =>
+      firestore ? query(collection(firestore, 'mentees'), orderBy('createdAt', 'desc')) : null,
+    [firestore]
+  );
+  const { data: mentees, isLoading: loadingMentees } =
+    useCollection<Mentee>(menteesQuery);
 
   const totalEarnings =
     bookings?.reduce((acc, booking) => acc + (booking.sessionFee || 0), 0) ?? 0;
+  
+  const totalMenteeBalance = 
+    mentees?.reduce((acc, mentee) => acc + (mentee.accountBalance || 0), 0) ?? 0;
 
-  const renderTableBody = () => {
+  const isLoading = loadingBookings || loadingMentees;
+
+  const renderBookingsTableBody = () => {
     if (isLoading) {
       return Array.from({ length: 5 }).map((_, i) => (
         <TableRow key={i}>
@@ -93,22 +106,102 @@ export default function EarningsPage() {
       </TableRow>
     ));
   };
+  
+  const renderMenteesTableBody = () => {
+    if (isLoading) {
+      return Array.from({ length: 5 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell colSpan={4}>
+            <Skeleton className="h-8 w-full" />
+          </TableCell>
+        </TableRow>
+      ));
+    }
+    if (!mentees || mentees.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={4} className="text-center">
+            No mentees found.
+          </TableCell>
+        </TableRow>
+      );
+    }
+    return mentees.map((mentee, index) => (
+      <TableRow key={mentee.id}>
+        <TableCell>{index + 1}</TableCell>
+        <TableCell>{mentee.displayId || mentee.id}</TableCell>
+        <TableCell>
+            <Button asChild variant="link" className="p-0 h-auto">
+              <Link href={`/admin/mentees/${mentee.id}`}>{mentee.name}</Link>
+            </Button>
+        </TableCell>
+        <TableCell className="text-right">
+          {formatCurrency(mentee.accountBalance || 0)}
+        </TableCell>
+      </TableRow>
+    ));
+  }
 
   return (
     <div className="flex flex-col gap-4">
-      <Card className="w-fit">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Platform Earnings</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+            {isLoading ? (
+                <Skeleton className="h-8 w-32" />
+            ) : (
+                <div className="text-2xl font-bold">{formatCurrency(totalEarnings)}</div>
+            )}
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Mentee Balances</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+            {isLoading ? (
+                <Skeleton className="h-8 w-32" />
+            ) : (
+                <div className="text-2xl font-bold">{formatCurrency(totalMenteeBalance)}</div>
+            )}
+            </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Mentee Balances</CardTitle>
+          <CardDescription>
+            A list of all mentees and their current account balances.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <Skeleton className="h-8 w-32" />
-          ) : (
-            <div className="text-2xl font-bold">{formatCurrency(totalEarnings)}</div>
-          )}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>SL.</TableHead>
+                <TableHead>User ID</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead className="text-right">Balance (BDT)</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>{renderMenteesTableBody()}</TableBody>
+          </Table>
         </CardContent>
+         {mentees && (
+          <CardFooter>
+            <div className="text-xs text-muted-foreground">
+              Showing <strong>{mentees.length}</strong> mentees
+            </div>
+          </CardFooter>
+        )}
       </Card>
+      
       <Card>
         <CardHeader>
           <CardTitle>Earnings Breakdown</CardTitle>
@@ -127,7 +220,7 @@ export default function EarningsPage() {
                 <TableHead className="text-right">Amount (BDT)</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>{renderTableBody()}</TableBody>
+            <TableBody>{renderBookingsTableBody()}</TableBody>
           </Table>
         </CardContent>
         {bookings && (
