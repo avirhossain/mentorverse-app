@@ -1,3 +1,4 @@
+
 'use client';
 // Shared Firestore Data Access Layer for Admin + Mentee apps
 // Adapted to use non-blocking writes and contextual error handling.
@@ -223,11 +224,12 @@ export const SessionsAPI = {
 
   startMeetingForSession: async (db: Firestore, sessionId: string, roomName: string) => {
     const sessionRef = doc(db, 'sessions', sessionId);
+    const updateData = { meetingUrl: roomName, status: 'Active' as const };
     try {
-      await updateDoc(sessionRef, { meetingUrl: roomName, status: 'Active' });
+      await updateDoc(sessionRef, updateData);
     } catch(error) {
       console.error('Failed to update session with meeting URL', error);
-      emitPermissionError(sessionRef.path, 'update', { meetingUrl: roomName });
+      emitPermissionError(sessionRef.path, 'update', updateData);
     }
   },
 };

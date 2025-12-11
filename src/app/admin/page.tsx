@@ -41,7 +41,6 @@ export default function AdminDashboardPage() {
   const { toast } = useToast();
   const [isMeetingDialogOpen, setIsMeetingDialogOpen] = React.useState(false);
   const [generatedLink, setGeneratedLink] = React.useState('');
-  const [roomName, setRoomName] = React.useState('');
 
   const mentorsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'mentors') : null),
@@ -91,9 +90,8 @@ export default function AdminDashboardPage() {
     loadingMentors || loadingMentees || loadingSessions || loadingBookings;
 
   const handleCreateMeeting = () => {
-    const newRoomName = `vpaas-magic-cookie-514c5de29b504a348a2e6ce4646314c2/mentor-meet-${uuidv4()}`;
-    const newLink = `${window.location.origin}/meeting/${encodeURIComponent(newRoomName)}`;
-    setRoomName(newRoomName);
+    const cleanRoomId = `mentor-meet-${uuidv4()}`;
+    const newLink = `${window.location.origin}/meeting/${cleanRoomId}`;
     setGeneratedLink(newLink);
     toast({
       title: 'Meeting Link Generated',

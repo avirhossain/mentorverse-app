@@ -30,9 +30,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { SessionsAPI } from '@/lib/firebase-adapter';
 import { format } from 'date-fns';
-import { v4 as uuidv4 } from 'uuid';
 import {
   Dialog,
   DialogContent,
@@ -53,7 +51,6 @@ export default function SessionDetailsPage({
   const { toast } = useToast();
   const [isMeetingDialogOpen, setIsMeetingDialogOpen] = React.useState(false);
   const [generatedLink, setGeneratedLink] = React.useState('');
-  const [roomName, setRoomName] = React.useState('');
 
 
   const sessionRef = useMemoFirebase(
@@ -75,13 +72,12 @@ export default function SessionDetailsPage({
 
   const handleCreateMeeting = async () => {
     if (!firestore || !session) return;
-    const newRoomName = `vpaas-magic-cookie-514c5de29b504a348a2e6ce4646314c2/mentorverse-session-${sessionId}`;
-    const newLink = `${window.location.origin}/meeting/${encodeURIComponent(newRoomName)}`;
     
-    // Update session with meeting URL
-    await SessionsAPI.startMeetingForSession(firestore, sessionId, newRoomName);
+    // The clean URL part, e.g., 'mentorverse-session-xxxx'
+    const cleanRoomId = `mentorverse-session-${sessionId}`;
+    // The full URL to be shared
+    const newLink = `${window.location.origin}/meeting/${cleanRoomId}`;
 
-    setRoomName(newRoomName);
     setGeneratedLink(newLink);
     setIsMeetingDialogOpen(true);
     toast({
@@ -106,10 +102,6 @@ export default function SessionDetailsPage({
   const hasConfirmedBookings = React.useMemo(() => {
     return bookings?.some(b => b.status === 'confirmed');
   }, [bookings]);
-
-  const isMeetingActive = React.useMemo(() => {
-    return !!session?.meetingUrl;
-  }, [session]);
 
 
   const renderBookings = () => {
@@ -167,17 +159,10 @@ export default function SessionDetailsPage({
           Session Details
         </h1>
         <div className="ml-auto flex items-center gap-2">
-            {session && hasConfirmedBookings && !isMeetingActive && (
-                 <Button size="sm" onClick={handleCreateMeeting}>
+            {session && hasConfirmedBookings && (
+                <Button size="sm" onClick={handleCreateMeeting}>
                     <PlayCircle className="mr-2 h-4 w-4" />
-                    Start Meeting for All
-                 </Button>
-            )}
-            {isMeetingActive && session?.meetingUrl && (
-                <Button size="sm" asChild>
-                    <a href={`/meeting/${encodeURIComponent(session.meetingUrl)}`} target="_blank" rel="noopener noreferrer">
-                        Join Active Meeting
-                    </a>
+                    Start Meeting
                 </Button>
             )}
             <Button asChild size="sm" variant="outline">
