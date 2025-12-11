@@ -104,7 +104,7 @@ export default function AdminDashboardPage() {
     try {
       const finalMentorId = values.mentorId === 'none' ? undefined : values.mentorId;
       
-      await SessionBookingsAPI.createInstantMeeting(firestore, {
+      const meetingUrl = await SessionBookingsAPI.createInstantMeeting(firestore, {
         ...values,
         mentorId: finalMentorId,
         mentor: mentors?.find((m) => m.id === finalMentorId),
@@ -115,6 +115,12 @@ export default function AdminDashboardPage() {
         description: `The meeting "${values.subject}" has been started.`,
       });
       setIsMeetingFormOpen(false);
+
+      // Open the meeting URL in a new tab for the admin
+      if (meetingUrl) {
+        window.open(meetingUrl, '_blank');
+      }
+
     } catch (error: any) {
       toast({
         variant: 'destructive',

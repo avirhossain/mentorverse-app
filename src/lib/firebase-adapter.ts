@@ -391,7 +391,7 @@ export const SessionBookingsAPI = {
       subject: string;
       isShareable: boolean;
     }
-  ) => {
+  ): Promise<string> => {
     const { mentor, menteeId, subject, isShareable } = options;
     const batch = writeBatch(db);
     const now = new Date();
@@ -462,6 +462,7 @@ export const SessionBookingsAPI = {
 
     try {
       await batch.commit();
+      return meetingUrl; // Return the URL on success
     } catch (error) {
       console.error('Failed to create instant meeting:', error);
       emitPermissionError(sessionRef.path, 'create', sessionData);
@@ -469,6 +470,7 @@ export const SessionBookingsAPI = {
         emitPermissionError(`/sessionBookings`, 'create');
         emitPermissionError(`/mentees/${menteeId}/notifications`, 'create');
       }
+      throw error; // Re-throw the error to be caught by the caller
     }
   },
 
