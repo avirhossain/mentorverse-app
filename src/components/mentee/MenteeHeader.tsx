@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
 
 const navLinks = [
@@ -51,6 +51,9 @@ export function MenteeHeader() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="sm:max-w-xs">
+            <SheetHeader>
+               <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+            </SheetHeader>
             <nav className="grid gap-6 text-lg font-medium">
               <Link
                   href="/"
