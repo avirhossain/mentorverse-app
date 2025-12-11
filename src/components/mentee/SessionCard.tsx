@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import Link from 'next/link';
 
 interface SessionCardProps {
   session: Session | (Booking & { sessionName: string });
@@ -207,8 +208,8 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
 
     return (
       <div className="flex gap-2">
-        <Button variant="outline" className="w-full">
-          See More
+        <Button variant="outline" className="w-full" asChild>
+          <Link href={`/sessions/${session.id}`}>See More</Link>
         </Button>
         <Button className="w-full" onClick={handleBooking}>
           Book Session
