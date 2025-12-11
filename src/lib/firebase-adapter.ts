@@ -222,14 +222,51 @@ export const SessionsAPI = {
     });
   },
 
-  startMeetingForSession: async (db: Firestore, sessionId: string, roomName: string) => {
+  startMeetingAndNotifyBookedMentees: async (
+    db: Firestore,
+    sessionId: string,
+    meetingUrl: string,
+    allBookings: Booking[]
+  ) => {
+    const batch = writeBatch(db);
+  
+    // 1. Update the main session document
     const sessionRef = doc(db, 'sessions', sessionId);
-    const updateData = { meetingUrl: roomName, status: 'Active' as const };
+    const sessionUpdateData = { meetingUrl, status: 'started' as const };
+    batch.update(sessionRef, sessionUpdateData);
+  
+    // 2. Filter for only confirmed bookings
+    const confirmedBookings = allBookings.filter(b => b.status === 'confirmed');
+  
+    // 3. Create notifications for each confirmed mentee
+    confirmedBookings.forEach(booking => {
+      // Update the booking itself
+      const bookingRef = doc(db, 'sessionBookings', booking.id);
+      batch.update(bookingRef, { status: 'started', meetingUrl });
+  
+      // Create a notification for the mentee
+      const notificationRef = doc(collection(db, 'mentees', booking.menteeId, 'notifications'));
+      const notificationData: Notification = {
+        id: notificationRef.id,
+        menteeId: booking.menteeId,
+        message: `Your session "${booking.sessionName}" has started!`,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        link: meetingUrl,
+      };
+      batch.set(notificationRef, notificationData);
+    });
+  
     try {
-      await updateDoc(sessionRef, updateData);
-    } catch(error) {
-      console.error('Failed to update session with meeting URL', error);
-      emitPermissionError(sessionRef.path, 'update', updateData);
+      await batch.commit();
+    } catch (error) {
+      console.error('Failed to start meeting and notify mentees:', error);
+      // Emit a general error for debugging, as it could fail on any of the writes
+      emitPermissionError(sessionRef.path, 'write', {
+        ...sessionUpdateData,
+        notifications: confirmedBookings.length,
+      });
+      throw new Error('Failed to update session and notify mentees.');
     }
   },
 };

@@ -40,6 +40,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { SessionsAPI } from '@/lib/firebase-adapter';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function SessionDetailsPage({
   params,
@@ -51,6 +53,7 @@ export default function SessionDetailsPage({
   const { toast } = useToast();
   const [isMeetingDialogOpen, setIsMeetingDialogOpen] = React.useState(false);
   const [generatedLink, setGeneratedLink] = React.useState('');
+  const [cleanRoomId, setCleanRoomId] = React.useState('');
 
 
   const sessionRef = useMemoFirebase(
@@ -74,22 +77,38 @@ export default function SessionDetailsPage({
     if (!firestore || !session) return;
     
     // The clean URL part, e.g., 'mentorverse-session-xxxx'
-    const cleanRoomId = `mentorverse-session-${sessionId}`;
+    const newCleanRoomId = `mentorverse-session-${sessionId.substring(0, 8)}-${uuidv4().substring(0, 4)}`;
     // The full URL to be shared
-    const newLink = `${window.location.origin}/meeting/${cleanRoomId}`;
+    const newLink = `${window.location.origin}/meeting/${newCleanRoomId}`;
 
+    setCleanRoomId(newCleanRoomId);
     setGeneratedLink(newLink);
     setIsMeetingDialogOpen(true);
-    toast({
-      title: 'Meeting Ready',
-      description: 'The meeting link has been generated for this session.',
-    });
   };
+  
+  const handleStartAndNotify = async () => {
+    if (!firestore || !session) return;
+    
+    const fullJaaSRoomName = `vpaas-magic-cookie-514c5de29b504a2e6ce4646314c2/${cleanRoomId}`;
 
-  const handleStartMeeting = () => {
-    window.open(generatedLink, '_blank');
-    setIsMeetingDialogOpen(false);
+    try {
+        await SessionsAPI.startMeetingAndNotifyBookedMentees(firestore, sessionId, fullJaaSRoomName, bookings || []);
+        toast({
+          title: 'Meeting Started & Mentees Notified',
+          description: 'All confirmed mentees have received a notification.',
+        });
+        window.open(generatedLink, '_blank');
+        setIsMeetingDialogOpen(false);
+    } catch(error) {
+        console.error("Failed to start meeting and notify mentees: ", error);
+        toast({
+            variant: "destructive",
+            title: "Operation Failed",
+            description: "Could not start the meeting or send notifications."
+        })
+    }
   }
+
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(generatedLink);
@@ -227,9 +246,9 @@ export default function SessionDetailsPage({
      <Dialog open={isMeetingDialogOpen} onOpenChange={setIsMeetingDialogOpen}>
         <DialogContent>
         <DialogHeader>
-            <DialogTitle>Meeting Ready</DialogTitle>
+            <DialogTitle>Start Session & Notify Mentees</DialogTitle>
             <DialogDescription>
-                Share this link with participants for them to join the session.
+                This will generate a unique meeting link, notify all confirmed mentees, and start the meeting in a new tab.
             </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -242,7 +261,7 @@ export default function SessionDetailsPage({
             </div>
             <div className="flex justify-end gap-2">
                 <Button variant="secondary" onClick={() => setIsMeetingDialogOpen(false)}>Close</Button>
-                <Button onClick={handleStartMeeting}>Start Meeting</Button>
+                <Button onClick={handleStartAndNotify}>Start & Notify</Button>
             </div>
         </div>
         </DialogContent>

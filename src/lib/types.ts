@@ -1,3 +1,4 @@
+
 'use client';
 // Defines the core data structures for the MentorVerse application, ensuring type safety.
 
@@ -56,7 +57,7 @@ export interface Session {
   participants?: number; // Number of participants
   bookedCount?: number; // Number of booked participants
   sessionFee: number;
-  status?: 'Active' | 'Expired' | 'Draft';
+  status?: 'Active' | 'Expired' | 'Draft' | 'started';
   availability?: AvailabilitySlot[];
   meetingUrl?: string;
 }
@@ -155,5 +156,3 @@ export interface Waitlist {
   phoneNumber?: string;
   createdAt: string; // ISO 8601 date string
 }
-
-    
