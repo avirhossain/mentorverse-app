@@ -58,6 +58,7 @@ export interface Session {
   sessionFee: number;
   status?: 'Active' | 'Expired' | 'Draft';
   availability?: AvailabilitySlot[];
+  meetingUrl?: string;
 }
 
 export interface Booking {
@@ -154,3 +155,5 @@ export interface Waitlist {
   phoneNumber?: string;
   createdAt: string; // ISO 8601 date string
 }
+
+    

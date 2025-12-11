@@ -33,12 +33,14 @@ import {
 import { CreateMeetingForm } from '@/components/admin/CreateMeetingForm';
 import { SessionBookingsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 export default function AdminDashboardPage() {
   const firestore = useFirestore();
   const { user: adminUser } = useUser();
   const { toast } = useToast();
   const [isMeetingFormOpen, setIsMeetingFormOpen] = React.useState(false);
+  const router = useRouter();
 
   const mentorsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'mentors') : null),
@@ -105,7 +107,7 @@ export default function AdminDashboardPage() {
     try {
       const finalMentorId = values.mentorId === 'none' ? undefined : values.mentorId;
       
-      const meetingUrl = await SessionBookingsAPI.createInstantMeeting(firestore, {
+      const roomName = await SessionBookingsAPI.createInstantMeeting(firestore, {
         ...values,
         mentorId: finalMentorId,
         mentor: mentors?.find((m) => m.id === finalMentorId),
@@ -118,9 +120,9 @@ export default function AdminDashboardPage() {
       });
       setIsMeetingFormOpen(false);
 
-      // Open the meeting URL in a new tab for the admin
-      if (meetingUrl) {
-        window.open(meetingUrl, '_blank');
+      // Open the meeting in a new page inside the app
+      if (roomName) {
+        router.push(`/admin/meeting/${encodeURIComponent(roomName)}`);
       }
 
     } catch (error: any) {
@@ -216,3 +218,5 @@ export default function AdminDashboardPage() {
     </>
   );
 }
+
+    

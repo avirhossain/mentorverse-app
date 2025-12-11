@@ -37,6 +37,7 @@
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.6.0",
     "firebase": "^10.12.3",
+    "js-sha256": "^0.11.0",
     "lucide-react": "^0.475.0",
     "next": "latest",
     "patch-package": "^8.0.0",
@@ -59,3 +60,5 @@
     "typescript": "^5"
   }
 }
+
+    

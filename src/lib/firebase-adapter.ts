@@ -399,9 +399,8 @@ export const SessionBookingsAPI = {
     const now = new Date();
     const sessionId = uuidv4();
     
-    const adminDisplayName = admin.displayName ? encodeURIComponent(admin.displayName) : '';
-    const adminEmail = admin.email ? encodeURIComponent(admin.email) : '';
-    const meetingUrl = `https://meet.jit.si/mentorverse-instant-${sessionId}#userInfo.displayName="${adminDisplayName}"&userInfo.email="${adminEmail}"`;
+    const roomName = `vpaas-magic-cookie-514c5de29b504a348a2e6ce4646314c2/mentorverse-instant-${sessionId}`;
+    const meetingUrl = `/admin/meeting/${encodeURIComponent(roomName)}`;
 
     // 1. Create the session document
     const sessionRef = doc(db, 'sessions', sessionId);
@@ -418,6 +417,7 @@ export const SessionBookingsAPI = {
       duration: 60,
       participants: isShareable ? 50 : 1, // High limit for shareable link
       bookedCount: menteeId ? 1 : 0,
+      meetingUrl: roomName, // Store the room name
     };
     batch.set(sessionRef, sessionData);
 
@@ -444,7 +444,7 @@ export const SessionBookingsAPI = {
         scheduledDate: sessionData.scheduledDate!,
         scheduledTime: sessionData.scheduledTime!,
         status: 'started',
-        meetingUrl: meetingUrl,
+        meetingUrl: roomName,
         sessionFee: 0,
         adminDisbursementStatus: 'pending',
       };
@@ -467,7 +467,7 @@ export const SessionBookingsAPI = {
 
     try {
       await batch.commit();
-      return meetingUrl; // Return the URL on success
+      return roomName; // Return the room name on success
     } catch (error) {
       console.error('Failed to create instant meeting:', error);
       emitPermissionError(sessionRef.path, 'create', sessionData);
@@ -478,6 +478,7 @@ export const SessionBookingsAPI = {
       throw error; // Re-throw the error to be caught by the caller
     }
   },
+
 
   listBookingsForMentee: (db: Firestore, menteeId: string) => {
     const q = query(
@@ -586,3 +587,5 @@ export const DisbursementAPI = {
     return getDocs(q);
   },
 };
+
+    
