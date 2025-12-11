@@ -224,7 +224,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
         </div>
         
         {sessionType !== 'Special Request' && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Controller
               control={form.control}
               name="scheduledDate"
@@ -271,19 +271,6 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                   <FormLabel>Scheduled Time</FormLabel>
                   <FormControl>
                     <Input type="time" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="duration"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Duration (minutes)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="e.g., 60" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
