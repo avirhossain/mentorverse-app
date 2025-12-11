@@ -40,7 +40,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { SessionsAPI } from '@/lib/firebase-adapter';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function SessionDetailsPage({
@@ -73,42 +72,19 @@ export default function SessionDetailsPage({
   const { data: bookings, isLoading: loadingBookings } =
     useCollection<Booking>(bookingsQuery);
 
-  const handleCreateMeeting = async () => {
-    if (!firestore || !session) return;
-    
-    // The clean URL part, e.g., 'mentorverse-session-xxxx'
+  const handleCreateMeeting = () => {
+    if (!session) return;
     const newCleanRoomId = `mentorverse-session-${sessionId.substring(0, 8)}-${uuidv4().substring(0, 4)}`;
-    // The full URL to be shared
     const newLink = `${window.location.origin}/meeting/${newCleanRoomId}`;
-
-    setCleanRoomId(newCleanRoomId);
     setGeneratedLink(newLink);
     setIsMeetingDialogOpen(true);
   };
   
-  const handleStartAndNotify = async () => {
-    if (!firestore || !session) return;
-    
-    const fullJaaSRoomName = `vpaas-magic-cookie-514c5de29b504a348a2e6ce4646314c2/${cleanRoomId}`;
-
-    try {
-        await SessionsAPI.startMeetingAndNotifyBookedMentees(firestore, sessionId, fullJaaSRoomName, bookings || []);
-        toast({
-          title: 'Meeting Started & Mentees Notified',
-          description: 'All confirmed mentees have received a notification.',
-        });
-        window.open(generatedLink, '_blank');
-        setIsMeetingDialogOpen(false);
-    } catch(error) {
-        console.error("Failed to start meeting and notify mentees: ", error);
-        toast({
-            variant: "destructive",
-            title: "Operation Failed",
-            description: "Could not start the meeting or send notifications."
-        })
-    }
+  const handleStartMeeting = () => {
+    if (!generatedLink) return;
+    window.open(generatedLink, '_blank');
+    setIsMeetingDialogOpen(false);
   }
-
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(generatedLink);
@@ -117,11 +93,6 @@ export default function SessionDetailsPage({
         description: 'The meeting link has been copied to your clipboard.',
     })
   }
-
-  const hasConfirmedBookings = React.useMemo(() => {
-    return bookings?.some(b => b.status === 'confirmed');
-  }, [bookings]);
-
 
   const renderBookings = () => {
     if (loadingBookings) {
@@ -261,7 +232,7 @@ export default function SessionDetailsPage({
             </div>
             <div className="flex justify-end gap-2">
                 <Button variant="secondary" onClick={() => setIsMeetingDialogOpen(false)}>Close</Button>
-                <Button onClick={handleStartAndNotify}>Start & Notify</Button>
+                <Button onClick={handleStartMeeting}>Start Meeting</Button>
             </div>
         </div>
         </DialogContent>
@@ -269,3 +240,4 @@ export default function SessionDetailsPage({
     </>
   );
 }
+
