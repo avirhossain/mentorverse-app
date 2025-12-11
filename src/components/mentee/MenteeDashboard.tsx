@@ -30,7 +30,6 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import { SessionCard } from './SessionCard';
 import { Separator } from '../ui/separator';
 import { Edit } from 'lucide-react';
 
@@ -184,51 +183,8 @@ function BalanceSection() {
     )
 }
 
-function SessionList({ title, bookings, isLoading, emptyMessage }: { title: string, bookings: Booking[] | null, isLoading: boolean, emptyMessage: string }) {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>{title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-                {isLoading && (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {Array.from({ length: 3 }).map((_, index) => (
-                            <Skeleton key={index} className="h-[320px] w-full rounded-lg" />
-                        ))}
-                    </div>
-                )}
-                {!isLoading && (!bookings || bookings.length === 0) && (
-                    <p className="text-muted-foreground">{emptyMessage}</p>
-                )}
-                {!isLoading && bookings && bookings.length > 0 && (
-                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        {bookings.map((booking) => {
-                            const sessionLike = { ...booking, name: booking.sessionName, sessionType: booking.sessionFee === 0 ? 'Free' : 'Paid' };
-                            return <SessionCard key={booking.id} session={sessionLike} isBooking />;
-                        })}
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    )
-}
-
 export function MenteeDashboard() {
   const { user } = useUser();
-  const firestore = useFirestore();
-
-  const previousBookingsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(
-      collection(firestore, 'sessionBookings'),
-      where('menteeId', '==', user.uid),
-      where('status', '==', 'completed'),
-      orderBy('scheduledDate', 'desc')
-    );
-  }, [firestore, user]);
-
-  const { data: previousBookings, isLoading: loadingPrevious } = useCollection<Booking>(previousBookingsQuery);
 
   if (!user) {
     return <div className="container mx-auto px-4 py-8">Please log in to view your dashboard.</div>;
@@ -244,10 +200,9 @@ export function MenteeDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-1 space-y-8">
             <PersonalDetails />
-            <BalanceSection />
         </div>
         <div className="lg:col-span-2 space-y-8">
-            <SessionList title="Previous Sessions" bookings={previousBookings} isLoading={loadingPrevious} emptyMessage="You have not completed any sessions yet." />
+             <BalanceSection />
         </div>
       </div>
     </div>
