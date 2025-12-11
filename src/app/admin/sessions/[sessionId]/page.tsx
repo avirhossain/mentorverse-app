@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { v4 as uuidv4 } from 'uuid';
+import { SessionsAPI } from '@/lib/firebase-adapter';
 
 export default function SessionDetailsPage({
   params,
@@ -53,7 +54,6 @@ export default function SessionDetailsPage({
   const [isMeetingDialogOpen, setIsMeetingDialogOpen] = React.useState(false);
   const [generatedLink, setGeneratedLink] = React.useState('');
   const [cleanRoomId, setCleanRoomId] = React.useState('');
-
 
   const sessionRef = useMemoFirebase(
     () => (firestore ? doc(firestore, 'sessions', sessionId) : null),
@@ -74,16 +74,36 @@ export default function SessionDetailsPage({
 
   const handleCreateMeeting = () => {
     if (!session) return;
-    const newCleanRoomId = `mentorverse-session-${sessionId.substring(0, 8)}-${uuidv4().substring(0, 4)}`;
+    // Generate a clean, URL-friendly room ID
+    const newCleanRoomId = `mentorverse-session-${sessionId.substring(
+      0,
+      8
+    )}-${uuidv4().substring(0, 4)}`;
+    setCleanRoomId(newCleanRoomId);
+
+    // Create the full URL for the meeting
     const newLink = `${window.location.origin}/meeting/${newCleanRoomId}`;
     setGeneratedLink(newLink);
     setIsMeetingDialogOpen(true);
   };
   
-  const handleStartMeeting = () => {
-    if (!generatedLink) return;
-    window.open(generatedLink, '_blank');
-    setIsMeetingDialogOpen(false);
+  const handleStartAndNotify = async () => {
+    if (!firestore || !session || !bookings) return;
+    try {
+        await SessionsAPI.startMeetingAndNotifyBookedMentees(firestore, session.id, generatedLink, bookings);
+        toast({
+            title: 'Meeting Started & Mentees Notified',
+            description: 'All confirmed mentees have been sent an in-app notification.',
+        });
+        window.open(generatedLink, '_blank'); // Open meeting for admin
+        setIsMeetingDialogOpen(false);
+    } catch (error) {
+        toast({
+            variant: 'destructive',
+            title: 'Failed to Start Meeting',
+            description: 'There was an error notifying mentees. Please try again.',
+        });
+    }
   }
 
   const handleCopyLink = () => {
@@ -232,7 +252,7 @@ export default function SessionDetailsPage({
             </div>
             <div className="flex justify-end gap-2">
                 <Button variant="secondary" onClick={() => setIsMeetingDialogOpen(false)}>Close</Button>
-                <Button onClick={handleStartMeeting}>Start Meeting</Button>
+                <Button onClick={handleStartAndNotify}>Start & Notify</Button>
             </div>
         </div>
         </DialogContent>
@@ -240,4 +260,3 @@ export default function SessionDetailsPage({
     </>
   );
 }
-
