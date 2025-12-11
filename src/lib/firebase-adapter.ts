@@ -275,43 +275,71 @@ export const SessionsAPI = {
 export const SessionBookingsAPI = {
   createBooking: async (
     db: Firestore,
-    bookingData: WithFieldValue<Booking>
+    bookingData: WithFieldValue<Booking>,
+    menteeId: string
   ) => {
     const sessionRef = doc(db, 'sessions', bookingData.sessionId);
     const bookingRef = doc(db, 'sessionBookings', bookingData.id);
+    const menteeRef = doc(db, 'mentees', menteeId);
+    const transactionRef = doc(collection(db, `mentees/${menteeId}/transactions`));
 
     try {
       await runTransaction(db, async (transaction) => {
         const sessionDoc = await transaction.get(sessionRef);
+        const menteeDoc = await transaction.get(menteeRef);
+
         if (!sessionDoc.exists()) {
-          throw 'Session does not exist!';
+          throw new Error('Session does not exist!');
+        }
+        if (!menteeDoc.exists()) {
+          throw new Error('Mentee profile not found!');
         }
 
         const sessionData = sessionDoc.data() as Session;
+        const menteeData = menteeDoc.data() as Mentee;
+
+        // Check session capacity
         const currentBookedCount = sessionData.bookedCount || 0;
         const maxParticipants = sessionData.participants || 1;
-
         if (currentBookedCount >= maxParticipants) {
           throw new Error('Session is already full!');
         }
 
-        // Perform the writes within the transaction
+        // Check mentee balance
+        const menteeBalance = menteeData.accountBalance || 0;
+        if (menteeBalance < sessionData.sessionFee) {
+          throw new Error('Insufficient balance.');
+        }
+
+        // All checks passed, perform writes
+        // 1. Create the booking document
         transaction.set(bookingRef, bookingData);
+        // 2. Increment the session's bookedCount
         transaction.update(sessionRef, { bookedCount: increment(1) });
+        // 3. Decrement the mentee's accountBalance
+        transaction.update(menteeRef, { accountBalance: increment(-sessionData.sessionFee) });
+        // 4. Create a transaction record for the mentee
+        const newTransaction: Transaction = {
+          id: transactionRef.id,
+          type: 'booking',
+          amount: sessionData.sessionFee,
+          description: `Booking for session: ${sessionData.name}`,
+          createdAt: new Date().toISOString(),
+        };
+        transaction.set(transactionRef, newTransaction);
       });
     } catch (error: any) {
-      // If it's a "Session is full" error, re-throw it so the UI can catch it.
-      if (error instanceof Error && error.message.includes('full')) {
+      if (error instanceof Error) {
+        // Re-throw specific, user-facing errors
         throw error;
       }
       
-      // Otherwise, it's likely a Firestore permission error
+      // Log and emit generic permission errors for debugging
       console.error('Booking transaction failed: ', error);
       emitPermissionError(bookingRef.path, 'create', bookingData);
-      emitPermissionError(sessionRef.path, 'update', {
-        bookedCount: 'increment(1)',
-      });
-      // Throw a generic error for other cases
+      emitPermissionError(sessionRef.path, 'update', { bookedCount: 'increment(1)' });
+      emitPermissionError(menteeRef.path, 'update', { accountBalance: `increment(${-bookingData.sessionFee})` });
+      
       throw new Error('Could not complete booking due to a server error.');
     }
   },

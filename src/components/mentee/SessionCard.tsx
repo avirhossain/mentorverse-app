@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { SessionBookingsAPI, SessionsAPI } from '@/lib/firebase-adapter';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,6 +31,8 @@ import {
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import Link from 'next/link';
+import { doc } from 'firebase/firestore';
+import { useDoc } from '@/firebase/firestore/use-doc';
 
 interface SessionCardProps {
   session: Session | (Booking & { sessionName: string });
@@ -56,13 +58,23 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   const { toast } = useToast();
   const [phoneNumber, setPhoneNumber] = React.useState('');
   const [name, setName] = React.useState('');
+  const [isCheckoutOpen, setIsCheckoutOpen] = React.useState(false);
+
+  const menteeRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'mentees', user.uid);
+  }, [firestore, user]);
+
+  const { data: mentee } = useDoc<Mentee>(menteeRef);
 
   const bookedCount = session.bookedCount || 0;
   const participantLimit = session.participants || 1;
   const isFull = bookedCount >= participantLimit;
 
-  const handleBooking = async () => {
-    if (!user) {
+  const hasSufficientBalance = (mentee?.accountBalance || 0) >= session.sessionFee;
+
+  const handleBookingConfirm = async () => {
+    if (!user || !mentee) {
       toast({
         variant: 'destructive',
         title: 'Authentication Required',
@@ -79,12 +91,21 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
       });
       return;
     }
-    
+
     if (isFull) {
         toast({
             variant: 'destructive',
             title: 'Session Full',
             description: 'This session has no available seats.',
+        });
+        return;
+    }
+
+    if (!hasSufficientBalance) {
+        toast({
+            variant: 'destructive',
+            title: 'Insufficient Balance',
+            description: 'Please add funds to your account before booking.',
         });
         return;
     }
@@ -106,7 +127,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
     };
 
     try {
-      await SessionBookingsAPI.createBooking(firestore, newBooking);
+      await SessionBookingsAPI.createBooking(firestore, newBooking, user.uid);
       toast({
         title: 'Session Booked!',
         description: `Your booking for "${session.name}" has been confirmed.`,
@@ -117,6 +138,8 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
         title: 'Booking Failed',
         description: error.message || 'Could not complete your booking.',
       });
+    } finally {
+        setIsCheckoutOpen(false);
     }
   };
 
@@ -126,7 +149,6 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
       return;
     }
     
-    // For visitors, name and phone number are required.
     if (!user && (!name || !phoneNumber)) {
         toast({ variant: 'destructive', title: 'Information Required', description: 'Please provide your name and phone number to join the waitlist.' });
         return;
@@ -145,7 +167,6 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
 
   const renderFooter = () => {
     if (isBooking) {
-        // If it's a booking, check the status
         const booking = session as Booking;
         if (booking.status === 'started' && booking.meetingUrl) {
             return (
@@ -205,15 +226,86 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
         </AlertDialog>
       );
     }
+    
+    const renderCheckoutContent = () => {
+      if (!user) {
+        return (
+          <>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Login Required</AlertDialogTitle>
+              <AlertDialogDescription>
+                You need to be logged in to book this session.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction asChild>
+                <Link href="/login">Login</Link>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </>
+        );
+      }
+
+      if (hasSufficientBalance) {
+        return (
+          <>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Your Booking</AlertDialogTitle>
+              <AlertDialogDescription>
+                The session fee of{' '}
+                <span className="font-bold">{formatCurrency(session.sessionFee)}</span>{' '}
+                will be deducted from your account balance.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+             <div className="text-sm">
+                <p>Current Balance: {formatCurrency(mentee?.accountBalance || 0)}</p>
+                <p>New Balance: {formatCurrency((mentee?.accountBalance || 0) - session.sessionFee)}</p>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleBookingConfirm}>
+                Confirm & Book
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </>
+        );
+      }
+      
+      return (
+        <>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Insufficient Balance</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Your current balance is <span className="font-bold">{formatCurrency(mentee?.accountBalance || 0)}</span>, but this session costs <span className="font-bold">{formatCurrency(session.sessionFee)}</span>. Please add funds to your account.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction asChild>
+                    <Link href="/dashboard">Add Balance</Link>
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </>
+      )
+    };
+
 
     return (
       <div className="flex gap-2">
         <Button variant="outline" className="w-full" asChild>
           <Link href={`/session/${encodeURIComponent(session.name)}`}>See More</Link>
         </Button>
-        <Button className="w-full" onClick={handleBooking}>
-          Book Session
-        </Button>
+        <AlertDialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
+            <AlertDialogTrigger asChild>
+                <Button className="w-full">
+                    Book Session
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                {renderCheckoutContent()}
+            </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   };
