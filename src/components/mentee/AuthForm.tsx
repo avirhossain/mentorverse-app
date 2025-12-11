@@ -171,7 +171,7 @@ export function AuthForm() {
             {isLoading ? "Signing In..." : (
                 <>
                     <GoogleIcon />
-                    Continue with Google
+                    Sign in/up with Google
                 </>
             )}
           </Button>
