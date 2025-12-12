@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import {
@@ -10,6 +9,8 @@ import {
   Settings,
   Inbox,
   UserPlus,
+  Contact,
+  UserRoundPlus,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -27,6 +28,8 @@ const navItems = [
   { href: '/admin/sessions', icon: Clock, label: 'Sessions' },
   { href: '/admin/disbursements', icon: Wallet, label: 'Disbursements' },
   { href: '/admin/inbox', icon: Inbox, label: 'Inbox' },
+  { href: '/admin/contact', icon: Contact, label: 'Contact Requests' },
+  { href: '/admin/mentor-requests', icon: UserRoundPlus, label: 'Mentor Requests' },
   { href: '/admin/waitlist', icon: UserPlus, label: 'Waitlist' },
 ];
 

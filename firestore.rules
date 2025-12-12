@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -19,7 +18,6 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/mentees/$(userId)) &&
              get(/databases/$(database)/documents/mentees/$(userId)).data.isActive == true;
     }
-
 
     // Mentees: Can only read/write their own profile if their account is active. Admins can read all.
     match /mentees/{menteeId} {
@@ -80,6 +78,18 @@ service cloud.firestore {
     match /specialRequests/{requestId} {
       allow get, list, update: if isAdmin();
       allow create: if request.auth != null && isMenteeActive(request.auth.uid) && isOwner(request.resource.data.menteeId);
+    }
+    
+    // Contact Requests: Anyone can create, Admins can manage.
+    match /contactRequests/{requestId} {
+      allow create: if true;
+      allow get, list, update, delete: if isAdmin();
+    }
+
+    // Mentor Requests: Anyone can create, Admins can manage.
+    match /mentorRequests/{requestId} {
+      allow create: if true;
+      allow get, list, update, delete: if isAdmin();
     }
 
     // --- Admin-only or user-specific subcollections ---

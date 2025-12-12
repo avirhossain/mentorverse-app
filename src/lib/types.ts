@@ -1,4 +1,3 @@
-
 'use client';
 // Defines the core data structures for the MenTees application, ensuring type safety.
 
@@ -125,6 +124,27 @@ export interface Notification {
     createdAt: string; // ISO 8601 date string
     link?: string;
 }
+
+export interface ContactRequest {
+  id: string;
+  name: string;
+  phone: string;
+  message: string;
+  status: 'pending' | 'read';
+  createdAt: string; // ISO 8601 date string
+  notes?: string;
+}
+
+export interface MentorRequest {
+  id: string;
+  name: string;
+  phone: string;
+  professionalSummary: string;
+  status: 'pending' | 'reviewed';
+  createdAt: string; // ISO 8601 date string
+  notes?: string;
+}
+
 
 // Subcollection types
 

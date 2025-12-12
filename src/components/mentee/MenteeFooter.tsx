@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -44,14 +43,14 @@ export const MenteeFooter = () => {
             Privacy Policy
           </Link>
            <Link
-            href="mailto:support@mentees.com"
+            href="/contact"
             className="text-sm hover:underline"
             prefetch={false}
           >
             Contact Us
           </Link>
            <Link
-            href="mailto:mentors@mentees.com"
+            href="/become-a-mentor"
             className="text-sm hover:underline"
             prefetch={false}
           >

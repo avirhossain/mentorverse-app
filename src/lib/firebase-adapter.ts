@@ -1,4 +1,3 @@
-
 'use client';
 // Shared Firestore Data Access Layer for Admin + Mentee apps
 // Adapted to use non-blocking writes and contextual error handling.
@@ -35,6 +34,8 @@ import type {
   Waitlist,
   Payout,
   Notification,
+  ContactRequest,
+  MentorRequest,
 } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -541,5 +542,55 @@ export const DisbursementAPI = {
       where('bookingIds', 'array-contains', bookingId)
     );
     return getDocs(q);
+  },
+};
+
+// ------------------ CONTACT REQUESTS ------------------
+export const ContactRequestsAPI = {
+  createRequest: (db: Firestore, data: Partial<ContactRequest>) => {
+    const id = uuidv4();
+    const requestRef = doc(db, 'contactRequests', id);
+    const fullData: ContactRequest = {
+      id,
+      name: data.name!,
+      phone: data.phone!,
+      message: data.message!,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    return setDoc(requestRef, fullData).catch(() => {
+      emitPermissionError(requestRef.path, 'create', fullData);
+    });
+  },
+  updateRequest: (db: Firestore, id: string, data: Partial<ContactRequest>) => {
+    const requestRef = doc(db, 'contactRequests', id);
+    return updateDoc(requestRef, data).catch(() => {
+      emitPermissionError(requestRef.path, 'update', data);
+    });
+  },
+};
+
+// ------------------ MENTOR REQUESTS ------------------
+export const MentorRequestsAPI = {
+  createRequest: (db: Firestore, data: Partial<MentorRequest>) => {
+    const id = uuidv4();
+    const requestRef = doc(db, 'mentorRequests', id);
+    const fullData: MentorRequest = {
+      id,
+      name: data.name!,
+      phone: data.phone!,
+      professionalSummary: data.professionalSummary!,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    return setDoc(requestRef, fullData).catch(() => {
+      emitPermissionError(requestRef.path, 'create', fullData);
+    });
+  },
+  updateRequest: (db: Firestore, id: string, data: Partial<MentorRequest>) => {
+    const requestRef = doc(db, 'mentorRequests', id);
+    return updateDoc(requestRef, data).catch(() => {
+      emitPermissionError(requestRef.path, 'update', data);
+    });
   },
 };

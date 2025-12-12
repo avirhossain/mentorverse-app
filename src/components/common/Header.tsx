@@ -1,4 +1,3 @@
-
 'use client';
 import React from 'react';
 import Link from 'next/link';
@@ -6,7 +5,7 @@ import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { PanelLeft, Home, Users, BookUser, Clock, Wallet, Settings, Inbox, UserPlus } from 'lucide-react';
+import { PanelLeft, Home, Users, BookUser, Clock, Wallet, Settings, Inbox, UserPlus, Contact, UserRoundPlus } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +16,8 @@ const navItems = [
   { href: '/admin/sessions', icon: Clock, label: 'Sessions' },
   { href: '/admin/disbursements', icon: Wallet, label: 'Disbursements' },
   { href: '/admin/inbox', icon: Inbox, label: 'Inbox' },
+  { href: '/admin/contact', icon: Contact, label: 'Contact Requests' },
+  { href: '/admin/mentor-requests', icon: UserRoundPlus, label: 'Mentor Requests' },
   { href: '/admin/waitlist', icon: UserPlus, label: 'Waitlist' },
 ];
 
