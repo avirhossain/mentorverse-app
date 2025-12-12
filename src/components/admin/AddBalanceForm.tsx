@@ -1,4 +1,3 @@
-
 'use client';
 import React from 'react';
 import { useForm } from 'react-hook-form';
@@ -9,16 +8,11 @@ import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Textarea } from '../ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { MenteesAPI } from '@/lib/firebase-adapter';
-import { useFirestore } from '@/firebase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const addBalanceSchema = z.object({
@@ -33,14 +27,12 @@ const addBalanceSchema = z.object({
 export type AddBalanceFormValues = z.infer<typeof addBalanceSchema>;
 
 interface AddBalanceFormProps {
-  menteeId: string;
+  onSubmit: (values: AddBalanceFormValues) => void;
 }
 
 export const AddBalanceForm: React.FC<AddBalanceFormProps> = ({
-  menteeId,
+  onSubmit,
 }) => {
-  const { toast } = useToast();
-  const firestore = useFirestore();
   const form = useForm<AddBalanceFormValues>({
     resolver: zodResolver(addBalanceSchema),
     defaultValues: {
@@ -51,45 +43,6 @@ export const AddBalanceForm: React.FC<AddBalanceFormProps> = ({
     },
   });
 
-  const handleFormSubmit = (values: AddBalanceFormValues) => {
-    if (!firestore) return;
-    if (values.paymentMethod === 'bKash') {
-      if (!values.transactionId) {
-        toast({
-          variant: 'destructive',
-          title: 'Transaction ID required',
-          description: 'Please enter your bKash transaction ID.',
-        });
-        return;
-      }
-      MenteesAPI.requestBalanceAdd(
-        firestore,
-        menteeId,
-        values.amount,
-        `bKash top-up request. TrxID: ${values.transactionId}`
-      );
-      toast({
-        title: 'Request Submitted',
-        description: 'We will confirm your payment shortly.',
-      });
-    } else if (values.paymentMethod === 'coupon') {
-      if (!values.couponCode) {
-        toast({
-          variant: 'destructive',
-          title: 'Coupon Code Required',
-          description: 'Please enter a coupon code.',
-        });
-        return;
-      }
-      // This is a placeholder for coupon verification logic.
-      // In a real app, you would call a cloud function to verify the coupon.
-      toast({
-        title: 'Coupon Applied!',
-        description: 'Your balance has been updated.',
-      });
-    }
-  };
-
   return (
     <Tabs defaultValue="bKash" className="w-full">
       <TabsList className="grid w-full grid-cols-2">
@@ -99,7 +52,7 @@ export const AddBalanceForm: React.FC<AddBalanceFormProps> = ({
       <TabsContent value="bKash">
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(handleFormSubmit)}
+            onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-4"
           >
             <FormField
@@ -150,7 +103,7 @@ export const AddBalanceForm: React.FC<AddBalanceFormProps> = ({
       <TabsContent value="coupon">
          <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(handleFormSubmit)}
+            onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-4"
           >
              <FormField

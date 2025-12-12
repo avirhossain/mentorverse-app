@@ -1,3 +1,4 @@
+'use client';
 
 import { use } from 'react';
 import { EditTipClient } from '@/components/admin/EditTipClient';
@@ -6,11 +7,7 @@ import { EditTipClient } from '@/components/admin/EditTipClient';
 export default function EditTipPage({
   params,
 }: {
-  params: Promise<{ tipId: string }>;
+  params: { tipId: string };
 }) {
-  // `use` unwraps the promise and gets the resolved params on the server.
-  const { tipId } = use(params);
-
-  // Pass the simple string prop to the Client Component.
-  return <EditTipClient tipId={tipId} />;
+  return <EditTipClient tipId={params.tipId} />;
 }

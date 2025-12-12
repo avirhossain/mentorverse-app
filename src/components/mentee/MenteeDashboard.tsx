@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '../ui/separator';
 import { Edit } from 'lucide-react';
-import { AddBalanceForm } from '@/components/admin/AddBalanceForm';
+import { AddBalanceForm, type AddBalanceFormValues } from '@/components/admin/AddBalanceForm';
 
 function PersonalDetails() {
   const { user, isUserLoading } = useUser();
@@ -136,6 +136,7 @@ function PersonalDetails() {
 function BalanceSection() {
     const { user } = useUser();
     const firestore = useFirestore();
+    const { toast } = useToast();
 
     const menteeRef = useMemoFirebase(() => {
         if (!firestore || !user) return null;
@@ -143,6 +144,45 @@ function BalanceSection() {
     }, [firestore, user]);
 
     const { data: mentee, isLoading } = useDoc<Mentee>(menteeRef);
+    
+    const handleAddBalanceSubmit = (values: AddBalanceFormValues) => {
+        if (!firestore || !user) return;
+        if (values.paymentMethod === 'bKash') {
+          if (!values.transactionId) {
+            toast({
+              variant: 'destructive',
+              title: 'Transaction ID required',
+              description: 'Please enter your bKash transaction ID.',
+            });
+            return;
+          }
+          MenteesAPI.requestBalanceAdd(
+            firestore,
+            user.uid,
+            values.amount,
+            `bKash top-up request. TrxID: ${values.transactionId}`
+          );
+          toast({
+            title: 'Request Submitted',
+            description: 'We will confirm your payment shortly.',
+          });
+        } else if (values.paymentMethod === 'coupon') {
+          if (!values.couponCode) {
+            toast({
+              variant: 'destructive',
+              title: 'Coupon Code Required',
+              description: 'Please enter a coupon code.',
+            });
+            return;
+          }
+          // This is a placeholder for coupon verification logic.
+          // In a real app, you would call a cloud function to verify the coupon.
+          toast({
+            title: 'Coupon Applied!',
+            description: 'Your balance has been updated.',
+          });
+        }
+      };
 
     return (
         <Card>
@@ -166,7 +206,7 @@ function BalanceSection() {
                                 Top up your account using one of the methods below.
                             </DialogDescription>
                         </DialogHeader>
-                        <AddBalanceForm menteeId={user?.uid} />
+                        <AddBalanceForm onSubmit={handleAddBalanceSubmit} />
                     </DialogContent>
                 </Dialog>
             </CardFooter>
