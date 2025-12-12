@@ -659,7 +659,9 @@ export default function SessionDetailsPage({
                   <Users className="h-5 w-5 text-muted-foreground" />
                   <span className="font-medium">
                     {isFull ? (
-                      <span className="text-destructive">Session Full</span>
+                      <span className="text-destructive font-semibold">Session Full</span>
+                    ) : availableSeats === 1 ? (
+                      <span className="text-amber-600 font-semibold">Only One Seat Available</span>
                     ) : (
                       <>
                         Seats Left:{' '}
