@@ -7,7 +7,6 @@ import { PublicDashboard } from '@/components/mentee/PublicDashboard';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import type { Mentor, Session } from '@/lib/types';
-import { ClientFeatures } from '@/components/mentee/ClientFeatures';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
@@ -62,7 +61,6 @@ export default function HomePage() {
         )}
       </main>
       <MenteeFooter />
-      <ClientFeatures />
     </div>
   );
 }
