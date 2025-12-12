@@ -17,7 +17,7 @@ export default function MentorPublicProfilePage({
 }: {
   params: { mentorName: string };
 }) {
-  const { mentorName } = React.use(params);
+  const { mentorName } = params;
   const firestore = useFirestore();
 
   const mentorsQuery = useMemoFirebase(() => {

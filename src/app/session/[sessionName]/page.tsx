@@ -94,7 +94,7 @@ export default function SessionDetailsPage({
 }: {
   params: { sessionName: string };
 }) {
-  const { sessionName } = React.use(params);
+  const { sessionName } = params;
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
