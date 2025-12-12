@@ -139,23 +139,25 @@ export default function SessionDetailsPage({
     if (!session?.scheduledDate || !session?.scheduledTime) {
       setSessionState('upcoming');
       return;
-    };
+    }
 
     const checkSessionState = () => {
       try {
         const now = new Date();
-        const datePart = parse(session.scheduledDate!, 'yyyy-MM-dd', new Date());
-        if (isNaN(datePart.getTime())) {
-            setSessionState('upcoming');
-            return;
-        };
-
-        const [hours, minutes] = session.scheduledTime!.split(':').map(Number);
-        datePart.setHours(hours, minutes);
         
+        const datePart = parse(session.scheduledDate, 'yyyy-MM-dd', new Date());
+        if (isNaN(datePart.getTime())) {
+          console.error("Invalid date parsed:", session.scheduledDate);
+          setSessionState('upcoming');
+          return;
+        }
+
+        const [hours, minutes] = session.scheduledTime.split(':').map(Number);
+        datePart.setHours(hours, minutes, 0, 0); // Set seconds and ms to 0 for accuracy
+
         const startTime = datePart;
         const endTime = addMinutes(startTime, session.duration || 0);
-
+        
         if (now >= startTime && now < endTime) {
           setSessionState('ongoing');
         } else if (now >= endTime) {
@@ -163,10 +165,12 @@ export default function SessionDetailsPage({
         } else {
           setSessionState('upcoming');
         }
-      } catch {
+      } catch (e) {
+        console.error("Error parsing session date/time:", e);
         setSessionState('upcoming'); // parsing failed, assume upcoming
       }
     };
+
 
     checkSessionState();
     const interval = setInterval(checkSessionState, 60000); // Check every minute
@@ -328,7 +332,7 @@ export default function SessionDetailsPage({
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button className="w-full text-lg" variant="secondary">
-              Session Full - Notify Me
+              Join Waitlist
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -622,10 +626,10 @@ export default function SessionDetailsPage({
           <Card className="sticky top-20">
             <CardHeader>
               <CardTitle>
-                {session.sessionFee > 0 ? (
-                  <span>{formatCurrency(session.sessionFee)}</span>
-                ) : (
+                {session.sessionType === 'Free' ? (
                   <span>Free Session</span>
+                ) : (
+                  <span>{formatCurrency(session.sessionFee)}</span>
                 )}
               </CardTitle>
             </CardHeader>
