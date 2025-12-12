@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { format, parse } from 'date-fns';
+import { format, parse, addMinutes } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { SessionBookingsAPI, SessionsAPI, ReviewsAPI } from '@/lib/firebase-adapter';
@@ -113,20 +113,37 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   const participantLimit = session.participants || 1;
   const isFull = bookedCount >= participantLimit;
 
-  const isSessionOver = React.useMemo(() => {
-    if (!session.scheduledDate || !session.scheduledTime) {
-      return false;
-    }
-    // Robust date parsing
-    try {
-      const datePart = parse(session.scheduledDate, 'yyyy-MM-dd', new Date());
-      const [hours, minutes] = session.scheduledTime.split(':').map(Number);
-      datePart.setHours(hours, minutes);
-      return datePart < new Date();
-    } catch {
-      return false; // If parsing fails, assume it's not over
-    }
-  }, [session.scheduledDate, session.scheduledTime]);
+  const [sessionState, setSessionState] = React.useState<'upcoming' | 'ongoing' | 'finished'>('upcoming');
+
+  React.useEffect(() => {
+    if (!session.scheduledDate || !session.scheduledTime) return;
+
+    const checkSessionState = () => {
+      try {
+        const now = new Date();
+        const startTime = parse(
+          `${session.scheduledDate} ${session.scheduledTime}`,
+          'yyyy-MM-dd HH:mm',
+          new Date()
+        );
+        const endTime = addMinutes(startTime, session.duration || 0);
+
+        if (now >= startTime && now < endTime) {
+          setSessionState('ongoing');
+        } else if (now >= endTime) {
+          setSessionState('finished');
+        } else {
+          setSessionState('upcoming');
+        }
+      } catch {
+        // parsing failed, do nothing
+      }
+    };
+
+    checkSessionState();
+    const interval = setInterval(checkSessionState, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [session.scheduledDate, session.scheduledTime, session.duration]);
 
 
   const hasSufficientBalance = (mentee?.accountBalance || 0) >= session.sessionFee;
@@ -224,12 +241,15 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   };
 
   const renderAction = () => {
-    // State 0: Session is over
-    if (isSessionOver) {
+    if (sessionState === 'finished') {
         if (hasBooked && !hasReviewed) {
              return <Button variant="outline" size="sm" onClick={() => setIsReviewOpen(true)}>Write a Review</Button>
         }
         return <Button variant="secondary" disabled>Expired</Button>
+    }
+    
+    if (sessionState === 'ongoing') {
+        return <Button variant="secondary" disabled>Session Going on</Button>
     }
 
     // State 1: User has booked this session

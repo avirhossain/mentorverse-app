@@ -1,14 +1,35 @@
 'use client';
 import { SessionCard } from './SessionCard';
 import type { Session } from '@/lib/types';
+import { addMinutes, parse } from 'date-fns';
 
 interface UpcomingSessionsProps {
   sessions: Session[];
 }
 
 export function UpcomingSessions({ sessions }: UpcomingSessionsProps) {
+  const now = new Date();
+  
+  const upcomingSessions = sessions.filter(session => {
+    if (!session.scheduledDate || !session.scheduledTime) {
+      return true; // Keep sessions without a date/time for now
+    }
+    try {
+      const datePart = parse(session.scheduledDate, 'yyyy-MM-dd', new Date());
+      if (isNaN(datePart.getTime())) return false; // Invalid date
+      const [hours, minutes] = session.scheduledTime.split(':').map(Number);
+      datePart.setHours(hours, minutes);
+      
+      const endTime = addMinutes(datePart, session.duration || 0);
+      return endTime >= now; // Only include sessions that have not finished
+    } catch {
+      return false; // Exclude sessions with parsing errors
+    }
+  });
+
+
   const renderContent = () => {
-    if (!sessions || sessions.length === 0) {
+    if (!upcomingSessions || upcomingSessions.length === 0) {
       return (
         <p className="mt-10 text-center text-muted-foreground">
           No upcoming sessions scheduled. Check back soon!
@@ -18,7 +39,7 @@ export function UpcomingSessions({ sessions }: UpcomingSessionsProps) {
 
     return (
       <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sessions.map((session) => (
+        {upcomingSessions.map((session) => (
           <SessionCard key={session.id} session={session} />
         ))}
       </div>
