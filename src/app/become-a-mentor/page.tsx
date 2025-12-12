@@ -27,7 +27,7 @@ import { MenteeFooter } from '@/components/mentee/MenteeFooter';
 import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { MentorRequestsAPI } from '@/lib/firebase-adapter';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 
 const formSchema = z.object({
@@ -82,6 +82,14 @@ export default function BecomeAMentorPage() {
       <MenteeHeader />
       <main className="flex-1">
         <div className="container mx-auto max-w-2xl px-4 py-12">
+          <div className="mb-4">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/">
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Back to Home
+              </Link>
+            </Button>
+          </div>
           <Card>
             <CardHeader>
               <CardTitle className="text-3xl">Become a Mentor</CardTitle>
