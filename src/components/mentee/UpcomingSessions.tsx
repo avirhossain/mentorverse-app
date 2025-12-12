@@ -13,8 +13,7 @@ export function UpcomingSessions() {
     if (!firestore) return null;
     return query(
       collection(firestore, 'sessions'),
-      where('sessionType', '!=', 'Special Request'), // Exclude special requests
-      orderBy('sessionType'), // This is needed for the inequality filter
+      where('status', '==', 'Active'),
       orderBy('scheduledDate', 'desc'),
       limit(3)
     );

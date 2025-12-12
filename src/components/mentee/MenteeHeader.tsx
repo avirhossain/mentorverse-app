@@ -1,4 +1,3 @@
-
 'use client';
 import React from 'react';
 import Link from 'next/link';
@@ -111,7 +110,9 @@ export function MenteeHeader() {
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard">Dashboard</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>My Sessions</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/my-sessions">My Sessions</Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   Sign Out
