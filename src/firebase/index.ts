@@ -5,25 +5,17 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore'
 
-// IMPORTANT: DO NOT MODIFY THIS FUNCTION
+// IMPORTANT: This function is for CLIENT-SIDE initialization.
+// A separate server-side initialization exists in firebase/index.server.ts
 export function initializeFirebase() {
   if (getApps().length) {
     // If already initialized, return the SDKs with the already initialized App
     return getSdks(getApp());
   }
 
-  // When in a production environment, Firebase App Hosting automatically provides
-  // the necessary environment variables to initialize the app without a config object.
-  if (process.env.NODE_ENV === 'production') {
-    // Important! initializeApp() is called without any arguments in production.
-    const firebaseApp = initializeApp();
-    return getSdks(firebaseApp);
-  } else {
-    // In a non-production environment (like local development),
-    // we fall back to using the explicit firebaseConfig object.
-    const firebaseApp = initializeApp(firebaseConfig);
-    return getSdks(firebaseApp);
-  }
+  // On the client, we always use the explicit firebaseConfig object.
+  const firebaseApp = initializeApp(firebaseConfig);
+  return getSdks(firebaseApp);
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {

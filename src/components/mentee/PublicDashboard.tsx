@@ -1,11 +1,15 @@
 'use client';
 import { FeaturedMentors } from '@/components/mentee/FeaturedMentors';
 import { UpcomingSessions } from '@/components/mentee/UpcomingSessions';
-import { Button } from '@/components/ui/button';
+import type { Mentor, Session } from '@/lib/types';
 import Image from 'next/image';
-import Link from 'next/link';
 
-export function PublicDashboard() {
+interface PublicDashboardProps {
+  mentors: Mentor[];
+  sessions: Session[];
+}
+
+export function PublicDashboard({ mentors, sessions }: PublicDashboardProps) {
   return (
     <>
       <section className="relative h-[50vh] md:h-[60vh] w-full">
@@ -27,8 +31,8 @@ export function PublicDashboard() {
           </p>
         </div>
       </section>
-      <FeaturedMentors />
-      <UpcomingSessions />
+      <FeaturedMentors mentors={mentors} />
+      <UpcomingSessions sessions={sessions} />
     </>
   );
 }

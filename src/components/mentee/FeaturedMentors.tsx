@@ -8,48 +8,13 @@ import {
 } from '@/components/ui/carousel';
 import { MentorCard } from './MentorCard';
 import type { Mentor } from '@/lib/types';
-import { Skeleton } from '../ui/skeleton';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 
+interface FeaturedMentorsProps {
+  mentors: Mentor[];
+}
 
-export function FeaturedMentors() {
-  const firestore = useFirestore();
-
-  const mentorsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(
-      collection(firestore, 'mentors'),
-      where('isActive', '==', true),
-      orderBy('createdAt', 'desc'),
-      limit(5)
-    );
-  }, [firestore]);
-
-  const { data: mentors, isLoading, error } = useCollection<Mentor>(mentorsQuery);
-
-
+export function FeaturedMentors({ mentors }: FeaturedMentorsProps) {
   const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="mt-10">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 3 }).map((_, index) => (
-                <Skeleton key={index} className="h-[280px] w-full rounded-lg" />
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <p className="mt-10 text-center text-destructive">
-          Error loading mentors: An error occurred.
-        </p>
-      );
-    }
-
     if (!mentors || mentors.length === 0) {
       return (
         <p className="mt-10 text-center text-muted-foreground">

@@ -1,45 +1,13 @@
 'use client';
 import { SessionCard } from './SessionCard';
 import type { Session } from '@/lib/types';
-import { Skeleton } from '../ui/skeleton';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 
+interface UpcomingSessionsProps {
+  sessions: Session[];
+}
 
-export function UpcomingSessions() {
-  const firestore = useFirestore();
-
-  const sessionsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(
-      collection(firestore, 'sessions'),
-      where('status', '==', 'Active'),
-      orderBy('scheduledDate', 'desc'),
-      limit(3)
-    );
-  }, [firestore]);
-  
-  const { data: sessions, isLoading, error } = useCollection<Session>(sessionsQuery);
-
+export function UpcomingSessions({ sessions }: UpcomingSessionsProps) {
   const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} className="h-[320px] w-full rounded-lg" />
-          ))}
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <p className="mt-10 text-center text-destructive">
-          Error loading sessions: An error occurred.
-        </p>
-      );
-    }
-
     if (!sessions || sessions.length === 0) {
       return (
         <p className="mt-10 text-center text-muted-foreground">
