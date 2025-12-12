@@ -145,17 +145,17 @@ export default function SessionDetailsPage({
       try {
         const now = new Date();
         
-        const datePart = parse(session.scheduledDate, 'yyyy-MM-dd', new Date());
-        if (isNaN(datePart.getTime())) {
-          console.error("Invalid date parsed:", session.scheduledDate);
+        // This is a safer parsing method
+        const [year, month, day] = session.scheduledDate.split('-').map(Number);
+        const [hours, minutes] = session.scheduledTime.split(':').map(Number);
+        const startTime = new Date(year, month - 1, day, hours, minutes);
+
+        if (isNaN(startTime.getTime())) {
+          console.error("Invalid date constructed:", session.scheduledDate, session.scheduledTime);
           setSessionState('upcoming');
           return;
         }
 
-        const [hours, minutes] = session.scheduledTime.split(':').map(Number);
-        datePart.setHours(hours, minutes, 0, 0); // Set seconds and ms to 0 for accuracy
-
-        const startTime = datePart;
         const endTime = addMinutes(startTime, session.duration || 0);
         
         if (now >= startTime && now < endTime) {
@@ -331,7 +331,7 @@ export default function SessionDetailsPage({
       return (
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button className="w-full text-lg" variant="secondary">
+            <Button className="w-full text-lg">
               Join Waitlist
             </Button>
           </AlertDialogTrigger>
