@@ -3,12 +3,10 @@ import * as React from 'react';
 import { MenteeHeader } from '@/components/mentee/MenteeHeader';
 import { MenteeFooter } from '@/components/mentee/MenteeFooter';
 import { PublicDashboard } from '@/components/mentee/PublicDashboard';
-import { MotivationalChat } from '@/components/common/MotivationalChat';
-import { Button } from '@/components/ui/button';
-import { MessageSquare } from 'lucide-react';
 import { initializeFirebaseOnServer } from '@/firebase/index.server';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import type { Mentor, Session } from '@/lib/types';
+import { ClientFeatures } from '@/components/mentee/ClientFeatures';
 
 
 async function getHomepageData() {
@@ -44,26 +42,6 @@ async function getHomepageData() {
 // This is now a Server Component
 export default async function HomePage() {
   const { mentors, sessions } = await getHomepageData();
-
-  // The MotivationalChat is a client component that needs to be stateful on its own.
-  // We can wrap it in its own client component if needed, or keep it as is if it manages its own state.
-  // For now, we will render it from a client component wrapper.
-  const ClientFeatures = () => {
-    'use client';
-    const [isChatOpen, setIsChatOpen] = React.useState(false);
-    return (
-      <>
-        <Button
-          onClick={() => setIsChatOpen(true)}
-          className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg"
-          aria-label="Open motivational chat"
-        >
-          <MessageSquare className="h-6 w-6" />
-        </Button>
-        <MotivationalChat open={isChatOpen} onOpenChange={setIsChatOpen} />
-      </>
-    )
-  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
