@@ -131,6 +131,7 @@ export default function SessionDetailsPage({
   const bookedCount = session?.bookedCount || 0;
   const participantLimit = session?.participants || 1;
   const isFull = bookedCount >= participantLimit;
+  const availableSeats = participantLimit - bookedCount;
 
   const isSessionOver = React.useMemo(() => {
     if (!session?.scheduledDate || !session?.scheduledTime) {
@@ -619,7 +620,7 @@ export default function SessionDetailsPage({
                     {isFull && !hasBooked ? (
                           <span className="text-destructive">No Seats Available</span>
                       ) : (
-                          `${bookedCount} / ${participantLimit} Seats Booked`
+                          `${availableSeats}/${participantLimit} seats available`
                       )}
                   </span>
                 </div>

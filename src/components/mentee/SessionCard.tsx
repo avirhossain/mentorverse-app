@@ -112,6 +112,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   const bookedCount = session.bookedCount || 0;
   const participantLimit = session.participants || 1;
   const isFull = bookedCount >= participantLimit;
+  const availableSeats = participantLimit - bookedCount;
 
   const [sessionState, setSessionState] = React.useState<'upcoming' | 'ongoing' | 'finished'>('upcoming');
 
@@ -531,7 +532,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
                     {isFull ? (
                         <span className="text-destructive">No Seats Available</span>
                     ) : (
-                        `${bookedCount}/${participantLimit} Seats Booked`
+                        `${availableSeats}/${participantLimit} seats available`
                     )}
                 </span>
             </div>
