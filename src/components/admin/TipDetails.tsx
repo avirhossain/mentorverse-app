@@ -1,149 +1,102 @@
+rules_version = '2';
 
-'use client';
+service cloud.firestore {
+  match /databases/{database}/documents {
 
-import * as React from 'react';
-import Link from 'next/link';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, Edit, Trash2 } from 'lucide-react';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { Tip } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
-import { TipsAPI } from '@/lib/firebase-adapter';
-import { useRouter } from 'next/navigation';
-
-export function TipDetailsClient({ tipId }: { tipId: string }) {
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  const router = useRouter();
-
-  const tipRef = useMemoFirebase(
-    () => (firestore ? doc(firestore, 'tips', tipId) : null),
-    [firestore, tipId]
-  );
-  const { data: tip, isLoading } = useDoc<Tip>(tipRef);
-
-  const handleDelete = () => {
-    if (!firestore || !tip) return;
-    TipsAPI.deleteTip(firestore, tipId);
-    toast({
-      variant: 'destructive',
-      title: 'Tip Deleted',
-      description: `The tip "${tip.title}" has been removed.`,
-    });
-    router.push('/admin/tips');
-  };
-
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <CardContent>
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-24 w-full" />
-          </div>
-        </CardContent>
-      );
+    function isAdmin() {
+      // This rule checks if a user has an admin email.
+      // For production, it's recommended to use custom claims instead of hardcoding emails.
+      return request.auth != null && (request.auth.token.email == 'avirhossain@gmail.com' || request.auth.token.email == 'sabina@gmail.com');
     }
 
-    if (!tip) {
-      return (
-        <CardContent>
-          <p>This tip could not be found.</p>
-        </CardContent>
-      );
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    function isMenteeActive(userId) {
+      // Allow access only if the mentee's profile exists and they are active.
+      return exists(/databases/$(database)/documents/mentees/$(userId)) &&
+             get(/databases/$(database)/documents/mentees/$(userId)).data.isActive == true;
     }
 
-    return (
-      <>
-        <CardHeader>
-          <div className="flex items-start justify-between gap-4">
-            <CardTitle className="text-2xl">{tip.title}</CardTitle>
-            <Badge variant={tip.isActive ? 'default' : 'secondary'}>
-              {tip.isActive ? 'Active' : 'Inactive'}
-            </Badge>
-          </div>
-          <CardDescription>
-            Published on {format(new Date(tip.createdAt), 'MMMM d, yyyy')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="whitespace-pre-wrap">{tip.description}</p>
-        </CardContent>
-        <CardFooter className="flex justify-between border-t px-6 py-4">
-            <div className='flex items-center gap-2'>
-                 <Button asChild variant="outline" size="sm">
-                    <Link href={`/admin/tips/${tipId}/edit`}>
-                    <Edit className="mr-2 h-4 w-4" /> Edit
-                    </Link>
-                </Button>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                    </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete this
-                        tip.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete}>
-                        Continue
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </div>
-        </CardFooter>
-      </>
-    );
-  };
 
-  return (
-    <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-      <div className="mx-auto grid w-full max-w-3xl flex-1 auto-rows-max gap-4">
-        <div className="flex items-center gap-4">
-          <Button asChild variant="outline" size="icon" className="h-7 w-7">
-            <Link href="/admin/tips">
-              <ChevronLeft className="h-4 w-4" />
-              <span className="sr-only">Back</span>
-            </Link>
-          </Button>
-          <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
-            Tip Details
-          </h1>
-        </div>
-        <Card>{renderContent()}</Card>
-      </div>
-    </div>
-  );
+    // Mentees: Can only read/write their own profile if their account is active. Admins can read all.
+    match /mentees/{menteeId} {
+      allow get: if (isOwner(menteeId) && isMenteeActive(menteeId)) || isAdmin();
+      allow list: if isAdmin();
+      // Allow creation before isActive is set, but ensure it's set to true initially.
+      allow create: if isOwner(menteeId) && request.resource.data.isActive == true; 
+      allow update: if isOwner(menteeId) || isAdmin(); // allow admin to update isActive
+    }
+
+    // Mentors: Active mentors are publicly readable. Admins can write.
+    match /mentors/{mentorId} {
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Sessions: Readable by anyone, but only admins can create/manage them.
+    match /sessions/{sessionId} {
+      allow get, list: if true;
+      allow create, delete: if isAdmin();
+      // Allow mentees to update bookedCount, but nothing else
+      allow update: if isAdmin() || (request.auth != null && isMenteeActive(request.auth.uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bookedCount']));
+    }
+    
+    match /sessions/{sessionId}/waitlist/{userId} {
+        allow create: if true; // Anyone can join a waitlist
+        allow get, update, delete: if isAdmin();
+    }
+
+    // Rule for Collection Group Query on 'waitlist'
+    match /{path=**}/waitlist/{userId} {
+      allow list: if isAdmin();
+    }
+
+    // Session Bookings: Active mentees can create/read their own bookings. Admins can read all.
+    match /sessionBookings/{bookingId} {
+      allow get: if request.auth != null && ((isOwner(resource.data.menteeId) && isMenteeActive(request.auth.uid)) || isAdmin());
+      
+      // Admins can list all bookings. Mentees can only list their own if they query by their menteeId.
+      allow list: if request.auth != null && (isAdmin() || (isMenteeActive(request.auth.uid) && request.query.where[0][0] == "menteeId" && request.query.where[0][2] == request.auth.uid));
+
+      allow create: if request.auth != null && isOwner(request.resource.data.menteeId) && isMenteeActive(request.auth.uid);
+      
+      allow update, delete: if isAdmin();
+    }
+
+    // Reviews: Readable by anyone. Can be created by active users, or by guests for free sessions.
+    match /reviews/{reviewId} {
+       allow get, list: if true;
+       // Allow create if user is logged in and active
+       allow create: if (request.auth != null && isMenteeActive(request.auth.uid)) || 
+                        // OR if it's a guest review for a free session
+                        (request.auth == null && request.resource.data.menteeName != null); 
+       allow update, delete: if isAdmin();
+    }
+    
+    // Special Requests: Mentees can create, Admins can read/update.
+    match /specialRequests/{requestId} {
+      allow get, list, update: if isAdmin();
+      allow create: if request.auth != null && isMenteeActive(request.auth.uid) && isOwner(request.resource.data.menteeId);
+    }
+
+    // --- Admin-only or user-specific subcollections ---
+
+    match /disbursements/{disbursementId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /mentees/{menteeId}/transactions/{transactionId} {
+      allow read, write: if (isOwner(menteeId) && isMenteeActive(menteeId)) || isAdmin();
+    }
+
+    match /mentees/{menteeId}/notifications/{notificationId} {
+        allow read, write: if isOwner(menteeId) || isAdmin();
+    }
+    
+    match /mentors/{mentorId}/payouts/{payoutId} {
+      allow read, write: if isAdmin();
+    }
+  }
 }

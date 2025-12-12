@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import Link from 'next/link';
@@ -16,7 +17,6 @@ import {
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/tips', label: 'Tips' },
 ];
 
 export function MenteeHeader() {

@@ -399,42 +399,6 @@
         "rating"
       ]
     },
-    "tip": {
-      "title": "Tip",
-      "description": "A helpful tip or article for mentees, managed by admins.",
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "title": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "imageUrl": {
-          "type": "string",
-          "format": "uri"
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "adminId": {
-          "type": "string"
-        },
-        "isActive": {
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "id",
-        "title",
-        "description",
-        "adminId"
-      ]
-    },
     "disbursement": {
       "title": "Disbursement",
       "description": "Tracks payment settlements to mentors, managed by admins.",
@@ -690,12 +654,6 @@
         "$ref": "#/entities/review"
       },
       "description": "Stores all reviews for completed sessions."
-    },
-    "/tips/{tipId}": {
-      "schema": {
-        "$ref": "#/entities/tip"
-      },
-      "description": "Stores helpful tips for mentees, managed by admins."
     },
     "/disbursements/{disbursementId}": {
       "schema": {

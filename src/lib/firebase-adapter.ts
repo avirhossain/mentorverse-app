@@ -30,7 +30,6 @@ import type {
   Session,
   Booking,
   Review,
-  Tip,
   Disbursement,
   Transaction,
   Waitlist,
@@ -503,37 +502,6 @@ export const ReviewsAPI = {
   },
 };
 
-// ------------------ TIPS ------------------
-export const TipsAPI = {
-  listTips: (db: Firestore) => {
-    return getDocs(collection(db, 'tips'));
-  },
-
-  createTip: (db: Firestore, data: WithFieldValue<Tip>) => {
-    const tipsCol = collection(db, 'tips');
-    addDoc(tipsCol, data).catch(() => {
-      emitPermissionError(tipsCol.path, 'create', data);
-    });
-  },
-
-  updateTip: (
-    db: Firestore,
-    id: string,
-    data: Partial<WithFieldValue<Tip>>
-  ) => {
-    const tipRef = doc(db, 'tips', id);
-    updateDoc(tipRef, data).catch(() => {
-      emitPermissionError(tipRef.path, 'update', data);
-    });
-  },
-
-  deleteTip: (db: Firestore, id: string) => {
-    const tipRef = doc(db, 'tips', id);
-    deleteDoc(tipRef).catch(() => {
-      emitPermissionError(tipRef.path, 'delete');
-    });
-  },
-};
 
 // ------------------ DISBURSEMENTS ------------------
 export const DisbursementAPI = {

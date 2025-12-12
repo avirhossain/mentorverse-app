@@ -93,17 +93,6 @@ export interface Review {
   createdAt: string; // ISO 8601 date string
 }
 
-export interface Tip {
-  id: string; // Corresponds to document ID
-  title: string;
-  description: string;
-  imageUrl?: string;
-  linkUrl?: string;
-  createdAt: string; // ISO 8601 date string
-  adminId: string;
-  isActive: boolean;
-}
-
 export interface Disbursement {
   id: string; // Corresponds to document ID
   mentorId: string;

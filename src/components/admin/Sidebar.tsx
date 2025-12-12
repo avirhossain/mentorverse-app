@@ -8,7 +8,6 @@ import {
   Clock,
   Wallet,
   Settings,
-  Lightbulb,
   Inbox,
   UserPlus,
 } from 'lucide-react';
@@ -27,7 +26,6 @@ const navItems = [
   { href: '/admin/mentees', icon: BookUser, label: 'Mentees' },
   { href: '/admin/sessions', icon: Clock, label: 'Sessions' },
   { href: '/admin/disbursements', icon: Wallet, label: 'Disbursements' },
-  { href: '/admin/tips', icon: Lightbulb, label: 'Tips' },
   { href: '/admin/inbox', icon: Inbox, label: 'Inbox' },
   { href: '/admin/waitlist', icon: UserPlus, label: 'Waitlist' },
 ];

@@ -76,15 +76,6 @@ service cloud.firestore {
        allow update, delete: if isAdmin();
     }
     
-    // Tips: Active tips are readable by active users. Admins have write access.
-    match /tips/{tipId} {
-      // Allow read only if tip is active, or if user is an admin.
-      allow get: if (resource.data.isActive == true) || isAdmin();
-       // Allow list for any authenticated user, client must filter by isActive.
-      allow list: if request.auth != null;
-      allow create, update, delete: if isAdmin();
-    }
-    
     // Special Requests: Mentees can create, Admins can read/update.
     match /specialRequests/{requestId} {
       allow get, list, update: if isAdmin();
