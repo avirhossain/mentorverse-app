@@ -15,10 +15,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const navLinks = [
-  { href: '/', label: 'Home' },
-];
-
 export function MenteeHeader() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
@@ -58,15 +54,6 @@ export function MenteeHeader() {
           <span className="font-bold hidden sm:inline-block">MenTees</span>
         </Link>
         <nav className="hidden gap-6 md:flex">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {link.label}
-            </Link>
-          ))}
            {user && (
             <Link
                 href="/dashboard"
