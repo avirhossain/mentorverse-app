@@ -1,5 +1,6 @@
 
 {
+  "production": true,
   "entities": {
     "mentor": {
       "title": "Mentor",
