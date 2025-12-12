@@ -210,44 +210,25 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
     });
   };
 
-  const renderFooter = () => {
+  const renderAction = () => {
     // State 0: Session is over
     if (isSessionOver) {
-        return (
-            <div className="w-full text-center">
-                {session.sessionType === 'Free' && (
-                    <Button variant="outline" size="sm" onClick={() => setIsReviewOpen(true)}>Write a Review</Button>
-                )}
-                {(session.sessionType !== 'Free' || hasBooked) && (
-                    <>
-                        <p className="text-sm text-muted-foreground font-semibold mb-2">Session Expired</p>
-                        {hasBooked && !hasReviewed && (
-                            <Button variant="outline" size="sm" onClick={() => setIsReviewOpen(true)}>Write a Review</Button>
-                        )}
-                        {hasBooked && hasReviewed && (
-                            <p className="text-sm text-muted-foreground">Thank you for your review!</p>
-                        )}
-                    </>
-                )}
-            </div>
-        );
+        if (hasBooked && !hasReviewed) {
+             return <Button variant="outline" size="sm" onClick={() => setIsReviewOpen(true)}>Write a Review</Button>
+        }
+        return <Button variant="secondary" disabled>Expired</Button>
     }
 
     // State 1: User has booked this session
     if (hasBooked && userBooking) {
         if (userBooking.status === 'started' && userBooking.meetingUrl) {
             return (
-                <Button asChild className="w-full">
+                <Button asChild>
                     <a href={userBooking.meetingUrl} target="_blank" rel="noopener noreferrer">Join Session</a>
                 </Button>
             );
         }
-        return (
-            <div className="w-full text-center">
-                 <Button className="w-full" disabled>Join Session</Button>
-                 <p className="text-xs text-muted-foreground mt-1">Link will be active when the session starts.</p>
-            </div>
-        )
+        return <Button disabled>Booked</Button>
     }
 
     // State 2: Session is full and user has NOT booked
@@ -366,10 +347,6 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
 
 
     return (
-      <div className="flex gap-2">
-        <Button variant="outline" className="w-full" asChild>
-          <Link href={`/session/${session.name.replace(/\s+/g, '-')}`}>See More</Link>
-        </Button>
         <AlertDialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
             <AlertDialogTrigger asChild>
                 <Button className="w-full">
@@ -380,7 +357,6 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
                 {renderCheckoutContent()}
             </AlertDialogContent>
         </AlertDialog>
-      </div>
     );
   };
   
@@ -527,12 +503,15 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
            )}
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col items-stretch p-4 pt-0">
-        {isLoadingStatus ? <div className="h-9 w-full rounded-md bg-muted animate-pulse" /> : renderFooter()}
+      <CardFooter className="flex items-stretch gap-2 p-4 pt-0">
+        <Button variant="outline" className="w-full" asChild>
+            <Link href={`/session/${session.name.replace(/\s+/g, '-')}`}>See More</Link>
+        </Button>
+        <div className="w-full">
+            {isLoadingStatus ? <div className="h-9 w-full rounded-md bg-muted animate-pulse" /> : renderAction()}
+        </div>
       </CardFooter>
       <ReviewDialog session={session} userBooking={userBooking} />
     </Card>
   );
 }
-
-  
