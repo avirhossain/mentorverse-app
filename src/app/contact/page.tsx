@@ -29,6 +29,7 @@ import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { ContactRequestsAPI } from '@/lib/firebase-adapter';
 import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -92,11 +93,14 @@ export default function ContactPage() {
             </CardHeader>
             <CardContent>
               {isSubmitted ? (
-                <div className="text-center">
+                <div className="text-center space-y-4">
                   <h3 className="text-xl font-semibold text-primary">Thank You!</h3>
                   <p className="mt-2 text-muted-foreground">
                     We have received your message and will get back to you soon.
                   </p>
+                  <Button asChild variant="outline">
+                    <Link href="/">Back to Home</Link>
+                  </Button>
                 </div>
               ) : (
                 <Form {...form}>
