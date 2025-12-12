@@ -58,7 +58,7 @@ service cloud.firestore {
     match /sessionBookings/{bookingId} {
       allow get: if request.auth != null && ((isOwner(resource.data.menteeId) && isMenteeActive(request.auth.uid)) || isAdmin());
       
-      // Admins can list all bookings, mentees can only list their own if they query by their menteeId.
+      // Admins can list all bookings. Mentees can only list their own if they query by their menteeId.
       allow list: if request.auth != null && (isAdmin() || (isMenteeActive(request.auth.uid) && request.query.where[0][0] == "menteeId" && request.query.where[0][2] == request.auth.uid));
 
       allow create: if request.auth != null && isOwner(request.resource.data.menteeId) && isMenteeActive(request.auth.uid);
