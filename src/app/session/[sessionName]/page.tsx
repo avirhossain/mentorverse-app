@@ -330,7 +330,7 @@ export default function SessionDetailsPage({
           <AlertDialogTrigger asChild>
              <Button className="w-full text-lg">
                 {session.sessionFee > 0
-                  ? `Book Now for ${formatCurrency(session.sessionFee)}`
+                  ? 'Book Now'
                   : 'Claim Your Seat'}
               </Button>
           </AlertDialogTrigger>
