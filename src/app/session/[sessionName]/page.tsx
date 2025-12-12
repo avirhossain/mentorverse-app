@@ -574,13 +574,12 @@ export default function SessionDetailsPage({
         <div className="space-y-4">
           <Card className="sticky top-20">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle>
                 {session.sessionFee > 0 ? (
                   <span>{formatCurrency(session.sessionFee)}</span>
                 ) : (
                   <span>Free Session</span>
                 )}
-                <Badge variant="secondary">{session.sessionType}</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
