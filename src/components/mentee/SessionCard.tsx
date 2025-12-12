@@ -43,10 +43,8 @@ interface SessionCardProps {
 
 const getTypeBadgeVariant = (type: Session['sessionType']) => {
   switch (type) {
-    case 'Paid':
-      return 'default';
     case 'Free':
-      return 'secondary';
+        return 'default';
     case 'Exclusive':
       return 'outline';
     default:
@@ -455,9 +453,11 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
       <CardHeader className="p-4">
         <div className="flex items-start justify-between">
           <CardTitle className="pr-4 text-lg">{session.name}</CardTitle>
-          <Badge variant={getTypeBadgeVariant(session.sessionType)}>
-            {session.sessionType}
-          </Badge>
+          {session.sessionType === 'Free' && (
+            <Badge variant={getTypeBadgeVariant(session.sessionType)}>
+              {session.sessionType}
+            </Badge>
+          )}
         </div>
         <CardDescription>By {session.mentorName}</CardDescription>
       </CardHeader>
