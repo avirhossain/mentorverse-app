@@ -256,7 +256,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button className="w-full" variant="secondary">
-              Notify Me
+              Join Waitlist
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -534,3 +534,5 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
     </Card>
   );
 }
+
+  
