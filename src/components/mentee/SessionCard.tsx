@@ -541,16 +541,16 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
             </div>
           )}
            {session.participants && (
-            <div className="flex items-center gap-2 font-medium">
-                <Users className="h-4 w-4" />
-                <span>
-                    {isFull ? (
-                        <span className="text-destructive">No Seats Available</span>
-                    ) : (
-                        `Seats Left: Only ${availableSeats} / ${participantLimit}`
-                    )}
-                </span>
-            </div>
+                <div className="flex items-center gap-2 font-medium">
+                    <Users className="h-4 w-4" />
+                     <span>
+                        {isFull && !hasBooked ? (
+                            <span className="text-destructive">No Seats Available</span>
+                        ) : (
+                            `Seats Left: Only ${availableSeats} / ${participantLimit}`
+                        )}
+                    </span>
+                </div>
            )}
         </div>
       </CardContent>
@@ -566,3 +566,5 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
     </Card>
   );
 }
+
+    
