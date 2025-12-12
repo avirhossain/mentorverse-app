@@ -37,7 +37,7 @@ export const MenteeFooter = () => {
             Terms & Conditions
           </Link>
           <Link
-            href="/privacy"
+            href="/privacy-policy"
             className="text-sm hover:underline"
             prefetch={false}
           >
