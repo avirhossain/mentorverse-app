@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -68,10 +69,13 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
-    // Reviews: Readable by active users, can be created by active users. Admins have full control.
+    // Reviews: Readable by anyone. Can be created by active users, or by guests for free sessions.
     match /reviews/{reviewId} {
        allow get, list: if true;
-       allow create: if request.auth != null && isMenteeActive(request.auth.uid);
+       // Allow create if user is logged in and active
+       allow create: if (request.auth != null && isMenteeActive(request.auth.uid)) || 
+                        // OR if it's a guest review for a free session
+                        (request.auth == null && request.resource.data.menteeName != null); 
        allow update, delete: if isAdmin();
     }
     

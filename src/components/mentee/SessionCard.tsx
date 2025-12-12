@@ -114,6 +114,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   const bookedCount = session.bookedCount || 0;
   const participantLimit = session.participants || 1;
   const isFull = bookedCount >= participantLimit;
+  const isSessionOver = session.scheduledDate ? new Date(session.scheduledDate) < new Date() : false;
 
   const hasSufficientBalance = (mentee?.accountBalance || 0) >= session.sessionFee;
 
@@ -210,21 +211,30 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   };
 
   const renderFooter = () => {
+    // State 0: Session is over
+    if (isSessionOver) {
+        return (
+            <div className="w-full text-center">
+                {session.sessionType === 'Free' && (
+                    <Button variant="outline" size="sm" onClick={() => setIsReviewOpen(true)}>Write a Review</Button>
+                )}
+                {(session.sessionType !== 'Free' || hasBooked) && (
+                    <>
+                        <p className="text-sm text-muted-foreground font-semibold mb-2">Session Expired</p>
+                        {hasBooked && !hasReviewed && (
+                            <Button variant="outline" size="sm" onClick={() => setIsReviewOpen(true)}>Write a Review</Button>
+                        )}
+                        {hasBooked && hasReviewed && (
+                            <p className="text-sm text-muted-foreground">Thank you for your review!</p>
+                        )}
+                    </>
+                )}
+            </div>
+        );
+    }
+
     // State 1: User has booked this session
     if (hasBooked && userBooking) {
-        if (userBooking.status === 'completed' || userBooking.status === 'cancelled' || session.status === 'Expired') {
-            return (
-                <div className="w-full text-center">
-                    <p className="text-sm text-muted-foreground font-semibold mb-2">Session Expired</p>
-                    {!hasReviewed && (
-                         <Button variant="outline" size="sm" onClick={() => setIsReviewOpen(true)}>Write a Review</Button>
-                    )}
-                    {hasReviewed && (
-                        <p className="text-sm text-muted-foreground">Thank you for your review!</p>
-                    )}
-                </div>
-            );
-        }
         if (userBooking.status === 'started' && userBooking.meetingUrl) {
             return (
                 <Button asChild className="w-full">
@@ -374,27 +384,69 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
     );
   };
   
-  const ReviewDialog = ({ booking }: { booking: Booking }) => {
+  const ReviewDialog = ({ session, userBooking }: { session: Session, userBooking?: Booking }) => {
     const [rating, setRating] = React.useState(0);
     const [reviewText, setReviewText] = React.useState('');
+    const [guestName, setGuestName] = React.useState('');
+    const [guestPhone, setGuestPhone] = React.useState('');
 
     const handleReviewSubmit = () => {
-        // Validation could be added here
-        console.log({ rating, reviewText, bookingId: booking.id });
+        if (!firestore) return;
+        if (rating === 0) {
+            toast({ variant: "destructive", title: "Rating required", description: "Please select a star rating." });
+            return;
+        }
+        if (!user && !guestName) {
+            toast({ variant: "destructive", title: "Name required", description: "Please enter your name." });
+            return;
+        }
+
+        const newReview: Partial<Review> = {
+            id: uuidv4(),
+            bookingId: userBooking?.id, // Can be undefined for guests
+            mentorId: session.mentorId,
+            rating,
+            reviewText,
+            createdAt: new Date().toISOString(),
+        };
+
+        if (user) {
+            newReview.menteeId = user.uid;
+            newReview.menteeName = user.displayName || 'Anonymous';
+        } else {
+            newReview.menteeId = `guest_${uuidv4()}`; // Create a guest ID
+            newReview.menteeName = guestName;
+            newReview.menteePhone = guestPhone;
+        }
+
+        ReviewsAPI.createReview(firestore, newReview as Review);
+
+        toast({ title: "Review Submitted", description: "Thank you for your feedback!" });
         setIsReviewOpen(false);
-        // Here you would call the API to submit the review
     };
     
     return (
         <AlertDialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Write a Review for "{booking.sessionName}"</AlertDialogTitle>
+                    <AlertDialogTitle>Write a Review for "{session.name}"</AlertDialogTitle>
                     <AlertDialogDescription>
                         Your feedback helps other mentees make better decisions.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="py-4 space-y-4">
+                    {!user && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="guest-name">Name</Label>
+                                <Input id="guest-name" value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Your Name" />
+                            </div>
+                             <div className="grid gap-2">
+                                <Label htmlFor="guest-phone">Phone (Optional)</Label>
+                                <Input id="guest-phone" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Your Phone Number" />
+                            </div>
+                        </div>
+                    )}
                     <div className="flex justify-center items-center gap-1">
                         {[1, 2, 3, 4, 5].map((star) => (
                         <Star
@@ -478,7 +530,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
       <CardFooter className="flex flex-col items-stretch p-4 pt-0">
         {isLoadingStatus ? <div className="h-9 w-full rounded-md bg-muted animate-pulse" /> : renderFooter()}
       </CardFooter>
-      {userBooking && <ReviewDialog booking={userBooking} />}
+      <ReviewDialog session={session} userBooking={userBooking} />
     </Card>
   );
 }

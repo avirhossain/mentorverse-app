@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "mentor": {
@@ -353,7 +354,7 @@
     },
     "review": {
       "title": "Review",
-      "description": "A review left by a mentee for a completed session.",
+      "description": "A review left by a mentee for a completed session. Can be from a logged-in user or a guest for free sessions.",
       "type": "object",
       "properties": {
         "id": {
@@ -361,13 +362,22 @@
         },
         "bookingId": {
           "type": "string",
-          "description": "The ID of the booking being reviewed."
+          "description": "The ID of the booking being reviewed. Can be null for guest reviews on free sessions."
         },
         "mentorId": {
           "type": "string"
         },
         "menteeId": {
-          "type": "string"
+          "type": "string",
+          "description": "The ID of the mentee or a generated ID for a guest."
+        },
+        "menteeName": {
+          "type": "string",
+          "description": "The name of the reviewer."
+        },
+        "menteePhone": {
+          "type": "string",
+          "description": "Optional phone number for a guest reviewer."
         },
         "rating": {
           "type": "number"
@@ -382,9 +392,9 @@
       },
       "required": [
         "id",
-        "bookingId",
         "mentorId",
         "menteeId",
+        "menteeName",
         "rating"
       ]
     },

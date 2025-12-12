@@ -1,6 +1,6 @@
 
 'use client';
-// Defines the core data structures for the MentorVerse application, ensuring type safety.
+// Defines the core data structures for the MenTees application, ensuring type safety.
 
 export interface Mentor {
   id: string; // Corresponds to document ID
@@ -83,9 +83,11 @@ export interface Booking {
 
 export interface Review {
   id: string; // Corresponds to document ID
-  bookingId: string;
+  bookingId?: string; // Optional: not present for guest reviews on free sessions
   mentorId: string;
-  menteeId: string;
+  menteeId: string; // UID for users, generated ID for guests
+  menteeName: string; // Name of the reviewer (user or guest)
+  menteePhone?: string; // Optional phone for guests
   rating: number;
   reviewText?: string;
   createdAt: string; // ISO 8601 date string
@@ -159,5 +161,3 @@ export interface Waitlist {
   phoneNumber?: string;
   createdAt: string; // ISO 8601 date string
 }
-
-    
