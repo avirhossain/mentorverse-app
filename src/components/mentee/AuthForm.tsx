@@ -164,6 +164,7 @@ export function AuthForm() {
       <CardContent>
         <div className="grid grid-cols-1 gap-4 pt-4">
           <Button
+            type="button"
             variant="outline"
             className="w-full"
             onClick={handleGoogleSignIn}

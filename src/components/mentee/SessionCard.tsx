@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 import { useUser, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { SessionBookingsAPI, SessionsAPI, ReviewsAPI } from '@/lib/firebase-adapter';
@@ -113,15 +113,19 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   const participantLimit = session.participants || 1;
   const isFull = bookedCount >= participantLimit;
 
-  const getSessionDateTime = () => {
-    if (!session.scheduledDate || !session.scheduledTime) return null;
-    return new Date(`${session.scheduledDate}T${session.scheduledTime}`);
-  }
-
   const isSessionOver = React.useMemo(() => {
-    const sessionDateTime = getSessionDateTime();
-    if (!sessionDateTime) return false;
-    return sessionDateTime < new Date();
+    if (!session.scheduledDate || !session.scheduledTime) {
+      return false;
+    }
+    // Robust date parsing
+    try {
+      const datePart = parse(session.scheduledDate, 'yyyy-MM-dd', new Date());
+      const [hours, minutes] = session.scheduledTime.split(':').map(Number);
+      datePart.setHours(hours, minutes);
+      return datePart < new Date();
+    } catch {
+      return false; // If parsing fails, assume it's not over
+    }
   }, [session.scheduledDate, session.scheduledTime]);
 
 
@@ -526,5 +530,3 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
     </Card>
   );
 }
-
-    
