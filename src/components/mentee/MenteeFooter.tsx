@@ -30,11 +30,11 @@ export const MenteeFooter = () => {
         </p>
         <nav className="flex gap-4 sm:ml-auto sm:gap-6">
           <Link
-            href="/terms"
+            href="/terms-and-conditions"
             className="text-sm hover:underline"
             prefetch={false}
           >
-            Terms of Service
+            Terms & Conditions
           </Link>
           <Link
             href="/privacy"
