@@ -1,6 +1,9 @@
 
 import { MenteeHeader } from '@/components/mentee/MenteeHeader';
 import { MenteeFooter } from '@/components/mentee/MenteeFooter';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft } from 'lucide-react';
+import Link from 'next/link';
 
 export default function PrivacyPolicyPage() {
   return (
@@ -8,6 +11,14 @@ export default function PrivacyPolicyPage() {
       <MenteeHeader />
       <main className="flex-1">
         <div className="container mx-auto max-w-4xl px-4 py-12">
+           <div className="mb-4">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/">
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Back to Home
+              </Link>
+            </Button>
+          </div>
           <h1 className="text-4xl font-bold tracking-tight mb-6">Privacy Policy</h1>
           <div className="prose prose-lg max-w-none text-muted-foreground">
             <p>Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
