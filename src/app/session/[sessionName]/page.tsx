@@ -331,7 +331,7 @@ export default function SessionDetailsPage({
       return (
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button className="w-full text-lg">
+            <Button className="w-full text-lg" variant="default">
               Join Waitlist
             </Button>
           </AlertDialogTrigger>
@@ -661,7 +661,11 @@ export default function SessionDetailsPage({
                     {isFull ? (
                       <span className="text-destructive">Session Full</span>
                     ) : (
-                      `Seats Left: ${availableSeats}`
+                      <>
+                        Seats Left:{' '}
+                        {availableSeats <= 10 ? 'Only ' : ''}
+                        {availableSeats} / {participantLimit}
+                      </>
                     )}
                   </span>
                 </div>
