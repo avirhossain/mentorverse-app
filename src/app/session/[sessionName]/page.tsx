@@ -30,7 +30,7 @@ import {
   CheckSquare,
   Star,
 } from 'lucide-react';
-import { format, parse } from 'date-fns';
+import { format, parse, addMinutes } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
@@ -133,20 +133,46 @@ export default function SessionDetailsPage({
   const isFull = bookedCount >= participantLimit;
   const availableSeats = participantLimit - bookedCount;
 
-  const isSessionOver = React.useMemo(() => {
+  const [sessionState, setSessionState] = React.useState<'upcoming' | 'ongoing' | 'finished'>('upcoming');
+
+  React.useEffect(() => {
     if (!session?.scheduledDate || !session?.scheduledTime) {
-      return false;
-    }
-    // Robust date parsing
-    try {
-      const datePart = parse(session.scheduledDate, 'yyyy-MM-dd', new Date());
-      const [hours, minutes] = session.scheduledTime.split(':').map(Number);
-      datePart.setHours(hours, minutes);
-      return datePart < new Date();
-    } catch {
-      return false; // If parsing fails, assume it's not over
-    }
-  }, [session?.scheduledDate, session?.scheduledTime]);
+      setSessionState('upcoming');
+      return;
+    };
+
+    const checkSessionState = () => {
+      try {
+        const now = new Date();
+        const datePart = parse(session.scheduledDate!, 'yyyy-MM-dd', new Date());
+        if (isNaN(datePart.getTime())) {
+            setSessionState('upcoming');
+            return;
+        };
+
+        const [hours, minutes] = session.scheduledTime!.split(':').map(Number);
+        datePart.setHours(hours, minutes);
+        
+        const startTime = datePart;
+        const endTime = addMinutes(startTime, session.duration || 0);
+
+        if (now >= startTime && now < endTime) {
+          setSessionState('ongoing');
+        } else if (now >= endTime) {
+          setSessionState('finished');
+        } else {
+          setSessionState('upcoming');
+        }
+      } catch {
+        setSessionState('upcoming'); // parsing failed, assume upcoming
+      }
+    };
+
+    checkSessionState();
+    const interval = setInterval(checkSessionState, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [session?.scheduledDate, session?.scheduledTime, session?.duration]);
+
 
   const hasSufficientBalance = session && (mentee?.accountBalance || 0) >= session.sessionFee;
 
@@ -252,27 +278,34 @@ export default function SessionDetailsPage({
     if (isLoading || !session) {
       return <Skeleton className="h-12 w-full" />;
     }
-
-    if(isSessionOver) {
-        return (
-            <div className="w-full text-center">
-                {session.sessionType === 'Free' && (
-                    <Button variant="outline" size="sm" onClick={() => setIsReviewOpen(true)}>Write a Review</Button>
-                )}
-                {(session.sessionType !== 'Free' || hasBooked) && (
-                    <>
-                        <p className="text-sm text-muted-foreground font-semibold mb-2">Session Expired</p>
-                        {hasBooked && !hasReviewed && (
-                            <Button variant="outline" size="sm" onClick={() => setIsReviewOpen(true)}>Write a Review</Button>
-                        )}
-                        {hasBooked && hasReviewed && (
-                            <p className="text-sm text-muted-foreground">Thank you for your review!</p>
-                        )}
-                    </>
-                )}
-            </div>
-        );
+    
+    if (sessionState === 'finished') {
+       if (hasBooked && !hasReviewed) {
+         return (
+           <Button variant="outline" size="sm" onClick={() => setIsReviewOpen(true)}>
+             Write a Review
+           </Button>
+         );
+       }
+       if (hasBooked && hasReviewed) {
+         return (
+           <p className="text-sm text-muted-foreground">Thank you for your review!</p>
+         );
+       }
+       return <Button variant="secondary" disabled>Session Over</Button>;
     }
+    
+    if (sessionState === 'ongoing') {
+        if (userBooking?.meetingUrl) {
+            return (
+                <Button asChild className="w-full text-lg">
+                    <a href={userBooking.meetingUrl} target="_blank" rel="noopener noreferrer">Join Session Now</a>
+                </Button>
+            );
+        }
+       return <Button variant="destructive" className="w-full" disabled>Session in Progress</Button>;
+    }
+
 
     if(hasBooked && userBooking) {
         if (userBooking.status === 'started' && userBooking.meetingUrl) {
@@ -284,8 +317,8 @@ export default function SessionDetailsPage({
         }
         return (
             <div className="w-full text-center">
-                 <Button className="w-full text-lg" disabled>Join Session</Button>
-                 <p className="text-xs text-muted-foreground mt-1">The join link will be active when the session starts.</p>
+                 <Button className="w-full text-lg" disabled>Booked</Button>
+                 <p className="text-xs text-muted-foreground mt-1">You will be able to join when the session starts.</p>
             </div>
         )
     }
@@ -597,16 +630,20 @@ export default function SessionDetailsPage({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">
-                  {format(new Date(session.scheduledDate as string), 'PPP')}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">{session.scheduledTime}</span>
-              </div>
+              {session.scheduledDate && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">
+                    {format(new Date(session.scheduledDate as string), 'PPP')}
+                  </span>
+                </div>
+              )}
+              {session.scheduledTime && (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">{session.scheduledTime}</span>
+                </div>
+              )}
               {session.duration && (
                 <div className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-muted-foreground" />
@@ -620,7 +657,7 @@ export default function SessionDetailsPage({
                     {isFull && !hasBooked ? (
                           <span className="text-destructive">No Seats Available</span>
                       ) : (
-                          `${availableSeats}/${participantLimit} seats available`
+                          `Seats Left: Only ${availableSeats} / ${participantLimit}`
                       )}
                   </span>
                 </div>

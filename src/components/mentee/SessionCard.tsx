@@ -117,16 +117,24 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   const [sessionState, setSessionState] = React.useState<'upcoming' | 'ongoing' | 'finished'>('upcoming');
 
   React.useEffect(() => {
-    if (!session.scheduledDate || !session.scheduledTime) return;
+    if (!session.scheduledDate || !session.scheduledTime) {
+      setSessionState('upcoming');
+      return;
+    };
 
     const checkSessionState = () => {
       try {
         const now = new Date();
-        const startTime = parse(
-          `${session.scheduledDate} ${session.scheduledTime}`,
-          'yyyy-MM-dd HH:mm',
-          new Date()
-        );
+        const datePart = parse(session.scheduledDate!, 'yyyy-MM-dd', new Date());
+        if (isNaN(datePart.getTime())) {
+            setSessionState('upcoming');
+            return;
+        };
+
+        const [hours, minutes] = session.scheduledTime!.split(':').map(Number);
+        datePart.setHours(hours, minutes);
+        
+        const startTime = datePart;
         const endTime = addMinutes(startTime, session.duration || 0);
 
         if (now >= startTime && now < endTime) {
@@ -137,7 +145,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
           setSessionState('upcoming');
         }
       } catch {
-        // parsing failed, do nothing
+        setSessionState('upcoming'); // parsing failed, assume upcoming
       }
     };
 
@@ -250,7 +258,14 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
     }
     
     if (sessionState === 'ongoing') {
-        return <Button variant="secondary" disabled>Session Going on</Button>
+       if (userBooking?.meetingUrl) {
+            return (
+                <Button asChild className="w-full">
+                    <a href={userBooking.meetingUrl} target="_blank" rel="noopener noreferrer">Join Now</a>
+                </Button>
+            );
+        }
+        return <Button variant="destructive" className="w-full" disabled>Session in Progress</Button>
     }
 
     // State 1: User has booked this session
@@ -532,7 +547,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
                     {isFull ? (
                         <span className="text-destructive">No Seats Available</span>
                     ) : (
-                        `${availableSeats}/${participantLimit} seats available`
+                        `Seats Left: Only ${availableSeats} / ${participantLimit}`
                     )}
                 </span>
             </div>
