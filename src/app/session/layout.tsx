@@ -3,7 +3,6 @@
 import * as React from 'react';
 import { MenteeHeader } from '@/components/mentee/MenteeHeader';
 import { MenteeFooter } from '@/components/mentee/MenteeFooter';
-import { ClientFeatures } from '@/components/mentee/ClientFeatures';
 
 export default function SessionLayout({
   children,
@@ -18,7 +17,6 @@ export default function SessionLayout({
         {children}
       </main>
       <MenteeFooter />
-      <ClientFeatures />
     </div>
   );
 }

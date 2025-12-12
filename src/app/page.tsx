@@ -1,53 +1,65 @@
+'use client';
 
 import * as React from 'react';
 import { MenteeHeader } from '@/components/mentee/MenteeHeader';
 import { MenteeFooter } from '@/components/mentee/MenteeFooter';
 import { PublicDashboard } from '@/components/mentee/PublicDashboard';
-import { initializeFirebaseOnServer } from '@/firebase/index.server';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import type { Mentor, Session } from '@/lib/types';
 import { ClientFeatures } from '@/components/mentee/ClientFeatures';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
-async function getHomepageData() {
-  const { firestore } = await initializeFirebaseOnServer();
+// This is now a Client Component
+export default function HomePage() {
+  const firestore = useFirestore();
 
   // Fetch Mentors
-  const mentorsQuery = query(
-    collection(firestore, 'mentors'),
-    where('isActive', '==', true),
-    orderBy('createdAt', 'desc'),
-    limit(5)
-  );
-  const mentorsPromise = getDocs(mentorsQuery);
+  const mentorsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'mentors'),
+      where('isActive', '==', true),
+      orderBy('createdAt', 'desc'),
+      limit(5)
+    );
+  }, [firestore]);
+  
+  const { data: mentors, isLoading: isLoadingMentors } = useCollection<Mentor>(mentorsQuery);
 
   // Fetch Sessions
-  const sessionsQuery = query(
-    collection(firestore, 'sessions'),
-    where('status', '==', 'Active'),
-    orderBy('scheduledDate', 'desc'),
-    limit(3)
-  );
-  const sessionsPromise = getDocs(sessionsQuery);
+  const sessionsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'sessions'),
+      where('status', '==', 'Active'),
+      orderBy('scheduledDate', 'desc'),
+      limit(3)
+    );
+  }, [firestore]);
+  
+  const { data: sessions, isLoading: isLoadingSessions } = useCollection<Session>(sessionsQuery);
 
-  const [mentorsSnapshot, sessionsSnapshot] = await Promise.all([mentorsPromise, sessionsPromise]);
-
-  const mentors = mentorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Mentor[];
-  const sessions = sessionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Session[];
-
-  return { mentors, sessions };
-}
-
-
-// This is now a Server Component
-export default async function HomePage() {
-  const { mentors, sessions } = await getHomepageData();
+  const isLoading = isLoadingMentors || isLoadingSessions;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <MenteeHeader />
       <main className="flex-1">
-        <PublicDashboard mentors={mentors} sessions={sessions} />
+        {isLoading ? (
+             <div className="space-y-8 py-8">
+                <Skeleton className="h-[60vh] w-full" />
+                <div className="container mx-auto px-4">
+                    <Skeleton className="h-40 w-full" />
+                </div>
+                 <div className="container mx-auto px-4">
+                    <Skeleton className="h-40 w-full" />
+                </div>
+            </div>
+        ) : (
+             <PublicDashboard mentors={mentors || []} sessions={sessions || []} />
+        )}
       </main>
       <MenteeFooter />
       <ClientFeatures />
