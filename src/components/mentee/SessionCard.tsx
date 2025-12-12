@@ -112,7 +112,18 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
   const bookedCount = session.bookedCount || 0;
   const participantLimit = session.participants || 1;
   const isFull = bookedCount >= participantLimit;
-  const isSessionOver = session.scheduledDate ? new Date(session.scheduledDate) < new Date() : false;
+
+  const getSessionDateTime = () => {
+    if (!session.scheduledDate || !session.scheduledTime) return null;
+    return new Date(`${session.scheduledDate}T${session.scheduledTime}`);
+  }
+
+  const isSessionOver = React.useMemo(() => {
+    const sessionDateTime = getSessionDateTime();
+    if (!sessionDateTime) return false;
+    return sessionDateTime < new Date();
+  }, [session.scheduledDate, session.scheduledTime]);
+
 
   const hasSufficientBalance = (mentee?.accountBalance || 0) >= session.sessionFee;
 

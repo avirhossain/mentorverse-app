@@ -131,8 +131,19 @@ export default function SessionDetailsPage({
   const bookedCount = session?.bookedCount || 0;
   const participantLimit = session?.participants || 1;
   const isFull = bookedCount >= participantLimit;
+
+  const getSessionDateTime = () => {
+    if (!session?.scheduledDate || !session?.scheduledTime) return null;
+    return new Date(`${session.scheduledDate}T${session.scheduledTime}`);
+  }
+
+  const isSessionOver = React.useMemo(() => {
+    const sessionDateTime = getSessionDateTime();
+    if (!sessionDateTime) return false;
+    return sessionDateTime < new Date();
+  }, [session?.scheduledDate, session?.scheduledTime]);
+
   const hasSufficientBalance = session && (mentee?.accountBalance || 0) >= session.sessionFee;
-  const isSessionOver = session?.scheduledDate ? new Date(session.scheduledDate) < new Date() : false;
 
 
   const isLoading = isLoadingSession || isLoadingMentee || isLoadingStatus;
@@ -329,9 +340,7 @@ export default function SessionDetailsPage({
         <AlertDialog>
           <AlertDialogTrigger asChild>
              <Button className="w-full text-lg">
-                {session.sessionFee > 0
-                  ? 'Book Now'
-                  : 'Claim Your Seat'}
+                Book Now
               </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -620,3 +629,4 @@ export default function SessionDetailsPage({
     </div>
   );
 }
+
