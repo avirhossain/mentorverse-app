@@ -654,15 +654,15 @@ export default function SessionDetailsPage({
                   <span className="font-medium">{session.duration} minutes</span>
                 </div>
               )}
-              {session.participants && (
+              {session.participants && !hasBooked && (
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-muted-foreground" />
                   <span className="font-medium">
-                    {isFull && !hasBooked ? (
-                          <span className="text-destructive">No Seats Available</span>
-                      ) : (
-                          `Seats Left: Only ${availableSeats} / ${participantLimit}`
-                      )}
+                    {isFull ? (
+                      <span className="text-destructive">Session Full</span>
+                    ) : (
+                      `Seats Left: ${availableSeats}`
+                    )}
                   </span>
                 </div>
               )}
