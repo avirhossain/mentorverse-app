@@ -170,3 +170,14 @@ export interface Waitlist {
   phoneNumber?: string;
   createdAt: string; // ISO 8601 date string
 }
+
+export interface Tip {
+  id: string;
+  adminId: string;
+  title: string;
+  description: string;
+  linkUrl?: string;
+  imageUrl?: string;
+  createdAt: string; // ISO 8601 date string
+  isActive: boolean;
+}

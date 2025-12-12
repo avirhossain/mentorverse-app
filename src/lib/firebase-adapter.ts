@@ -34,6 +34,7 @@ import type {
   Waitlist,
   Payout,
   Notification,
+  Tip,
   ContactRequest,
   MentorRequest,
 } from './types';
@@ -542,6 +543,29 @@ export const DisbursementAPI = {
       where('bookingIds', 'array-contains', bookingId)
     );
     return getDocs(q);
+  },
+};
+
+// ------------------ TIPS ------------------
+export const TipsAPI = {
+  createTip: (db: Firestore, data: Partial<Tip>) => {
+    const tipRef = doc(collection(db, 'tips'));
+    const fullData = { ...data, id: tipRef.id };
+    return setDoc(tipRef, fullData).catch(() => {
+      emitPermissionError(tipRef.path, 'create', fullData);
+    });
+  },
+  updateTip: (db: Firestore, id: string, data: Partial<Tip>) => {
+    const tipRef = doc(db, 'tips', id);
+    return updateDoc(tipRef, data).catch(() => {
+      emitPermissionError(tipRef.path, 'update', data);
+    });
+  },
+  deleteTip: (db: Firestore, id: string) => {
+    const tipRef = doc(db, 'tips', id);
+    return deleteDoc(tipRef).catch(() => {
+      emitPermissionError(tipRef.path, 'delete');
+    });
   },
 };
 

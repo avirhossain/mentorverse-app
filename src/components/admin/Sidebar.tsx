@@ -11,6 +11,7 @@ import {
   UserPlus,
   Contact,
   UserRoundPlus,
+  Lightbulb,
 } from 'lucide-react';
 import {
   Tooltip,
