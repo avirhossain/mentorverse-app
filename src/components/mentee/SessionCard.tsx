@@ -545,9 +545,11 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
                     <Users className="h-4 w-4" />
                      <span>
                         {isFull && !hasBooked ? (
-                            <span className="text-destructive">No Seats Available</span>
+                            <span className="text-destructive font-semibold">Session Full</span>
+                        ) : availableSeats === 1 ? (
+                            <span className="text-amber-600 font-semibold">Only One Seat Available</span>
                         ) : (
-                            `Seats Left: Only ${availableSeats} / ${participantLimit}`
+                            `Seats Left: ${availableSeats} / ${participantLimit}`
                         )}
                     </span>
                 </div>
