@@ -473,7 +473,7 @@ export function SessionCard({ session, isBooking = false }: SessionCardProps) {
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                <span>{session.scheduledTime}</span>
+                <span>{session.scheduledTime} {session.duration && `(${session.duration} mins)`}</span>
               </div>
             </>
           )}

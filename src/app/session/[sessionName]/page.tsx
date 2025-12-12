@@ -525,7 +525,13 @@ export default function SessionDetailsPage({
       <header className="mb-8">
         <h1 className="text-4xl font-bold tracking-tight">{session.name}</h1>
         <p className="mt-2 text-xl text-muted-foreground">
-          with {session.mentorName}
+          with{' '}
+          <Link
+            href={`/${session.mentorName.replace(/\s+/g, '-')}`}
+            className="text-primary hover:underline"
+          >
+            {session.mentorName}
+          </Link>
         </p>
       </header>
 
@@ -588,6 +594,12 @@ export default function SessionDetailsPage({
                 <Clock className="h-5 w-5 text-muted-foreground" />
                 <span className="font-medium">{session.scheduledTime}</span>
               </div>
+              {session.duration && (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">{session.duration} minutes</span>
+                </div>
+              )}
               {session.participants && (
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-muted-foreground" />
