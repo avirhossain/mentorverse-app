@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   GoogleAuthProvider,
   signInWithPopup,
@@ -18,9 +19,12 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 
 const GoogleIcon = () => (
@@ -46,6 +50,7 @@ const GoogleIcon = () => (
 
 export function AuthForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(true);
 
   const auth = useAuth();
   const firestore = useFirestore();
@@ -129,6 +134,14 @@ export function AuthForm() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!agreedToTerms) {
+        toast({
+            variant: 'destructive',
+            title: 'Agreement Required',
+            description: 'You must agree to the Terms & Conditions to continue.',
+        });
+        return;
+    }
     setIsLoading(true);
     try {
       const provider = new GoogleAuthProvider();
@@ -161,14 +174,14 @@ export function AuthForm() {
           Sign in or create an account with your Google account to get started.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <div className="grid grid-cols-1 gap-4 pt-4">
           <Button
             type="button"
             variant="outline"
             className="w-full"
             onClick={handleGoogleSignIn}
-            disabled={isLoading}
+            disabled={isLoading || !agreedToTerms}
           >
             {isLoading ? "Signing In..." : (
                 <>
@@ -177,6 +190,16 @@ export function AuthForm() {
                 </>
             )}
           </Button>
+        </div>
+        <div className="flex items-center space-x-2">
+            <Checkbox id="terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(Boolean(checked))} />
+            <Label htmlFor="terms" className="text-sm text-muted-foreground">
+                I agree to the{' '}
+                <Link href="/terms-and-conditions" className="underline hover:text-primary" target="_blank">
+                    Terms & Conditions
+                </Link>
+                .
+            </Label>
         </div>
       </CardContent>
     </Card>
