@@ -32,10 +32,7 @@ service cloud.firestore {
 
     // Mentors: Active mentors are publicly readable. Admins can write.
     match /mentors/{mentorId} {
-      // Allow read for anyone if mentor is active, or if user is an admin.
-      allow get: if (resource.data.isActive == true) || isAdmin();
-      // Allow list for anyone. Client-side query must filter by isActive == true for public view.
-      allow list: if true;
+      allow get, list: if true;
       allow create, update, delete: if isAdmin();
     }
     
